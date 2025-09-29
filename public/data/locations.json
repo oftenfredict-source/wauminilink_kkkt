@@ -1,0 +1,14 @@
+{
+  "regions": [
+    { "name": "Dar es Salaam", "districts": [
+      { "name": "Ilala", "wards": ["Buguruni", "Kisutu", "Kitunda"] },
+      { "name": "Temeke", "wards": ["Chang'ombe", "Mbagala", "Kurasini"] }
+    ]},
+    { "name": "Arusha", "districts": [
+      { "name": "Arusha Urban", "wards": ["Sokon I", "Themi", "Kaloleni"] }
+    ]}
+  ]
+}
+
+
+

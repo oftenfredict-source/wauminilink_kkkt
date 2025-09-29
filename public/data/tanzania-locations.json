@@ -1,0 +1,35 @@
+{
+  "regions": [
+    {
+      "name": "Dar es Salaam",
+      "districts": [
+        { "name": "Ilala", "wards": ["Buguruni", "Kariakoo", "Kisutu", "Tabata", "Vingunguti", "Gerezani", "Kurasini"] },
+        { "name": "Kinondoni", "wards": ["Kawe", "Msasani", "Oyster Bay", "Sinza", "Kijitonyama", "Makumbusho", "Mwananyamala"] },
+        { "name": "Temeke", "wards": ["Chamazi", "Mbagala", "Tandika", "Chang’ombe", "Azimio"] },
+        { "name": "Ubungo", "wards": ["Saranga", "Makuburi", "Kimara", "Mbezi", "Goba"] },
+        { "name": "Kigamboni", "wards": ["Kibada", "Kisarawe II", "Tungi", "Kimbiji", "Somangila", "Vijibweni"] }
+      ]
+    },
+    {
+      "name": "Arusha",
+      "districts": [
+        { "name": "Arusha City", "wards": ["Central", "Sekei", "Themi", "Unga Limited", "Kaloleni", "Levolosi", "Daraja Mbili"] },
+        { "name": "Meru", "wards": ["Akheri", "Maji ya Chai", "Usa River", "Leguruki"] },
+        { "name": "Karatu", "wards": ["Karatu", "Rhotia", "Endabash", "Mang'ola"] },
+        { "name": "Ngorongoro", "wards": ["Nainokanoka", "Sale", "Soit Sambu"] }
+      ]
+    },
+    {
+      "name": "Kilimanjaro",
+      "districts": [
+        { "name": "Moshi Urban", "wards": ["Kaloleni", "Kiboriloni", "Rau", "Majengo", "Shirimatunda", "Soweto"] },
+        { "name": "Moshi Rural", "wards": ["Kahe", "Uru Mashariki", "Uru Kusini", "Mamba", "Kilema Kaskazini"] },
+        { "name": "Hai", "wards": ["Machame Uroki", "Machame Narumu", "Machame Kaskazini", "Masama Rundugai"] }
+      ]
+    }
+  ]
+}
+
+
+
+

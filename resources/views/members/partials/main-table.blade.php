@@ -80,7 +80,7 @@
                         @if(!empty($isArchived))
                             @php $snap = $member->member_snapshot ?? []; @endphp
                         @endif
-                        <tr id="row-{{ $member->id }}"
+                        <tr id="row-{{ !empty($isArchived) ? $member->member_id : $member->id }}"
                             @if(!empty($isArchived)) style="background-color: #f4f4f4; color: #000;" @endif
                             data-name="{{ strtolower(!empty($isArchived) ? ($snap['full_name'] ?? '') : $member->full_name) }}"
                             data-memberid="{{ strtolower(!empty($isArchived) ? ($snap['member_id'] ?? '') : $member->member_id) }}"
@@ -109,9 +109,9 @@
                             @endif
                             <td class="text-end">
                                 <div class="btn-group btn-group-sm" role="group">
-                                    <button class="btn btn-outline-info" onclick="viewDetails({{ $member->id }})"><i class="fas fa-eye"></i></button>
-                                    <button class="btn btn-outline-primary" onclick="openEdit({{ $member->id }})"><i class="fas fa-edit"></i></button>
-                                    <button class="btn btn-outline-danger" onclick="confirmDelete({{ $member->id }})"><i class="fas fa-trash"></i></button>
+                                    <button class="btn btn-outline-info" onclick="viewDetails({{ !empty($isArchived) ? $member->member_id : $member->id }})"><i class="fas fa-eye"></i></button>
+                                    <button class="btn btn-outline-primary" onclick="openEdit({{ !empty($isArchived) ? $member->member_id : $member->id }})"><i class="fas fa-edit"></i></button>
+                                    <button class="btn btn-outline-danger" onclick="confirmDelete({{ !empty($isArchived) ? $member->member_id : $member->id }})"><i class="fas fa-trash"></i></button>
                                     @if(($showArchive ?? false) && empty($isArchived))
                                         <button class="btn btn-outline-warning" onclick="openArchiveModal({{ $member->id }})"><i class="fas fa-archive"></i></button>
                                     @endif
@@ -137,6 +137,79 @@
                 }
             </style>
             @endif
+
+            <style>
+                /* Action Button Colors */
+                .btn-outline-info {
+                    border-color: #17a2b8 !important;
+                    color: #17a2b8 !important;
+                }
+                .btn-outline-info:hover {
+                    background: linear-gradient(90deg, #17a2b8, #138496) !important;
+                    border-color: #17a2b8 !important;
+                    color: white !important;
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 8px rgba(23, 162, 184, 0.3);
+                }
+
+                .btn-outline-primary {
+                    border-color: #667eea !important;
+                    color: #667eea !important;
+                }
+                .btn-outline-primary:hover {
+                    background: linear-gradient(90deg, #667eea, #764ba2) !important;
+                    border-color: #667eea !important;
+                    color: white !important;
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+                }
+
+                .btn-outline-danger {
+                    border-color: #dc3545 !important;
+                    color: #dc3545 !important;
+                }
+                .btn-outline-danger:hover {
+                    background: linear-gradient(90deg, #dc3545, #c82333) !important;
+                    border-color: #dc3545 !important;
+                    color: white !important;
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+                }
+
+                .btn-outline-warning {
+                    border-color: #ffc107 !important;
+                    color: #ffc107 !important;
+                }
+                .btn-outline-warning:hover {
+                    background: linear-gradient(90deg, #ffc107, #e0a800) !important;
+                    border-color: #ffc107 !important;
+                    color: #212529 !important;
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 8px rgba(255, 193, 7, 0.3);
+                }
+
+                .btn-outline-success {
+                    border-color: #28a745 !important;
+                    color: #28a745 !important;
+                }
+                .btn-outline-success:hover {
+                    background: linear-gradient(90deg, #28a745, #218838) !important;
+                    border-color: #28a745 !important;
+                    color: white !important;
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+                }
+
+                /* Button group styling */
+                .btn-group .btn {
+                    transition: all 0.3s ease;
+                    font-weight: 600;
+                }
+
+                .btn-group .btn i {
+                    font-size: 0.9rem;
+                }
+            </style>
         </div>
     </div>
     @if(isset($members) && method_exists($members, 'firstItem'))

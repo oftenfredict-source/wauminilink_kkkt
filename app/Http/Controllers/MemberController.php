@@ -28,27 +28,39 @@ class MemberController extends Controller
     public function store(Request $request)
     {
         // Debug: Log received data
+        \Log::info('=== MEMBER STORE METHOD CALLED ===');
+        \Log::info('Request method: ' . $request->method());
+        \Log::info('Request URL: ' . $request->url());
         \Log::info('Received member data:', $request->all());
+        \Log::info('CSRF Token: ' . $request->input('_token'));
+        \Log::info('Request headers:', $request->headers->all());
+        
+        // Also log to browser console if possible
+        if ($request->wantsJson()) {
+            \Log::info('JSON request received');
+        } else {
+            \Log::info('Form request received');
+        }
 
         $childMaxAge = config('membership.child_max_age', 18);
         
         // Validation rules
         $rules = [
-            'member_type' => ['required_if:membership_type,permanent', Rule::in(['father','mother','independent',''])],
+            'member_type' => ['nullable','required_if:membership_type,permanent', Rule::in(['father','mother','independent'])],
             'membership_type' => ['required', Rule::in(['permanent','temporary'])],
 
             'full_name' => 'required|string|max:255',
             'email' => 'nullable|email|max:255',
-            'phone_number' => ['required','string','max:20','regex:/^\+255[67][0-9]{8}$/'],
+            'phone_number' => ['required','string','max:20','regex:/^\+255[0-9]{9,15}$/'],
             'date_of_birth' => 'required|date|before:today',
             'gender' => 'required|in:male,female',
 
-            'education_level' => ['nullable', Rule::in(['none','primary','secondary','chuo_cha_kati','university'])],
-            'profession' => ['nullable','string','max:100'],
+            'education_level' => ['nullable', Rule::in(['primary','secondary','high_level','certificate','diploma','bachelor_degree','masters','phd','professor','not_studied'])],
+            'profession' => 'required|string|max:100',
 
             // Guardian for temporary members
             'guardian_name' => 'nullable|required_if:membership_type,temporary|string|max:255',
-            'guardian_phone' => 'nullable|required_if:membership_type,temporary|string|max:20',
+            'guardian_phone' => ['nullable','required_if:membership_type,temporary','string','max:20','regex:/^\+255[0-9]{9,15}$/'],
             'guardian_relationship' => 'nullable|required_if:membership_type,temporary|string|max:100',
 
             // Children
@@ -58,40 +70,29 @@ class MemberController extends Controller
             'children.*.gender' => ['required_with:children', Rule::in(['male','female'])],
             'children.*.date_of_birth' => 'required_with:children|date|before_or_equal:today',
 
-            // Existing address fields remain
+            // Address fields - make required
             'nida_number' => 'nullable|string|max:20',
-            'tribe' => 'nullable|string|max:100',
-            'other_tribe' => 'nullable|string|max:100',
-            'region' => 'nullable|string|max:100',
-            'district' => 'nullable|string|max:100',
-            'ward' => 'nullable|string|max:100',
-            'street' => 'nullable|string|max:255',
-            'address' => 'nullable|string',
-            'living_with_family' => 'nullable|in:yes,no',
-            'family_relationship' => 'nullable|string|max:100',
+            'tribe' => 'required|string|max:100',
+            'other_tribe' => 'nullable|required_if:tribe,Other|string|max:100',
+            'region' => 'required|string|max:100',
+            'district' => 'required|string|max:100',
+            'ward' => 'required|string|max:100',
+            'street' => 'required|string|max:255',
+            'address' => 'required|string',
 
             'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
 
-            // Mother info fields (only if permanent & father & mother_alive is yes)
-            'mother_alive' => ['nullable', Rule::in(['yes','no'])],
-            'mother_full_name' => 'nullable|required_if:mother_alive,yes|string|max:255',
-            'mother_date_of_birth' => 'nullable|required_if:mother_alive,yes|date|before:today',
-            'mother_education_level' => ['nullable','required_if:mother_alive,yes', Rule::in(['none','primary','secondary','chuo_cha_kati','university'])],
-            'mother_profession' => 'nullable|required_if:mother_alive,yes|string|max:100',
-            'mother_nida_number' => 'nullable|string|max:20',
-            'mother_email' => 'nullable|email|max:255',
-            'mother_phone_number' => 'nullable|required_if:mother_alive,yes|string|max:20',
-
-            // Father info fields (only if permanent & mother & father_alive is yes)
-            'father_alive' => ['nullable', Rule::in(['yes','no'])],
-            'father_full_name' => 'nullable|required_if:father_alive,yes|string|max:255',
-            'father_date_of_birth' => 'nullable|required_if:father_alive,yes|date|before:today',
-            'father_education_level' => ['nullable','required_if:father_alive,yes', Rule::in(['none','primary','secondary','chuo_cha_kati','university'])],
-            'father_profession' => 'nullable|required_if:father_alive,yes|string|max:100',
-            'father_nida_number' => 'nullable|string|max:20',
-            'father_email' => 'nullable|email|max:255',
-            'father_phone_number' => 'nullable|required_if:father_alive,yes|string|max:20',
-        ];
+            // Spouse info fields (only if permanent & father/mother & spouse_alive is yes)
+            'spouse_alive' => ['nullable', Rule::in(['yes','no'])],
+            'spouse_full_name' => 'nullable|required_if:spouse_alive,yes|string|max:255',
+            'spouse_date_of_birth' => 'nullable|required_if:spouse_alive,yes|date|before:today',
+            'spouse_education_level' => ['nullable','required_if:spouse_alive,yes', Rule::in(['primary','secondary','high_level','certificate','diploma','bachelor_degree','masters','phd','professor','not_studied'])],
+            'spouse_profession' => 'nullable|required_if:spouse_alive,yes|string|max:100',
+            'spouse_nida_number' => 'nullable|string|max:20',
+            'spouse_email' => 'nullable|email|max:255',
+            'spouse_phone_number' => ['nullable','required_if:spouse_alive,yes','string','max:20','regex:/^\+255[0-9]{9,15}$/'],
+            'spouse_tribe' => 'nullable|required_if:spouse_alive,yes|string|max:100',
+            'spouse_other_tribe' => 'nullable|required_if:spouse_tribe,Other|string|max:100',
         ];
         // Custom validation messages
         $messages = [
@@ -108,9 +109,7 @@ class MemberController extends Controller
             'ward.required' => 'Ward is required.',
             'street.required' => 'Street is required.',
             'address.required' => 'Address is required.',
-            'living_with_family.required' => 'Please specify if the believer is living with family.',
             'other_tribe.required_if' => 'Please specify the tribe name.',
-            'family_relationship.required_if' => 'Please select who you are living with.',
             'avatar.image' => 'Avatar must be an image file.',
             'avatar.mimes' => 'Avatar must be a JPEG, PNG, JPG, or GIF file.',
             'avatar.max' => 'Avatar size must not exceed 2MB.',
@@ -149,6 +148,9 @@ class MemberController extends Controller
         });
 
         if ($validator->fails()) {
+            \Log::info('=== VALIDATION FAILED ===');
+            \Log::info('Validation errors:', $validator->errors()->toArray());
+            
             if ($request->wantsJson()) {
                 return response()->json([
                     'success' => false,
@@ -158,6 +160,8 @@ class MemberController extends Controller
             }
             return back()->withErrors($validator)->withInput();
         }
+        
+        \Log::info('=== VALIDATION PASSED ===');
 
         try {
             // Handle avatar upload
@@ -170,7 +174,10 @@ class MemberController extends Controller
             $memberId = Member::generateMemberId();
 
             // Create member
-            $member = Member::create([
+            \Log::info('=== CREATING MEMBER ===');
+            \Log::info('Member ID to be created: ' . $memberId);
+            
+            $memberData = [
                 'member_id' => $memberId,
                 'member_type' => $request->member_type,
                 'membership_type' => $request->membership_type,
@@ -192,19 +199,26 @@ class MemberController extends Controller
                 'ward' => $request->ward,
                 'street' => $request->street,
                 'address' => $request->address,
-                'living_with_family' => $request->living_with_family,
-                'family_relationship' => $request->family_relationship,
                 'profile_picture' => $profilePicturePath,
-                    // Mother info fields
-                    'mother_alive' => $request->mother_alive,
-                    'mother_full_name' => $request->mother_full_name,
-                    'mother_date_of_birth' => $request->mother_date_of_birth,
-                    'mother_education_level' => $request->mother_education_level,
-                    'mother_profession' => $request->mother_profession,
-                    'mother_nida_number' => $request->mother_nida_number,
-                    'mother_email' => $request->mother_email,
-                    'mother_phone_number' => $request->mother_phone_number,
-            ]);
+                'spouse_alive' => $request->spouse_alive,
+                'spouse_full_name' => $request->spouse_full_name,
+                'spouse_date_of_birth' => $request->spouse_date_of_birth,
+                'spouse_education_level' => $request->spouse_education_level,
+                'spouse_profession' => $request->spouse_profession,
+                'spouse_nida_number' => $request->spouse_nida_number,
+                'spouse_email' => $request->spouse_email,
+                'spouse_phone_number' => $request->spouse_phone_number,
+                'spouse_tribe' => $request->spouse_tribe,
+                'spouse_other_tribe' => $request->spouse_other_tribe,
+            ];
+            
+            \Log::info('Member data to be saved:', $memberData);
+            
+            $member = Member::create($memberData);
+            
+            \Log::info('=== MEMBER CREATED SUCCESSFULLY ===');
+            \Log::info('Created member ID: ' . $member->id);
+            \Log::info('Created member data:', $member->toArray());
 
             // Children creation with age check
             $children = [];
@@ -251,6 +265,10 @@ class MemberController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            \Log::error('=== MEMBER CREATION FAILED ===');
+            \Log::error('Exception message: ' . $e->getMessage());
+            \Log::error('Exception trace: ' . $e->getTraceAsString());
+            
             if ($request->wantsJson()) {
                 return response()->json([
                     'success' => false,
@@ -321,9 +339,38 @@ public function view()
     return $this->index(request());
 }
 
-public function show(Member $member)
+public function show($id)
 {
-    return response()->json($member);
+    \Log::info('SHOW_MEMBER_ATTEMPT', ['id' => $id, 'type' => gettype($id)]);
+    
+    // First try to find in regular members
+    $member = Member::find($id);
+    if ($member) {
+        \Log::info('SHOW_MEMBER_FOUND_REGULAR', ['id' => $id]);
+        return response()->json($member->load('children'));
+    }
+    
+    // If not found, try to find in archived members
+    $archivedMember = DeletedMember::where('member_id', (int)$id)->first();
+    \Log::info('SHOW_ARCHIVED_SEARCH', [
+        'id' => $id, 
+        'archived_found' => $archivedMember ? true : false,
+        'archived_id' => $archivedMember ? $archivedMember->id : null
+    ]);
+    
+    if ($archivedMember) {
+        // Return the archived member data with the snapshot
+        $memberData = $archivedMember->member_snapshot;
+        $memberData['archived'] = true;
+        $memberData['archive_reason'] = $archivedMember->reason;
+        $memberData['archived_at'] = $archivedMember->deleted_at_actual;
+        \Log::info('SHOW_ARCHIVED_SUCCESS', ['id' => $id]);
+        return response()->json($memberData);
+    }
+    
+    // If not found in either table, return 404
+    \Log::info('SHOW_MEMBER_NOT_FOUND', ['id' => $id]);
+    return response()->json(['error' => 'Member not found'], 404);
 }
 
 public function update(Request $request, Member $member)

@@ -160,8 +160,8 @@
                             <div class="collapse" id="collapseEvents" aria-labelledby="headingTwo" data-bs-parent="#sidenavAccordion">
                                 <nav class="sb-sidenav-menu-nested nav">
                                     <a class="nav-link" href="{{ route('services.sunday.index') }}"><i class="fas fa-church me-2"></i>Sunday Services</a>
-                                    <a class="nav-link" href="#"><i class="fas fa-calendar-plus me-2"></i>Special Events</a>
-                                    <a class="nav-link" href="#"><i class="fas fa-birthday-cake me-2"></i>Celebrations</a>
+                                    <a class="nav-link" href="{{ route('special.events.index') }}"><i class="fas fa-calendar-plus me-2"></i>Special Events</a>
+                                    <a class="nav-link" href="{{ route('celebrations.index') }}"><i class="fas fa-birthday-cake me-2"></i>Celebrations</a>
                                 </nav>
                             </div>
                             
@@ -271,7 +271,7 @@
                                         <div class="d-flex align-items-center">
                                             <div class="flex-grow-1">
                                                 <div class="small text-white-50">Active Events</div>
-                                                <div class="h4 mb-0">8</div>
+                                                <div class="h4 mb-0">{{ $activeEvents ?? 0 }}</div>
                                             </div>
                                             <div class="ms-3">
                                                 <i class="fas fa-calendar-alt fa-2x text-white-50"></i>
@@ -279,7 +279,7 @@
                                         </div>
                                     </div>
                                     <div class="card-footer d-flex align-items-center justify-content-between">
-                                        <a class="small text-white stretched-link" href="#">View Events</a>
+                                        <a class="small text-white stretched-link" href="{{ route('special.events.index') }}">View Events</a>
                                         <div class="small text-white"><i class="fas fa-angle-right"></i></div>
                                     </div>
                                 </div>
@@ -308,16 +308,16 @@
                                     <div class="card-body">
                                         <div class="d-flex align-items-center">
                                             <div class="flex-grow-1">
-                                                <div class="small text-white-50">Upcoming Services</div>
-                                                <div class="h4 mb-0">3</div>
+                                                <div class="small text-white-50">Upcoming Celebrations</div>
+                                                <div class="h4 mb-0">{{ $upcomingCelebrations ?? 0 }}</div>
                                             </div>
                                             <div class="ms-3">
-                                                <i class="fas fa-church fa-2x text-white-50"></i>
+                                                <i class="fas fa-birthday-cake fa-2x text-white-50"></i>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="card-footer d-flex align-items-center justify-content-between">
-                                        <a class="small text-white stretched-link" href="#">View Services</a>
+                                        <a class="small text-white stretched-link" href="{{ route('celebrations.index') }}">View Celebrations</a>
                                         <div class="small text-white"><i class="fas fa-angle-right"></i></div>
                                     </div>
                                 </div>
@@ -341,13 +341,19 @@
                                                 </a>
                                             </div>
                                             <div class="col-lg-3 col-md-6 mb-3">
-                                                <button class="btn btn-outline-success w-100 h-100 d-flex flex-column align-items-center justify-content-center py-3">
+                                                <a href="{{ route('special.events.index') }}?action=add" class="btn btn-outline-success w-100 h-100 d-flex flex-column align-items-center justify-content-center py-3 text-decoration-none">
                                                     <i class="fas fa-calendar-plus fa-2x mb-2"></i>
                                                     <span>Create Event</span>
-                                                </button>
+                                                </a>
                                             </div>
                                             <div class="col-lg-3 col-md-6 mb-3">
-                                                <button class="btn btn-outline-warning w-100 h-100 d-flex flex-column align-items-center justify-content-center py-3">
+                                                <a href="{{ route('celebrations.index') }}?action=add" class="btn btn-outline-warning w-100 h-100 d-flex flex-column align-items-center justify-content-center py-3 text-decoration-none">
+                                                    <i class="fas fa-birthday-cake fa-2x mb-2"></i>
+                                                    <span>Create Celebration</span>
+                                                </a>
+                                            </div>
+                                            <div class="col-lg-3 col-md-6 mb-3">
+                                                <button class="btn btn-outline-info w-100 h-100 d-flex flex-column align-items-center justify-content-center py-3">
                                                     <i class="fas fa-donate fa-2x mb-2"></i>
                                                     <span>Record Donation</span>
                                                 </button>

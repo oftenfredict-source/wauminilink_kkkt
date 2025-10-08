@@ -32,22 +32,22 @@ class Member extends Model
         'ward',
         'street',
         'address',
-        'living_with_family',
-        'family_relationship',
         'profile_picture',
-            'mother_alive',
-            'mother_full_name',
-            'mother_date_of_birth',
-            'mother_education_level',
-            'mother_profession',
-            'mother_nida_number',
-            'mother_email',
-            'mother_phone_number',
+        'spouse_alive',
+        'spouse_full_name',
+        'spouse_date_of_birth',
+        'spouse_education_level',
+        'spouse_profession',
+        'spouse_nida_number',
+        'spouse_email',
+        'spouse_phone_number',
+        'spouse_tribe',
+        'spouse_other_tribe',
     ];
 
     protected $casts = [
         'date_of_birth' => 'date',
-            'mother_date_of_birth' => 'date',
+        'spouse_date_of_birth' => 'date',
     ];
 
     public function children()

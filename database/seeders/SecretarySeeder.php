@@ -14,11 +14,13 @@ class SecretarySeeder extends Seeder
      */
     public function run(): void
     {
-         User::create([
-            'name' => 'System Secretary',
-            'email' => 'secretary@example.com',
-            'password' => Hash::make('password123'),
-            'role' => 'secretary',
-        ]);
+         User::updateOrCreate(
+            ['email' => 'secretary@example.com'],
+            [
+                'name' => 'System Secretary',
+                'password' => Hash::make('12345@@'),
+                'role' => 'secretary',
+            ]
+        );
     }
 }

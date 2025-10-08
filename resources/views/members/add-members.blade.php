@@ -97,50 +97,6 @@
                 background-color: rgba(255, 255, 255, 0.1) !important;
                 color: white !important;
             }
-                        function addChild(){
-                            const idx = childCount;
-                            const row = document.createElement('div');
-                            row.className = 'row g-3 mb-2 align-items-end child-row';
-                            row.innerHTML = `
-                                <div class=\"col-md-5\">
-                                    <label class=\"form-label\">Child ${idx+1} Full Name</label>
-                                    <input type=\"text\" class=\"form-control child-fullname\" name=\"children[${idx}][full_name]\" required>
-                                </div>
-                                <div class=\"col-md-3\">
-                                    <label class=\"form-label\">Gender</label>
-                                    <select class=\"form-select child-gender\" name=\"children[${idx}][gender]\" required>
-                                        <option value=\"\">Select</option>
-                                        <option value=\"male\">Male</option>
-                                        <option value=\"female\">Female</option>
-                                    </select>
-                                </div>
-                                <div class=\"col-md-3\">
-                                    <label class=\"form-label\">Date of Birth</label>
-                                    <div class=\"input-group\">
-                                        <input type=\"date\" class=\"form-control child-dob\" name=\"children[${idx}][date_of_birth]\" required>
-                                        <span class=\"input-group-text child-age\" style=\"min-width:80px;display:none;\"></span>
-                                    </div>
-                                </div>
-                                <div class=\"col-md-1 text-end\">
-                                    <button type=\"button\" class=\"btn btn-danger btn-sm remove-child-btn\" title=\"Remove Child\"><i class=\"fas fa-trash\"></i></button>
-                                </div>
-                            `;
-                            childrenContainer.appendChild(row);
-                            childCount++;
-                            renderChildren();
-                            // Remove child handler
-                            row.querySelector('.remove-child-btn').addEventListener('click', function(){
-                                row.remove();
-                                childCount--;
-                                // Re-index names for children
-                                Array.from(childrenContainer.querySelectorAll('.child-row')).forEach((r, i) => {
-                                    r.querySelector('.form-label').textContent = `Child ${i+1} Full Name`;
-                                    r.querySelector('.child-fullname').setAttribute('name', `children[${i}][full_name]`);
-                                    r.querySelector('.child-gender').setAttribute('name', `children[${i}][gender]`);
-                                    r.querySelector('.child-dob').setAttribute('name', `children[${i}][date_of_birth]`);
-                                });
-                            });
-                        }
                 letter-spacing: 0.01em;
                 transition: color 0.3s, font-weight 0.3s;
             }
@@ -336,6 +292,10 @@
                                             <div class="step-circle bg-secondary text-white shadow">3</div>
                                             <div class="step-label mt-2 small">Family Information</div>
                                         </div>
+                                        <div class="wizard-step position-relative text-center" data-step="4">
+                                            <div class="step-circle bg-secondary text-white shadow">4</div>
+                                            <div class="step-label mt-2 small">Summary</div>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -414,8 +374,8 @@
                                         </div>
                                         <div class="col-md-4">
                                             <div class="form-floating">
-                                                <input type="text" class="form-control" name="nida_number" id="nida_number" placeholder="NIDA Number">
-                                                <label for="nida_number">NIDA Number</label>
+                                                <input type="text" class="form-control" name="nida_number" id="nida_number" placeholder="NIDA Number (optional)">
+                                                <label for="nida_number">NIDA Number (optional)</label>
                                             </div>
                                         </div>
                                     </div>
@@ -430,14 +390,12 @@
                                         <div class="col-md-4">
                                             <div class="form-floating">
                                                 <div class="input-group">
-                                                    <span class="input-group-text bg-white border-end-0" id="basic-addon1">
-                                                        <img src="https://flagcdn.com/w20/tz.png" alt="TZ" width="20" height="15" class="me-2">+255
-                                                    </span>
-                                                    <input type="text" class="form-control border-start-0" name="phone_number" id="phone_number" placeholder="7XXXXXXXX" required style="border-radius: 0 .375rem .375rem 0;">
+                                                    <span class="input-group-text">+255</span>
+                                                    <input type="text" class="form-control" name="phone_number" id="phone_number" placeholder="712345678" required>
                                                 </div>
-                                                <label for="phone_number">Phone</label>
+                                                <label for="phone_number">Phone Number</label>
                                             </div>
-                                            <small class="text-muted ms-1">Format: +255 7XXXXXXXX (9 digits)</small>
+                                            <small class="text-muted ms-1">Enter your phone number without +255 (e.g., 712345678)</small>
                                         </div>
                                         <div class="col-md-4">
                                             <div class="form-floating">
@@ -486,7 +444,7 @@
                                         </div>
                                         <div class="col-md-3" id="otherTribeWrapper" style="display:none;">
                                             <div class="form-floating">
-                                                <input type="text" class="form-control" name="other_tribe" id="other_tribe" placeholder="Please specify" required>
+                                                <input type="text" class="form-control" name="other_tribe" id="other_tribe" placeholder="Please specify">
                                                 <label for="other_tribe">Other Tribe</label>
                                             </div>
                                         </div>
@@ -570,8 +528,24 @@
                                             <div class="row g-4 mb-3">
                                                 <div class="col-md-4">
                                                     <div class="form-floating">
-                                                        <input type="text" class="form-control" name="spouse_phone_number" id="spouse_phone_number" placeholder="Phone Number">
+                                                        <div class="input-group">
+                                                            <span class="input-group-text">+255</span>
+                                                            <input type="text" class="form-control" name="spouse_phone_number" id="spouse_phone_number" placeholder="712345678">
+                                                        </div>
                                                         <label for="spouse_phone_number">Phone Number</label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <div class="form-floating">
+                                                        <select class="form-select select2" name="spouse_tribe" id="spouse_tribe">
+                                                        </select>
+                                                        <label for="spouse_tribe">Spouse Tribe</label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-4" id="spouseOtherTribeWrapper" style="display:none;">
+                                                    <div class="form-floating">
+                                                        <input type="text" class="form-control" name="spouse_other_tribe" id="spouse_other_tribe" placeholder="Please specify">
+                                                        <label for="spouse_other_tribe">Spouse Other Tribe</label>
                                                     </div>
                                                 </div>
                                             </div>
@@ -589,7 +563,10 @@
                                             </div>
                                             <div class="col-md-4">
                                                 <div class="form-floating">
-                                                    <input type="text" class="form-control" name="guardian_phone" id="guardian_phone" placeholder="Guardian Phone">
+                                                    <div class="input-group">
+                                                        <span class="input-group-text">+255</span>
+                                                        <input type="text" class="form-control" name="guardian_phone" id="guardian_phone" placeholder="712345678">
+                                                    </div>
                                                     <label for="guardian_phone">Guardian Phone</label>
                                                 </div>
                                             </div>
@@ -621,7 +598,7 @@
                                     </div>
                                     <div class="d-flex justify-content-between">
                                         <button type="button" class="btn btn-outline-secondary btn-lg px-4 shadow-sm prev-step" id="prevStep3"><i class="fas fa-arrow-left me-1"></i>Back</button>
-                                        <!-- Save Member button moved to summary step -->
+                                        <button type="button" class="btn btn-primary btn-lg px-4 shadow-sm next-step" id="nextStep3">Next <i class="fas fa-arrow-right ms-1"></i></button>
                                     </div>
                                 </div>
                             </form>
@@ -814,11 +791,33 @@
                         fetch('{{ asset('data/tribes.json') }}').then(r=>r.json()).then(data=>{
                             const tribes = data.tribes || [];
                             tribeEl.innerHTML = '<option value="">Select</option>' + tribes.map(t=>`<option value="${t}">${t}</option>`).join('');
+                            // Populate spouse tribe select with same dataset
+                            const spouseTribeEl = document.getElementById('spouse_tribe');
+                            if (spouseTribeEl) {
+                                spouseTribeEl.innerHTML = '<option value="">Select</option>' + tribes.map(t=>`<option value="${t}">${t}</option>`).join('');
+                                spouseTribeEl.addEventListener('change', function(){
+                                    const spouseOtherWrapper = document.getElementById('spouseOtherTribeWrapper');
+                                    const spouseOtherInput = document.getElementById('spouse_other_tribe');
+                                    if(this.value === 'Other'){
+                                        spouseOtherWrapper.style.display = '';
+                                        spouseOtherInput.setAttribute('required', 'required');
+                                    } else {
+                                        spouseOtherWrapper.style.display = 'none';
+                                        spouseOtherInput.removeAttribute('required');
+                                        spouseOtherInput.value = '';
+                                    }
+                                });
+                                $('.select2').select2({ width: '100%' });
+                            }
                             tribeEl.addEventListener('change', function(){
+                                const otherTribeInput = document.getElementById('other_tribe');
                                 if(this.value === 'Other'){
                                     otherTribeWrapper.style.display = '';
+                                    otherTribeInput.setAttribute('required', 'required');
                                 } else {
                                     otherTribeWrapper.style.display = 'none';
+                                    otherTribeInput.removeAttribute('required');
+                                    otherTribeInput.value = ''; // Clear the value when hidden
                                 }
                             });
                             $('.select2').select2({ width: '100%' });
@@ -1102,7 +1101,7 @@
                             el.classList.add(valid? 'is-valid':'is-invalid');
                         }
                         function validateEmail(){ const v=emailInput.value.trim(); if(!v) return true; const ok=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); markValid(emailInput, ok); return ok; }
-                        function validatePhone(){ const v=phoneLocalInput.value.replace(/\s+/g,''); const ok=/^[67][0-9]{8}$/.test(v); markValid(phoneLocalInput, ok); return ok; }
+                        function validatePhone(){ const v=phoneLocalInput.value.replace(/\s+/g,''); const ok=/^[0-9]{9,15}$/.test(v); markValid(phoneLocalInput, ok); return ok; }
                         function validateDob(){ const v=dobInput.value; if(!v) return false; const d=new Date(v); const ok=d<new Date(); markValid(dobInput, ok); return ok; }
                         emailInput.addEventListener('input', validateEmail);
                         phoneLocalInput.addEventListener('input', validatePhone);
@@ -1110,14 +1109,43 @@
 
                         function validateStep(step){
                             if(step===1){
-                                const req = ['membership_type','member_type','full_name','gender','date_of_birth','education_level','profession'];
+                                const membershipType = document.getElementById('membership_type').value;
+                                const req = ['membership_type','full_name','gender','date_of_birth','profession'];
+                                // Only require member_type for permanent members
+                                if(membershipType === 'permanent') {
+                                    req.push('member_type');
+                                }
                                 let ok=true; req.forEach(n=>{ const el=document.getElementsByName(n)[0]; if(el && (el.offsetParent!==null)) { const v=el.value.trim(); const pass=!!v; markValid(el, pass); ok = ok && pass; }});
                                 ok = ok && validateDob();
                                 return ok;
                             }
                             if(step===2){
-                                let ok = validatePhone() & validateEmail();
-                                return !!ok;
+                                let ok = validatePhone() && validateEmail();
+                                // Validate required address fields
+                                const region = document.getElementById('region');
+                                const district = document.getElementById('district');
+                                const ward = document.getElementById('ward');
+                                const street = document.getElementById('street');
+                                const address = document.getElementById('address');
+                                const tribe = document.getElementById('tribe');
+                                
+                                const regionOk = !!region.value.trim();
+                                const districtOk = !!district.value.trim();
+                                const wardOk = !!ward.value.trim();
+                                const streetOk = !!street.value.trim();
+                                const addressOk = !!address.value.trim();
+                                const tribeOk = !!tribe.value.trim();
+                                
+                                markValid(region, regionOk); 
+                                markValid(district, districtOk); 
+                                markValid(ward, wardOk); 
+                                markValid(street, streetOk); 
+                                markValid(address, addressOk); 
+                                markValid(tribe, tribeOk);
+                                
+                                ok = ok && regionOk && districtOk && wardOk && streetOk && addressOk && tribeOk;
+                                
+                                return ok;
                             }
                             if(step===3){
                                 let ok = true;
@@ -1127,11 +1155,13 @@
                                     const gPhone = document.getElementById('guardian_phone');
                                     const gRel = document.getElementById('guardian_relationship');
                                     const gNameOk = !!gName.value.trim();
-                                    const gPhoneOk = !!gPhone.value.trim();
+                                    const gPhoneDigits = gPhone.value.replace(/\s+/g,'');
+                                    const gPhoneOk = /^[0-9]{9,15}$/.test(gPhoneDigits);
                                     const gRelOk = !!gRel.value.trim();
-                                    markValid(gName, gNameOk); ok = ok && gNameOk;
-                                    markValid(gPhone, gPhoneOk); ok = ok && gPhoneOk;
-                                    markValid(gRel, gRelOk); ok = ok && gRelOk;
+                                    markValid(gName, gNameOk); 
+                                    markValid(gPhone, gPhoneOk); 
+                                    markValid(gRel, gRelOk);
+                                    ok = ok && gNameOk && gPhoneOk && gRelOk;
                                 }
                                 // children required when count > 0
                                 const childRows = childrenContainer.querySelectorAll('.child-row');
@@ -1144,9 +1174,10 @@
                                         const passGender = !!gender.value;
                                         const d = new Date(dob.value);
                                         const passDob = !!dob.value && d<new Date();
-                                        markValid(fullName, passName); ok = ok && passName;
-                                        markValid(gender, passGender); ok = ok && passGender;
-                                        markValid(dob, passDob); ok = ok && passDob;
+                                        markValid(fullName, passName); 
+                                        markValid(gender, passGender); 
+                                        markValid(dob, passDob);
+                                        ok = ok && passName && passGender && passDob;
                                     });
                                 }
                                 return ok;
@@ -1177,25 +1208,13 @@
                         `;
                         document.getElementById('addMemberForm').appendChild(summaryStep);
 
-                        // Add summary step to wizardSteps
-                        const wizardSteps = document.getElementById('wizardSteps');
-                        const summaryWizardStep = document.createElement('div');
-                        summaryWizardStep.className = 'wizard-step position-relative text-center';
-                        summaryWizardStep.setAttribute('data-step', '4');
-                        summaryWizardStep.innerHTML = `<div class="step-circle bg-secondary text-white shadow">4</div><div class="step-label mt-2 small">Summary</div>`;
-                        wizardSteps.appendChild(summaryWizardStep);
+                        // Summary step is now in HTML
 
-                        // Next button on step3 shows summary
-                        const nextStep3Btn = document.createElement('button');
-                        nextStep3Btn.type = 'button';
-                        nextStep3Btn.className = 'btn btn-primary btn-lg px-4 shadow-sm next-step';
-                        nextStep3Btn.id = 'nextStep3';
-                        nextStep3Btn.innerHTML = 'Next <i class="fas fa-arrow-right ms-1"></i>';
-                        const step3Actions = document.getElementById('step3').querySelector('.d-flex.justify-content-between');
-                        step3Actions.insertBefore(nextStep3Btn, step3Actions.lastElementChild);
+                        // Next button on step3 is now in HTML
 
-                        nextStep3Btn.addEventListener('click', function(){
+                        document.getElementById('nextStep3').addEventListener('click', function(){
                             if(!validateStep(3)) { Swal.fire('Validation', 'Please complete required fields in Step 3.', 'warning'); return; }
+                            console.log('Moving to step 4 (summary)');
                             // Categorize summary preview by form steps
                             const summaryContent = document.getElementById('summaryContent');
                             // Personal Information (all fields)
@@ -1207,12 +1226,12 @@
                                 { label: 'Date of Birth', value: document.getElementById('date_of_birth').value },
                                 { label: 'Education Level', value: document.getElementById('education_level').value },
                                 { label: 'Profession', value: document.getElementById('profession').value },
-                                { label: 'NIDA Number', value: document.getElementById('nida_number').value }
+                                { label: 'NIDA Number', value: document.getElementById('nida_number').value || 'Not provided' }
                             ];
                             // Other Information (all fields)
                             const otherFields = [
-                                { label: 'Phone', value: document.getElementById('phone_number').value },
-                                { label: 'Email', value: document.getElementById('email').value },
+                                { label: 'Phone', value: '+255' + document.getElementById('phone_number').value },
+                                { label: 'Email', value: document.getElementById('email').value || 'Not provided' },
                                 { label: 'Region', value: regionEl.value },
                                 { label: 'District', value: districtEl.value },
                                 { label: 'Ward', value: wardEl.value },
@@ -1229,15 +1248,17 @@
                                     familyFields.push({ label: (memberTypeEl.value==='father'?'Wife':'Husband')+' Date of Birth', value: document.getElementById('spouse_date_of_birth').value });
                                     familyFields.push({ label: (memberTypeEl.value==='father'?'Wife':'Husband')+' Education Level', value: document.getElementById('spouse_education_level').value });
                                     familyFields.push({ label: (memberTypeEl.value==='father'?'Wife':'Husband')+' Profession', value: document.getElementById('spouse_profession').value });
+                                    const spouseTribeVal = (document.getElementById('spouse_tribe').value || '') + (document.getElementById('spouse_tribe').value==='Other' ? ' ('+(document.getElementById('spouse_other_tribe').value||'')+')' : '');
+                                    familyFields.push({ label: (memberTypeEl.value==='father'?'Wife':'Husband')+' Tribe', value: spouseTribeVal });
                                     familyFields.push({ label: (memberTypeEl.value==='father'?'Wife':'Husband')+' NIDA Number', value: document.getElementById('spouse_nida_number').value });
                                     familyFields.push({ label: (memberTypeEl.value==='father'?'Wife':'Husband')+' Email', value: document.getElementById('spouse_email').value });
-                                    familyFields.push({ label: (memberTypeEl.value==='father'?'Wife':'Husband')+' Phone Number', value: document.getElementById('spouse_phone_number').value });
+                                    familyFields.push({ label: (memberTypeEl.value==='father'?'Wife':'Husband')+' Phone Number', value: '+255' + document.getElementById('spouse_phone_number').value });
                                 }
                             }
                             // Guardian Information (all fields)
                             if(membershipTypeEl.value==='temporary'){
                                 familyFields.push({ label: 'Guardian Name', value: document.getElementById('guardian_name').value });
-                                familyFields.push({ label: 'Guardian Phone', value: document.getElementById('guardian_phone').value });
+                                familyFields.push({ label: 'Guardian Phone', value: '+255' + document.getElementById('guardian_phone').value });
                                 familyFields.push({ label: 'Guardian Relationship', value: document.getElementById('guardian_relationship').value });
                             }
                             // Render summary by category
@@ -1284,21 +1305,112 @@
                             }
                             html += '</ul></div></div>';
                             summaryContent.innerHTML = html;
-                            showStep(4, 3); setStepActive(4);
+                            console.log('About to show step 4');
+                            showStep(4, 3); 
+                            console.log('About to set step 4 as active');
+                            setStepActive(4);
+                            console.log('Step 4 should now be visible and active');
+                            
+                            // Ensure step 4 is properly visible
+                            setTimeout(() => {
+                                const step4 = document.getElementById('step4');
+                                console.log('Step 4 after timeout:', step4);
+                                console.log('Step 4 display after timeout:', step4 ? step4.style.display : 'undefined');
+                                console.log('Step 4 offsetParent after timeout:', step4 ? step4.offsetParent : 'undefined');
+                            }, 1000);
                         });
 
                         document.getElementById('prevStep4').addEventListener('click', function(){ showStep(3, 4); setStepActive(3); });
+                        
+                        // Add click event handler to Save Member button for debugging
+                        document.addEventListener('click', function(e) {
+                            if (e.target && e.target.textContent && e.target.textContent.includes('Save Member')) {
+                                console.log('Save Member button clicked!');
+                                console.log('Button type:', e.target.type);
+                                console.log('Button form:', e.target.form);
+                            }
+                        });
 
-                        // On submit, place +255 prefix into value
+                        // Simplified form submission for debugging
                         document.getElementById('addMemberForm').addEventListener('submit', function(e){
-                            if(!validateStep(1) || !validateStep(2) || !validateStep(3) || !validateStep(4)){
-                                Swal.fire('Validation', 'Please correct the highlighted fields.', 'error');
+                            console.log('=== FORM SUBMISSION STARTED ===');
+                            
+                            // Check if we're on the summary step (step 4)
+                            const step4 = document.getElementById('step4');
+                            const isStep4Visible = step4 && step4.style.display !== 'none';
+                            console.log('Step 4 element:', step4);
+                            console.log('Step 4 display style:', step4 ? step4.style.display : 'undefined');
+                            console.log('Is step 4 visible:', isStep4Visible);
+                            
+                            // Allow submission if we're on step 4, otherwise prevent it
+                            if (!step4 || step4.style.display === 'none') {
+                                console.log('Step 4 not visible, preventing submission');
+                                Swal.fire('Error', 'Please complete all steps before submitting the form. Click "Next" on Step 3 to proceed to the summary.', 'error');
                                 e.preventDefault();
                                 return false;
                             }
+                            
+                            console.log('Step 4 is visible, proceeding with submission');
+                            
+                            // Add +255 prefix to phone number before submission
                             const v = phoneLocalInput.value.replace(/\s+/g,'');
-                            if(v && /^[67][0-9]{8}$/.test(v)){
+                            console.log('Phone number processing:', v);
+                            
+                            if(v && /^[0-9]{9,15}$/.test(v)){
                                 phoneLocalInput.value = '+255' + v;
+                                console.log('Phone number updated to:', phoneLocalInput.value);
+                            } else if(v){
+                                Swal.fire('Phone Number Error', 'Please enter a valid phone number (9-15 digits without +255)', 'error');
+                                e.preventDefault();
+                                return false;
+                            }
+                            
+                            // Also handle spouse phone number if provided
+                            const spousePhoneInput = document.getElementById('spouse_phone_number');
+                            if(spousePhoneInput && spousePhoneInput.value.trim()){
+                                const spouseV = spousePhoneInput.value.replace(/\s+/g,'');
+                                if(spouseV && /^[0-9]{9,15}$/.test(spouseV)){
+                                    spousePhoneInput.value = '+255' + spouseV;
+                                    console.log('Spouse phone number updated to:', spousePhoneInput.value);
+                                } else if(spouseV){
+                                    Swal.fire('Spouse Phone Number Error', 'Please enter a valid spouse phone number (9-15 digits without +255)', 'error');
+                                    e.preventDefault();
+                                    return false;
+                                }
+                            }
+
+                            // Guardian phone when temporary
+                            if(membershipTypeEl.value === 'temporary'){
+                                const guardianPhoneInput = document.getElementById('guardian_phone');
+                                if(guardianPhoneInput && guardianPhoneInput.value.trim()){
+                                    const gv = guardianPhoneInput.value.replace(/\s+/g,'');
+                                    if(/^[0-9]{9,15}$/.test(gv)){
+                                        guardianPhoneInput.value = '+255' + gv;
+                                    } else {
+                                        Swal.fire('Guardian Phone Error', 'Please enter a valid guardian phone (9-15 digits without +255)', 'error');
+                                        e.preventDefault();
+                                        return false;
+                                    }
+                                }
+                            }
+
+                            // Add children count to form data
+                            const childrenCount = childrenContainer.querySelectorAll('.child-row').length;
+                            console.log('Children count:', childrenCount);
+                            
+                            const childrenCountInput = document.createElement('input');
+                            childrenCountInput.type = 'hidden';
+                            childrenCountInput.name = 'children_count';
+                            childrenCountInput.value = childrenCount;
+                            this.appendChild(childrenCountInput);
+
+                            console.log('Form data prepared, submitting...');
+                            
+                            // Log form data for debugging
+                            const formData = new FormData(this);
+                            console.log('Form data entries:');
+                            for (let [key, value] of formData.entries()) {
+                                console.log(key, value);
                             }
 
                             // Show processing spinner immediately
@@ -1310,7 +1422,10 @@
                                     Swal.showLoading();
                                 }
                             });
-                            // Form will submit and backend will handle the next SweetAlert
+                            
+                            console.log('=== ALLOWING FORM SUBMISSION ===');
+                            console.log('Form action:', this.action);
+                            console.log('Form method:', this.method);
                         });
 
                         // realtime validation for text/select inputs in steps 1 & 2
@@ -1330,6 +1445,9 @@
                         document.getElementsByName('region')[0].addEventListener('change', (e)=> markValid(e.target, !!e.target.value));
                         document.getElementsByName('district')[0].addEventListener('change', (e)=> markValid(e.target, !!e.target.value));
                         document.getElementsByName('ward')[0].addEventListener('change', (e)=> markValid(e.target, !!e.target.value));
+                        document.getElementsByName('street')[0].addEventListener('input', (e)=> markValid(e.target, e.target.value.trim().length >= 2));
+                        document.getElementsByName('address')[0].addEventListener('input', (e)=> markValid(e.target, e.target.value.trim().length >= 5));
+                        document.getElementsByName('tribe')[0].addEventListener('change', (e)=> markValid(e.target, !!e.target.value));
 
                         // Initialize Select2 on static selects too
                         $('.select2').select2({ width: '100%' });

@@ -220,13 +220,23 @@
                         <div class="d-flex flex-wrap align-items-center justify-content-between mt-4 mb-3 gap-2">
                             <h2 class="mb-0">Members</h2>
                             <div class="d-flex gap-2">
+                                <div class="btn-group" role="group" aria-label="View toggle">
+                                    <button type="button" class="btn btn-outline-secondary active" id="listViewBtn" onclick="switchView('list')">
+                                        <i class="fas fa-list me-1"></i>List View
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary" id="cardViewBtn" onclick="switchView('card')">
+                                        <i class="fas fa-th-large me-1"></i>Card View
+                                    </button>
+                                </div>
                                 <a href="{{ route('members.add') }}" class="btn btn-primary"><i class="fas fa-user-plus me-2"></i>Add Member</a>
                                 <a href="{{ route('members.export.csv', request()->query()) }}" class="btn btn-outline-success"><i class="fas fa-file-excel me-2"></i>Export CSV</a>
                                 <button class="btn btn-outline-secondary" onclick="window.print()"><i class="fas fa-print me-2"></i>Print</button>
                             </div>
                         </div>
 
-                        <!-- Tabs and main table section -->
+                        <!-- List View -->
+                        <div id="listView">
+                            <!-- Tabs and main table section -->
                         @php
                             $permanentCount = $members->where('membership_type','permanent')->count();
                             $temporaryCount = $members->where('membership_type','temporary')->count();
@@ -278,6 +288,12 @@
                             <div class="tab-pane fade" id="archived" role="tabpanel">
                                 @include('members.partials.main-table', ['members' => $archivedMembers ?? collect(), 'showArchive' => false, 'isArchived' => true])
                             </div>
+                        </div>
+                        </div>
+
+                        <!-- Card View -->
+                        <div id="cardView" style="display: none;">
+                            @include('members.partials.card-view', ['members' => $members, 'archivedMembers' => $archivedMembers ?? collect()])
                         </div>
                 </main>
 
@@ -582,64 +598,51 @@
         </div>
         <script src="{{ asset('assets/js/bootstrap.bundle.min.js') }}" crossorigin="anonymous"></script>
         <script src="{{ asset('js/scripts.js') }}"></script>
-        <script src="{{ asset('js/scripts.js') }}"></script>
         <script>
         // Archive member logic (robust, attaches only once)
-        (function() {
-            let archiveMemberId = null;
-            window.openArchiveModal = function(id) {
-                archiveMemberId = id;
-                document.getElementById('archive_member_id').value = id;
-                document.getElementById('archive_reason').value = '';
-                var modalEl = document.getElementById('archiveMemberModal');
-                // Robust modal show: Bootstrap 5, fallback to native
-                if (window.bootstrap && bootstrap.Modal) {
-                    var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-                    modal.show();
-                } else if (modalEl.showModal) {
-                    modalEl.showModal();
-                } else {
-                    // Fallback: force display
-                    modalEl.style.display = 'block';
-                    modalEl.classList.add('show');
+        let archiveMemberId = null;
+        function openArchiveModal(id) {
+            document.getElementById('archive_member_id').value = id;
+            document.getElementById('archive_reason').value = '';
+            var modalEl = document.getElementById('archiveMemberModal');
+            var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+        }
+        
+        // Attach submit handler only once
+        const form = document.getElementById('archiveMemberForm');
+        if (form && !form._archiveHandlerAttached) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const id = document.getElementById('archive_member_id').value;
+                const reason = document.getElementById('archive_reason').value.trim();
+                if (!reason) {
+                    Swal.fire({ icon: 'warning', title: 'Please provide a reason.' });
+                    return;
                 }
-            };
-            // Attach submit handler only once
-            const form = document.getElementById('archiveMemberForm');
-            if (form && !form._archiveHandlerAttached) {
-                form.addEventListener('submit', function(e) {
-                    alert('DEBUG: Archive submit handler fired!');
-                    e.preventDefault();
-                    const id = document.getElementById('archive_member_id').value;
-                    const reason = document.getElementById('archive_reason').value.trim();
-                    if (!reason) {
-                        Swal.fire({ icon: 'warning', title: 'Please provide a reason.' });
-                        return;
+                const formData = new FormData();
+                formData.append('reason', reason);
+                formData.append('_method', 'DELETE');
+                fetch(`{{ url('/members') }}/${id}/archive`, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: formData
+                })
+                .then(r => r.json())
+                .then(res => {
+                    if (res.success) {
+                        Swal.fire({ icon: 'success', title: 'Member archived', timer: 1200, showConfirmButton: false }).then(()=>location.reload());
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Archive failed', text: res.message || 'Please try again.' });
                     }
-                    const formData = new FormData();
-                    formData.append('reason', reason);
-                    formData.append('_method', 'DELETE');
-                    fetch(`{{ url('/members') }}/${id}/archive`, {
-                        method: 'POST',
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                        },
-                        body: formData
-                    })
-                    .then(r => r.json())
-                    .then(res => {
-                        if (res.success) {
-                            Swal.fire({ icon: 'success', title: 'Member archived', timer: 1200, showConfirmButton: false }).then(()=>location.reload());
-                        } else {
-                            Swal.fire({ icon: 'error', title: 'Archive failed', text: res.message || 'Please try again.' });
-                        }
-                    })
-                    .catch(()=> Swal.fire({ icon: 'error', title: 'Network error' }));
-                });
-                form._archiveHandlerAttached = true;
-            }
-        })();
+                })
+                .catch(()=> Swal.fire({ icon: 'error', title: 'Network error' }));
+            });
+            form._archiveHandlerAttached = true;
+        }
         // Activate correct tab based on ?tab=permanent|temporary|archived
         (function() {
             function getQueryParam(name) {
@@ -688,6 +691,36 @@
             }
 
             function handleAction(fn){ confirmThen('Proceed with this action?', fn); return false; }
+
+            // View switching functionality
+            function switchView(view) {
+                const listView = document.getElementById('listView');
+                const cardView = document.getElementById('cardView');
+                const listBtn = document.getElementById('listViewBtn');
+                const cardBtn = document.getElementById('cardViewBtn');
+                
+                if (view === 'list') {
+                    listView.style.display = 'block';
+                    cardView.style.display = 'none';
+                    listBtn.classList.add('active');
+                    cardBtn.classList.remove('active');
+                    localStorage.setItem('memberViewPreference', 'list');
+                } else {
+                    listView.style.display = 'none';
+                    cardView.style.display = 'block';
+                    listBtn.classList.remove('active');
+                    cardBtn.classList.add('active');
+                    localStorage.setItem('memberViewPreference', 'card');
+                }
+            }
+
+            // Load saved view preference
+            document.addEventListener('DOMContentLoaded', function() {
+                const savedView = localStorage.getItem('memberViewPreference');
+                if (savedView === 'card') {
+                    switchView('card');
+                }
+            });
 
             function viewDetails(id) {
                 fetch(`{{ url('/members') }}/${id}`, { headers: { 'Accept': 'application/json' } })
@@ -788,10 +821,39 @@
                             </tbody></table>
                             <div class=\"small text-uppercase text-muted mt-3 mb-1\">Family</div>
                             <table class=\"table table-bordered table-striped align-middle interactive-table\"><tbody>
-                                ${row('fas fa-users', 'Living with family', data.living_with_family)}
+                                ${(() => { 
+                                    const spousePresent = !!(data.spouse_full_name || data.spouse_phone_number || data.spouse_email || data.spouse_profession || data.spouse_education_level || data.spouse_nida_number || data.spouse_date_of_birth);
+                                    const hasChildren = Array.isArray(data.children) && data.children.length > 0;
+                                    const inferred = (spousePresent || hasChildren) ? 'yes' : 'no';
+                                    const v = (data.living_with_family && typeof data.living_with_family === 'string') ? data.living_with_family.toLowerCase() : '';
+                                    const value = v === 'yes' || v === 'no' ? v : inferred;
+                                    const pretty = value === 'yes' ? 'Yes' : (value === 'no' ? 'No' : '—');
+                                    return row('fas fa-users', 'Living with family', pretty);
+                                })()}
                                 ${row('fas fa-user-friends', 'Family relationship', data.family_relationship)}
                                 ${row('fas fa-flag', 'Tribe', (data.tribe || '') + (data.other_tribe ? ` (${data.other_tribe})` : ''))}
-                            </tbody></table>`;
+                            </tbody></table>
+                            ${(() => {
+                                // Spouse details block (if spouse_alive === 'yes' or spouse fields present)
+                                if (data.spouse_full_name || data.spouse_email || data.spouse_phone_number || data.spouse_profession || data.spouse_education_level || data.spouse_nida_number || data.spouse_date_of_birth || data.spouse_tribe) {
+                                    const spouseTitle = (data.member_type === 'father' ? 'Wife' : (data.member_type === 'mother' ? 'Husband' : 'Spouse'));
+                                    const spouseTribe = (data.spouse_tribe || '') + (data.spouse_tribe === 'Other' && data.spouse_other_tribe ? ` (${data.spouse_other_tribe})` : '');
+                                    return `
+                                    <div class=\"small text-uppercase text-muted mt-3 mb-1\">${spouseTitle}</div>
+                                    <table class=\"table table-bordered table-striped align-middle interactive-table\"><tbody>
+                                        ${row('fas fa-check-circle', spouseTitle+' Alive', (data.spouse_alive ? (data.spouse_alive === 'yes' ? 'Yes' : 'No') : '—'))}
+                                        ${row('fas fa-user', spouseTitle+' Name', data.spouse_full_name)}
+                                        ${row('fas fa-birthday-cake', spouseTitle+' DOB', formatDateDisplay(data.spouse_date_of_birth))}
+                                        ${row('fas fa-graduation-cap', spouseTitle+' Education', data.spouse_education_level)}
+                                        ${row('fas fa-briefcase', spouseTitle+' Profession', data.spouse_profession)}
+                                        ${row('fas fa-id-card', spouseTitle+' NIDA', data.spouse_nida_number)}
+                                        ${row('fas fa-envelope', spouseTitle+' Email', data.spouse_email, mailto(data.spouse_email) + copyBtn(data.spouse_email, 'Copy email', 'fas fa-copy'))}
+                                        ${row('fas fa-phone', spouseTitle+' Phone', data.spouse_phone_number, telto(data.spouse_phone_number) + copyBtn(data.spouse_phone_number, 'Copy phone', 'fas fa-copy'))}
+                                        ${row('fas fa-flag', spouseTitle+' Tribe', spouseTribe)}
+                                    </tbody></table>`;
+                                }
+                                return '';
+                            })()}`;
                         // Guardian section (for temporary)
                         if (data.membership_type === 'temporary' && (data.guardian_name || data.guardian_phone || data.guardian_relationship)) {
                             html += `<div class=\"small text-uppercase text-muted mt-3 mb-1\">Guardian</div>
@@ -810,11 +872,12 @@
                             });
                             html += `</tbody></table>`;
                         }
-                        // Archive reason (for archived)
-                        if (isArchived && archiveReason) {
+                        // Archive info (for archived)
+                        if (isArchived) {
                             html += `<div class=\"small text-uppercase text-muted mt-3 mb-1\">Archive Info</div>
                             <table class=\"table table-bordered table-striped align-middle interactive-table\"><tbody>
-                                ${row('fas fa-archive', 'Reason for Archiving', archiveReason)}
+                                ${row('fas fa-archive', 'Reason for Archiving', archiveReason || 'Not specified')}
+                                ${row('fas fa-calendar-times', 'Archived Date', m.archived_at ? formatDateDisplay(m.archived_at) : '—')}
                             </tbody></table>`;
                         }
                         html += `</div>`;
@@ -1427,6 +1490,9 @@
                 if (prefill.other_tribe) { otherGroup.style.display = ''; otherInput.value = prefill.other_tribe; }
             }
 
+            // QR helper: load once and render
+            let qrLibLoaded = false;
+            
             // Preload QR lib early and accessibility: focus first actionable element when modals open
             ensureQrLib();
             document.getElementById('memberDetailsModal').addEventListener('shown.bs.modal', function(){
@@ -1436,9 +1502,6 @@
 
             // Set footer year
             document.getElementById('year').textContent = new Date().getFullYear();
-
-			// QR helper: load once and render
-			let qrLibLoaded = false;
 			function ensureQrLib() {
 				return new Promise((resolve) => {
 					if (qrLibLoaded || window.QRCode) { qrLibLoaded = true; return resolve(); }
@@ -1487,68 +1550,6 @@
             window.printMemberDetails = printMemberDetails;
             window.downloadMemberPDF = downloadMemberPDF;
         </script>
-        <!-- Archive Modal (should be included once per page, not per row) -->
-        <div class="modal fade" id="archiveMemberModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Archive Member</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <form id="archiveMemberForm">
-                            <input type="hidden" id="archive_member_id">
-                            <div class="mb-3">
-                                <label for="archive_reason" class="form-label">Reason for archiving</label>
-                                <textarea class="form-control" id="archive_reason" name="reason" rows="3" required></textarea>
-                            </div>
-                            <div class="d-flex justify-content-end gap-2">
-                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                                <button type="button" id="archiveSubmitBtn" class="btn btn-warning">Archive</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <script>
-        function openArchiveModal(id) {
-            document.getElementById('archive_member_id').value = id;
-            document.getElementById('archive_reason').value = '';
-            var modalEl = document.getElementById('archiveMemberModal');
-            var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-            modal.show();
-        }
-        document.getElementById('archiveSubmitBtn').addEventListener('click', function() {
-            const id = document.getElementById('archive_member_id').value;
-            const reason = document.getElementById('archive_reason').value.trim();
-            if (!reason) {
-                Swal.fire({ icon: 'warning', title: 'Please provide a reason.' });
-                return;
-            }
-            // Actual archive request
-            const formData = new FormData();
-            formData.append('reason', reason);
-            formData.append('_method', 'DELETE');
-            fetch(`{{ url('/members') }}/${id}/archive`, {
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                },
-                body: formData
-            })
-            .then(r => r.json())
-            .then(res => {
-                if (res.success) {
-                    Swal.fire({ icon: 'success', title: 'Member archived', timer: 1200, showConfirmButton: false }).then(()=>location.reload());
-                } else {
-                    Swal.fire({ icon: 'error', title: 'Archive failed', text: res.message || 'Please try again.' });
-                }
-            })
-            .catch(()=> Swal.fire({ icon: 'error', title: 'Network error' }));
-            bootstrap.Modal.getInstance(document.getElementById('archiveMemberModal')).hide();
-        });
-        </script>
+        
     </body>
 </html>

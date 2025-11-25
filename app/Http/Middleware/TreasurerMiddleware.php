@@ -50,11 +50,14 @@ class TreasurerMiddleware
             $currentRoute = $request->route()?->getName() ?? '';
             $currentPath = $request->path();
             
-            // Allow finance routes, reports routes, and dashboard route (which redirects based on role)
+            // Allow finance routes, reports routes, dashboard route, and password change route
             $isFinanceRoute = ($currentRoute && str_starts_with($currentRoute, 'finance.')) || 
                              ($currentRoute && str_starts_with($currentRoute, 'reports.')) ||
+                             ($currentRoute && str_starts_with($currentRoute, 'leader.change-password')) ||
+                             ($currentRoute && str_starts_with($currentRoute, 'leader.password.update')) ||
                              str_starts_with($currentPath, 'finance/') ||
                              str_starts_with($currentPath, 'reports/') ||
+                             str_starts_with($currentPath, 'leader/change-password') ||
                              $currentRoute === 'dashboard' ||
                              $currentRoute === 'finance.dashboard' ||
                              $currentPath === 'dashboard';

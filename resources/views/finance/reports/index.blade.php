@@ -439,7 +439,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
-                            <div class="small text-white-50">Offering Fund Breakdown</div>
+                            <div class="small text-white-50">Fund Breakdown</div>
                             <div class="h6">Fund Analysis</div>
                         </div>
                         <div class="d-flex align-items-center">
@@ -483,7 +483,7 @@
                             <ul class="list-unstyled">
                                 <li><i class="fas fa-check text-success me-2"></i>Income vs Expenditure</li>
                                 <li><i class="fas fa-check text-success me-2"></i>Budget Performance</li>
-                                <li><i class="fas fa-check text-success me-2"></i>Offering Fund Breakdown</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Fund Breakdown</li>
                                 <li><i class="fas fa-check text-success me-2"></i>Expense Analysis</li>
                                 <li><i class="fas fa-check text-success me-2"></i>Financial Trends</li>
                             </ul>
@@ -569,7 +569,7 @@
                     <div class="card h-100">
                         <div class="card-body text-center">
                             <i class="fas fa-chart-pie fa-3x text-success mb-3"></i>
-                            <h5 class="card-title">Offering Fund Breakdown</h5>
+                            <h5 class="card-title">Fund Breakdown</h5>
                             <p class="card-text">View offering types with income, used, and available amounts.</p>
                             <a href="{{ route('reports.offering-fund-breakdown') }}" class="btn btn-success">View Report</a>
                         </div>

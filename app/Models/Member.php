@@ -131,6 +131,12 @@ class Member extends Model
         return $this->hasMany(BereavementContribution::class);
     }
 
+    // User account relationship
+    public function user()
+    {
+        return $this->hasOne(User::class);
+    }
+
     /**
      * Generate a unique member ID
      * Format: YYYY + random alphanumeric (5 chars) + -WL

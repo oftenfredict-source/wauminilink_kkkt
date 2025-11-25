@@ -55,6 +55,53 @@ class ReportController extends Controller
             ->groupBy('donation_type')
             ->orderBy('total_amount', 'desc')
             ->get();
+        
+        // Combine offerings and donations by type (case-insensitive matching)
+        // This shows total, offering amount, and donation amount separately
+        $combinedByType = [];
+        
+        // Process offerings
+        foreach ($offeringTypes as $offering) {
+            $typeKey = strtolower($offering->offering_type);
+            if (!isset($combinedByType[$typeKey])) {
+                $combinedByType[$typeKey] = [
+                    'type' => $offering->offering_type,
+                    'offering_amount' => 0,
+                    'donation_amount' => 0,
+                    'offering_count' => 0,
+                    'donation_count' => 0,
+                ];
+            }
+            $combinedByType[$typeKey]['offering_amount'] = $offering->total_amount;
+            $combinedByType[$typeKey]['offering_count'] = $offering->count;
+        }
+        
+        // Process donations
+        foreach ($donationTypes as $donation) {
+            $typeKey = strtolower($donation->donation_type);
+            if (!isset($combinedByType[$typeKey])) {
+                $combinedByType[$typeKey] = [
+                    'type' => $donation->donation_type,
+                    'offering_amount' => 0,
+                    'donation_amount' => 0,
+                    'offering_count' => 0,
+                    'donation_count' => 0,
+                ];
+            }
+            $combinedByType[$typeKey]['donation_amount'] = $donation->total_amount;
+            $combinedByType[$typeKey]['donation_count'] = $donation->count;
+        }
+        
+        // Calculate totals and format for display
+        foreach ($combinedByType as $key => &$data) {
+            $data['total_amount'] = $data['offering_amount'] + $data['donation_amount'];
+            $data['total_count'] = $data['offering_count'] + $data['donation_count'];
+        }
+        
+        // Sort by total amount descending
+        usort($combinedByType, function($a, $b) {
+            return $b['total_amount'] <=> $a['total_amount'];
+        });
 
         // Top contributors (by total giving)
         $topContributors = Member::select('members.id', 'members.full_name',
@@ -78,6 +125,7 @@ class ReportController extends Controller
             'transactionsCount',
             'offeringTypes',
             'donationTypes',
+            'combinedByType',
             'topContributors',
             'start',
             'end'
@@ -699,7 +747,7 @@ class ReportController extends Controller
     }
     
     /**
-     * Generate offering fund breakdown report
+     * Generate fund breakdown report (includes both offerings and donations)
      */
     public function offeringFundBreakdown(Request $request)
     {
@@ -711,8 +759,8 @@ class ReportController extends Controller
             ? Carbon::parse($request->get('end_date')) 
             : Carbon::now()->endOfYear();
         
-        // Get all offering types (all approved offerings, not just date range)
-        // This ensures we show all offering types that have income, regardless of date
+        // Get all fund types from both offerings and donations (all approved, not just date range)
+        // This ensures we show all fund types that have income, regardless of date
         $offeringTypes = Offering::select('offering_type')
             ->where('approval_status', 'approved')
             ->distinct()
@@ -720,14 +768,43 @@ class ReportController extends Controller
             ->unique()
             ->values();
         
+        $donationTypes = Donation::select('donation_type')
+            ->where('approval_status', 'approved')
+            ->distinct()
+            ->pluck('donation_type')
+            ->unique()
+            ->values();
+        
+        // Combine and get unique types (case-insensitive)
+        $allFundTypes = $offeringTypes->concat($donationTypes)
+            ->map(function($type) {
+                return strtolower($type);
+            })
+            ->unique()
+            ->values();
+        
         $fundBreakdown = [];
         
-        foreach ($offeringTypes as $offeringType) {
-            // Get total income for this offering type (all approved offerings, not just date range)
-            // Date range filter is only for display purposes, but we need all income to calculate available
-            $totalIncome = Offering::where('offering_type', $offeringType)
+        foreach ($allFundTypes as $fundType) {
+            // Get total income from offerings for this type
+            $offeringIncome = Offering::whereRaw('LOWER(offering_type) = ?', [strtolower($fundType)])
                 ->where('approval_status', 'approved')
                 ->sum('amount');
+            
+            // Get total income from donations for this type
+            $donationIncome = Donation::whereRaw('LOWER(donation_type) = ?', [strtolower($fundType)])
+                ->where('approval_status', 'approved')
+                ->sum('amount');
+            
+            // Combined total income (offerings + donations)
+            $totalIncome = $offeringIncome + $donationIncome;
+            
+            // Get the original type name (prefer offering type if exists, otherwise donation type)
+            $originalTypeName = Offering::whereRaw('LOWER(offering_type) = ?', [strtolower($fundType)])
+                ->value('offering_type') 
+                ?? Donation::whereRaw('LOWER(donation_type) = ?', [strtolower($fundType)])
+                    ->value('donation_type')
+                ?? $fundType;
             
             // Get total used amount from budget allocations
             // BUT exclude amounts from expenses that have fund breakdown in approval_notes
@@ -755,7 +832,7 @@ class ReportController extends Controller
                         foreach ($breakdown as $funding) {
                             $fundingType = isset($funding['offering_type']) ? 
                                 strtolower(trim(str_replace([' ', '-'], '_', $funding['offering_type']))) : '';
-                            $currentType = strtolower(trim(str_replace([' ', '-'], '_', $offeringType)));
+                            $currentType = strtolower(trim(str_replace([' ', '-'], '_', $originalTypeName)));
                             
                             if ($fundingType === $currentType && isset($funding['amount'])) {
                                 $amountFromExpensesWithBreakdown += floatval($funding['amount']);
@@ -778,7 +855,7 @@ class ReportController extends Controller
             
             $query = \DB::table('budget_offering_allocations')
                 ->join('budgets', 'budget_offering_allocations.budget_id', '=', 'budgets.id')
-                ->where('budget_offering_allocations.offering_type', $offeringType);
+                ->whereRaw('LOWER(budget_offering_allocations.offering_type) = ?', [strtolower($originalTypeName)]);
             
             if ($hasDeletedAtColumn) {
                 // Include active budgets OR soft-deleted budgets (to preserve history)
@@ -820,10 +897,10 @@ class ReportController extends Controller
                     continue;
                 }
                 
-                // Check if this budget has allocations from the current offering type
+                // Check if this budget has allocations from the current fund type
                 $budgetAllocations = \DB::table('budget_offering_allocations')
                     ->where('budget_id', $expense->budget_id)
-                    ->where('offering_type', $offeringType)
+                    ->whereRaw('LOWER(offering_type) = ?', [strtolower($originalTypeName)])
                     ->first();
                 
                 if ($budgetAllocations && $budgetAllocations->used_amount > 0) {
@@ -870,8 +947,8 @@ class ReportController extends Controller
                 ->where('approval_status', 'approved')
                 ->get();
             
-            \Log::debug('Checking expenses for offering type', [
-                'offering_type' => $offeringType,
+            \Log::debug('Checking expenses for fund type', [
+                'fund_type' => $originalTypeName,
                 'total_all_expenses' => $allExpenses->count(),
                 'expenses_with_notes' => $allExpenses->whereNotNull('approval_notes')->count()
             ]);
@@ -978,7 +1055,7 @@ class ReportController extends Controller
                                     'expense_total_amount' => $expense->amount,
                                     'fund_breakdown' => $expenseFundBreakdown,
                                     'fund_breakdown_sum' => array_sum(array_column($expenseFundBreakdown, 'amount')),
-                                    'offering_type_being_checked' => $offeringType
+                                    'fund_type_being_checked' => $originalTypeName
                                 ]);
                                 
                                 // Validate that fund breakdown amounts sum to expense amount (with tolerance for rounding)
@@ -997,7 +1074,7 @@ class ReportController extends Controller
                                     // Normalize offering types for comparison (case-insensitive, handle spaces/underscores)
                                     $fundingOfferingType = isset($funding['offering_type']) ? 
                                         strtolower(trim(str_replace([' ', '-'], '_', $funding['offering_type']))) : '';
-                                    $currentOfferingType = strtolower(trim(str_replace([' ', '-'], '_', $offeringType)));
+                                    $currentOfferingType = strtolower(trim(str_replace([' ', '-'], '_', $originalTypeName)));
                                     
                                     \Log::debug('Comparing offering types', [
                                         'funding_offering_type' => $fundingOfferingType,
@@ -1017,8 +1094,8 @@ class ReportController extends Controller
                                         // Validate: amount must be positive
                                         // The amount in the JSON should be the actual amount used from this offering type
                                         if ($amount > 0) {
-                                            // Check if we've already processed this expense for this offering type
-                                            $expenseKey = $expense->id . '_' . $offeringType;
+                                            // Check if we've already processed this expense for this fund type
+                                            $expenseKey = $expense->id . '_' . $originalTypeName;
                                             if (!in_array($expenseKey, $processedExpenseIds)) {
                                                 $usedFromExpenses += $amount;
                                                 $processedExpenseIds[] = $expenseKey;
@@ -1034,26 +1111,26 @@ class ReportController extends Controller
                                                     'category' => $expense->expense_category
                                                 ];
                                                 
-                                                \Log::info('Found expense funding for offering type in report', [
+                                                \Log::info('Found expense funding for fund type in report', [
                                                     'expense_id' => $expense->id,
                                                     'expense_name' => $expense->expense_name,
-                                                    'offering_type' => $offeringType,
+                                                    'fund_type' => $originalTypeName,
                                                     'funding_offering_type' => $funding['offering_type'],
-                                                    'amount_from_this_offering' => $amount, // Amount used from this offering type
+                                                    'amount_from_this_fund' => $amount, // Amount used from this fund type
                                                     'total_expense_amount' => $expense->amount, // Total expense amount
                                                     'total_used_from_expenses' => $usedFromExpenses
                                                 ]);
                                             } else {
-                                                \Log::warning('Duplicate expense detected for offering type', [
+                                                \Log::warning('Duplicate expense detected for fund type', [
                                                     'expense_id' => $expense->id,
-                                                    'offering_type' => $offeringType,
+                                                    'fund_type' => $originalTypeName,
                                                     'amount' => $amount
                                                 ]);
                                             }
                                         } else {
                                             \Log::warning('Invalid amount in fund breakdown', [
                                                 'expense_id' => $expense->id,
-                                                'offering_type' => $offeringType,
+                                                'fund_type' => $originalTypeName,
                                                 'amount' => $amount,
                                                 'expense_amount' => $expense->amount
                                             ]);
@@ -1070,7 +1147,7 @@ class ReportController extends Controller
                             \Log::warning('Failed to parse additional funding from expense approval_notes in report', [
                                 'expense_id' => $expense->id,
                                 'expense_name' => $expense->expense_name,
-                                'offering_type' => $offeringType,
+                                'fund_type' => $originalTypeName,
                                 'approval_notes' => substr($expense->approval_notes, 0, 500),
                                 'error' => $e->getMessage(),
                                 'trace' => $e->getTraceAsString()
@@ -1089,10 +1166,10 @@ class ReportController extends Controller
                 }
             }
             
-            // Debug: Log detailed information for expenses with this offering type
-            if (strtolower($offeringType) === 'general') {
-                \Log::info('Debug: Detailed expense check for general offering', [
-                    'offering_type' => $offeringType,
+            // Debug: Log detailed information for expenses with this fund type
+            if (strtolower($originalTypeName) === 'general') {
+                \Log::info('Debug: Detailed expense check for general fund', [
+                    'fund_type' => $originalTypeName,
                     'total_all_expenses' => $allExpenses->count(),
                     'expenses_with_notes' => $allExpenses->whereNotNull('approval_notes')->count(),
                     'expenses_detail' => $allExpenses->map(function($e) {
@@ -1124,8 +1201,10 @@ class ReportController extends Controller
                 ]);
             }
             
-            \Log::info('Offering fund breakdown calculation', [
-                'offering_type' => $offeringType,
+            \Log::info('Fund breakdown calculation', [
+                'fund_type' => $originalTypeName,
+                'offering_amount' => $offeringIncome,
+                'donation_amount' => $donationIncome,
                 'total_income' => $totalIncome,
                 'used_from_allocations' => $usedFromAllocations,
                 'used_from_expenses' => $usedFromExpenses,
@@ -1147,9 +1226,12 @@ class ReportController extends Controller
             $utilizationPercentage = $totalIncome > 0 ? round(($usedAmount / $totalIncome) * 100, 2) : 0;
             
             $fundBreakdown[] = [
-                'offering_type' => $offeringType,
-                'display_name' => ucfirst(str_replace('_', ' ', $offeringType)),
+                'fund_type' => $originalTypeName,
+                'offering_type' => $originalTypeName, // Keep for backward compatibility
+                'display_name' => ucfirst(str_replace('_', ' ', $originalTypeName)),
                 'total_income' => $totalIncome,
+                'offering_amount' => $offeringIncome,
+                'donation_amount' => $donationIncome,
                 'used_amount' => $usedAmount,
                 'used_from_allocations' => $usedFromAllocations,
                 'used_from_expenses' => $usedFromExpenses + $usedFromBudgetExpenses,

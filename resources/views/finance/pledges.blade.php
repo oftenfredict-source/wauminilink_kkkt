@@ -125,15 +125,8 @@
                                         <i class="fas fa-times me-1"></i>Rejected
                                     </span>
                                 @else
-                                    @php
-                                        $pastorFirst = $pastor ? explode(' ', $pastor->name)[0] : null;
-                                        if ($pastorFirst && strpos(strtolower($pastorFirst), 'pastor') === 0) {
-                                            $pastorFirst = str_replace('pastor', '', strtolower($pastorFirst));
-                                            $pastorFirst = trim($pastorFirst);
-                                        }
-                                    @endphp
                                     <span class="badge bg-warning">
-                                        <i class="fas fa-clock me-1"></i>Awaiting Pastor {{ $pastorFirst ?? 'Approval' }}
+                                        <i class="fas fa-clock me-1"></i>Awaiting Pastor Approval
                                     </span>
                                 @endif
                             </td>

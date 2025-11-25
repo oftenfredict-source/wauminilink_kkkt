@@ -1529,6 +1529,11 @@
                                 <div class="sb-nav-link-icon"><i class="fas fa-chart-pie"></i></div>
                                 Reports
                             </a>
+                            <div class="sb-sidenav-menu-heading">Account</div>
+                            <a class="nav-link" href="{{ route('leader.change-password') }}">
+                                <div class="sb-nav-link-icon"><i class="fas fa-key"></i></div>
+                                Change Password
+                            </a>
                             @elseif(!auth()->user()->isMember())
                             {{-- For other users (not treasurer, not member): Show finance menu as collapsed dropdown --}}
                             <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapseFinance" aria-expanded="false" aria-controls="collapseFinance">
@@ -1563,6 +1568,14 @@
                                 <div class="sb-nav-link-icon"><i class="fas fa-file-alt"></i></div>
                                 All Reports
                             </a>
+                            
+                            @if(!auth()->user()->isMember())
+                            <div class="sb-sidenav-menu-heading">Account</div>
+                            <a class="nav-link" href="{{ route('leader.change-password') }}">
+                                <div class="sb-nav-link-icon"><i class="fas fa-key"></i></div>
+                                Change Password
+                            </a>
+                            @endif
                             
                             @if(auth()->user()->isAdmin())
                             <div class="sb-sidenav-menu-heading">Settings</div>

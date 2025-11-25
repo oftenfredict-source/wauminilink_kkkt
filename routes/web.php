@@ -26,6 +26,12 @@ use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\AdminController;
 use Illuminate\Http\Request;
 
+// Leader password change routes - accessible to all leaders (pastor, secretary, treasurer, admin)
+Route::middleware(['auth', PreventBackHistory::class])->group(function () {
+    Route::get('/leader/change-password', [DashboardController::class, 'showChangePassword'])->name('leader.change-password');
+    Route::post('/leader/change-password', [DashboardController::class, 'updatePassword'])->name('leader.password.update');
+});
+
 // Auth routes with PreventBackHistory middleware
 // Treasurer middleware is applied to restrict treasurer access to finance-only routes
 Route::middleware(['auth', PreventBackHistory::class, 'treasurer'])->group(function () {
@@ -1128,8 +1134,14 @@ Route::middleware(['auth', PreventBackHistory::class])->prefix('admin')->name('a
     Route::get('/sessions', [AdminController::class, 'sessions'])->name('sessions');
     Route::delete('/sessions/{sessionId}/revoke', [AdminController::class, 'revokeSession'])->name('sessions.revoke');
     Route::get('/users', [AdminController::class, 'users'])->name('users');
+    Route::get('/users/create', [AdminController::class, 'create'])->name('users.create');
+    Route::post('/users', [AdminController::class, 'store'])->name('users.store');
     Route::post('/users/{userId}/unblock', [AdminController::class, 'unblockUser'])->name('users.unblock');
     Route::get('/users/{userId}/activity', [AdminController::class, 'userActivity'])->name('user-activity');
+    Route::get('/users/{userId}/edit', [AdminController::class, 'edit'])->name('users.edit');
+    Route::put('/users/{userId}', [AdminController::class, 'update'])->name('users.update');
+    Route::delete('/users/{userId}', [AdminController::class, 'destroy'])->name('users.destroy');
+    Route::post('/users/{userId}/reset-password', [AdminController::class, 'resetPassword'])->name('users.reset-password');
     Route::get('/roles-permissions', [AdminController::class, 'rolesPermissions'])->name('roles-permissions');
     Route::post('/roles-permissions/update', [AdminController::class, 'updateRolePermissions'])->name('roles-permissions.update');
 });

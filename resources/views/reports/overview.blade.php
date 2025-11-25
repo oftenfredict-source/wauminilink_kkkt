@@ -117,6 +117,50 @@
                     <h6 class="mb-0 fw-semibold text-white position-relative"><i class="fas fa-layer-group me-2"></i>Offering & Donation Types (Approved)</h6>
                 </div>
                 <div class="card-body">
+                    <!-- Combined View: Shows types that exist in both offerings and donations -->
+                    @if(isset($combinedByType) && count($combinedByType) > 0)
+                    <div class="mb-4">
+                        <h6 class="text-success mb-3"><i class="fas fa-chart-pie me-2"></i>Combined by Type (Showing Total, Offering, and Donation amounts separately)</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Type</th>
+                                        <th class="text-end">Total Amount</th>
+                                        <th class="text-end">Offering</th>
+                                        <th class="text-end">Donation</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($combinedByType as $combined)
+                                    <tr>
+                                        <td><strong>{{ ucfirst(str_replace('_',' ', $combined['type'])) }}</strong></td>
+                                        <td class="text-end fw-bold text-success">{{ number_format($combined['total_amount'], 2) }}</td>
+                                        <td class="text-end">
+                                            @if($combined['offering_amount'] > 0)
+                                                <span class="text-primary">{{ number_format($combined['offering_amount'], 2) }}</span>
+                                                <small class="text-muted">({{ $combined['offering_count'] }})</small>
+                                            @else
+                                                <span class="text-muted">-</span>
+                                            @endif
+                                        </td>
+                                        <td class="text-end">
+                                            @if($combined['donation_amount'] > 0)
+                                                <span class="text-info">{{ number_format($combined['donation_amount'], 2) }}</span>
+                                                <small class="text-muted">({{ $combined['donation_count'] }})</small>
+                                            @else
+                                                <span class="text-muted">-</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <hr>
+                    @endif
+                    
                     <div class="row">
                         <div class="col-md-12 mb-3">
                             <h6 class="text-primary mb-2"><i class="fas fa-gift me-2"></i>Offerings by Type</h6>
@@ -175,7 +219,7 @@
                     </div>
                     <div class="mt-3 d-flex gap-2">
                         <a href="{{ route('reports.department-giving') }}" class="btn btn-success btn-sm"><i class="fas fa-layer-group me-1"></i>Department Giving</a>
-                        <a href="{{ route('reports.offering-fund-breakdown') }}" class="btn btn-warning btn-sm"><i class="fas fa-coins me-1"></i>Offering Fund Breakdown</a>
+                        <a href="{{ route('reports.offering-fund-breakdown') }}" class="btn btn-warning btn-sm"><i class="fas fa-coins me-1"></i>Fund Breakdown</a>
                     </div>
                 </div>
             </div>

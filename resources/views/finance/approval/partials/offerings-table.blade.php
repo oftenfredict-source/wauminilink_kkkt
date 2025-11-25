@@ -38,7 +38,7 @@
                     <strong class="text-success">TZS {{ number_format($record->amount, 0) }}</strong>
                 </td>
                 <td>
-                    <span class="badge badge-primary">
+                    <span class="badge bg-dark text-white px-2 py-1">
                         @if($record->offering_type == 'general')
                             General Offering
                         @elseif(in_array($record->offering_type, ['special', 'thanksgiving', 'building_fund']))

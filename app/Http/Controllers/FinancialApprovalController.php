@@ -394,10 +394,8 @@ class FinancialApprovalController extends Controller
             'approval_notes' => $approvalNotes
         ]);
 
-        // If donation is approved, create a corresponding offering
-        if ($request->type === 'donation') {
-            $this->createOfferingFromDonation($record);
-        }
+        // Donations and offerings are kept separate - no automatic conversion
+        // Reports will show both separately and combined totals when needed
 
         // Send notification to member if it's a member-related financial record
         if (in_array($request->type, ['tithe', 'offering', 'pledge', 'donation']) && $record->member) {
@@ -603,10 +601,8 @@ class FinancialApprovalController extends Controller
                     'approval_notes' => $request->approval_notes
                 ]);
 
-                // If donation is approved, create a corresponding offering
-                if ($recordData['type'] === 'donation') {
-                    $this->createOfferingFromDonation($record);
-                }
+                // Donations and offerings are kept separate - no automatic conversion
+                // Reports will show both separately and combined totals when needed
 
                 // Send notification to member if it's a member-related financial record
                 if (in_array($recordData['type'], ['tithe', 'offering', 'pledge', 'donation']) && $record->member) {

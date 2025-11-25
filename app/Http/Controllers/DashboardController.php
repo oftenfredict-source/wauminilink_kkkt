@@ -14,6 +14,9 @@ use App\Models\Donation;
 use App\Models\Expense;
 use App\Models\Announcement;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
 
 class DashboardController extends Controller
@@ -167,5 +170,65 @@ class DashboardController extends Controller
                 'child_females' => $femaleChildren,
             ]
         ];
+    }
+
+    /**
+     * Show password change form for leaders (pastor, secretary, treasurer)
+     */
+    public function showChangePassword()
+    {
+        $user = Auth::user();
+        
+        // Check if user is a leader (pastor, secretary, treasurer) or admin
+        if (!$user->isPastor() && !$user->isSecretary() && !$user->isTreasurer() && !$user->isAdmin()) {
+            return redirect()->route('dashboard')->withErrors(['error' => 'Unauthorized access.']);
+        }
+
+        return view('leaders.change-password');
+    }
+
+    /**
+     * Update leader password
+     */
+    public function updatePassword(Request $request)
+    {
+        $user = Auth::user();
+        
+        // Check if user is a leader (pastor, secretary, treasurer) or admin
+        if (!$user->isPastor() && !$user->isSecretary() && !$user->isTreasurer() && !$user->isAdmin()) {
+            return redirect()->route('dashboard')->withErrors(['error' => 'Unauthorized access.']);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'current_password' => 'required',
+            'new_password' => 'required|min:6|confirmed',
+        ], [
+            'current_password.required' => 'Please enter your current password.',
+            'new_password.required' => 'Please enter a new password.',
+            'new_password.min' => 'New password must be at least 6 characters.',
+            'new_password.confirmed' => 'New password confirmation does not match.',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator)->withInput();
+        }
+
+        // Verify current password
+        if (!Hash::check($request->current_password, $user->password)) {
+            return back()->withErrors(['current_password' => 'Current password is incorrect.'])->withInput();
+        }
+
+        // Update password
+        $user->password = Hash::make($request->new_password);
+        $user->save();
+
+        \Log::info('Leader password changed', [
+            'user_id' => $user->id,
+            'role' => $user->role,
+            'name' => $user->name,
+        ]);
+
+        return redirect()->route('leader.change-password')
+            ->with('success', 'Password changed successfully!');
     }
 }

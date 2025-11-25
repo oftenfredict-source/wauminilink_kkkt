@@ -34,14 +34,6 @@
 @endif
 
 <div class="container-fluid px-4">
-    @php
-        $pastorFirst = null;
-        if (isset($pastor) && !empty($pastor->name)) {
-            $cleanName = preg_replace('/^\s*Pastor\s+/i', '', $pastor->name);
-            $parts = preg_split('/\s+/', trim($cleanName));
-            $pastorFirst = $parts[0] ?? trim($cleanName);
-        }
-    @endphp
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="mt-4"><i class="fas fa-gift me-2"></i>Offerings Management</h1>
         <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addOfferingModal">
@@ -158,7 +150,7 @@
                                             </span>
                                         @else
                                             <span class="badge bg-warning">
-                                                <i class="fas fa-clock me-1"></i>Pending Pastor {{ $pastorFirst ?? ' ' }} Approval
+                                                <i class="fas fa-clock me-1"></i>Pending Pastor Approval
                                             </span>
                                         @endif
                                     </td>
@@ -169,7 +161,7 @@
                                             </button>
                                             @if($offering->approval_status == 'pending')
                                                 <span class="badge bg-info ms-1">
-                                                    <i class="fas fa-clock me-1"></i>Awaiting Pastor {{ $pastorFirst ?? ' ' }} Approval
+                                                    <i class="fas fa-clock me-1"></i>Awaiting Pastor Approval
                                                 </span>
                                             @endif
                                         </div>
@@ -393,7 +385,7 @@
                                 </span>
                             @else
                                 <span class="badge bg-warning">
-                                    <i class="fas fa-clock me-1"></i>Pending Pastor {{ $pastorFirst ?? ' ' }} Approval
+                                    <i class="fas fa-clock me-1"></i>Pending Pastor Approval
                                 </span>
                             @endif
                         </p>
@@ -430,7 +422,7 @@
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 @if($offering->approval_status == 'pending')
                     <span class="badge bg-info">
-                        <i class="fas fa-clock me-1"></i>Awaiting Pastor {{ $pastorFirst ?? ' ' }} Approval
+                        <i class="fas fa-clock me-1"></i>Awaiting Pastor Approval
                     </span>
                 @endif
             </div>

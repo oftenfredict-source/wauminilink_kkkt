@@ -262,10 +262,34 @@ class FinanceController extends Controller
         $totalMembers = Member::count();
         
         // Get pastor information for approval messages
-        $pastor = \App\Models\User::where('can_approve_finances', true)
-            ->orWhere('role', 'pastor')
-            ->orWhere('role', 'admin')
+        // Try to get from Leader model first (most accurate), then fallback to User model
+        $pastor = null;
+        $pastorLeader = \App\Models\Leader::with('member')
+            ->where('position', 'pastor')
+            ->where('is_active', true)
             ->first();
+        
+        if ($pastorLeader && $pastorLeader->member) {
+            // Create a simple object with the pastor's name from member
+            $pastor = (object)[
+                'name' => $pastorLeader->member->full_name,
+                'email' => $pastorLeader->member->email ?? null,
+            ];
+        } else {
+            // Fallback to User model - Priority: pastor role > admin with approval rights
+            $pastorUser = \App\Models\User::where('role', 'pastor')
+                ->orWhere(function($query) {
+                    $query->where('role', 'admin')
+                          ->where('can_approve_finances', true);
+                })
+                ->orWhere('can_approve_finances', true)
+                ->orderByRaw("CASE WHEN role = 'pastor' THEN 1 WHEN role = 'admin' THEN 2 ELSE 3 END")
+                ->first();
+            
+            if ($pastorUser) {
+                $pastor = $pastorUser;
+            }
+        }
         
         return view('finance.offerings', compact('offerings', 'members', 'totalMembers', 'pastor'));
     }

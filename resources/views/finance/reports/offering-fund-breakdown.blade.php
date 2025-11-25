@@ -1,6 +1,6 @@
 @extends('layouts.index')
 
-@section('title', 'Offering Fund Breakdown Report')
+@section('title', 'Fund Breakdown Report')
 
 @section('content')
 <div class="container-fluid px-4">
@@ -8,9 +8,9 @@
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-2">
         <div>
             <h1 class="h3 mb-0 text-gray-800">
-                <i class="fas fa-chart-pie text-primary me-2"></i>Offering Fund Breakdown Report
+                <i class="fas fa-chart-pie text-primary me-2"></i>Fund Breakdown Report
             </h1>
-            <p class="text-muted mb-0 d-none d-md-block">Comprehensive analysis of offering funds and their utilization</p>
+            <p class="text-muted mb-0 d-none d-md-block">Comprehensive analysis of funds (offerings and donations) and their utilization</p>
         </div>
         <div class="btn-group w-100 w-md-auto" role="group">
             <button type="button" class="btn btn-outline-primary btn-mobile-icon-only" onclick="window.print()">
@@ -145,9 +145,9 @@
                 <div class="card-header bg-white py-3">
                     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
                         <h6 class="m-0 font-weight-bold text-primary">
-                            <i class="fas fa-table me-2"></i>Offering Fund Breakdown
+                            <i class="fas fa-table me-2"></i>Fund Breakdown
                         </h6>
-                        <span class="badge bg-primary text-white" style="font-size: 0.9rem; padding: 0.5rem 0.75rem; font-weight: 600;">{{ count($fundBreakdown) }} {{ count($fundBreakdown) == 1 ? 'Offering Type' : 'Offering Types' }}</span>
+                        <span class="badge bg-primary text-white" style="font-size: 0.9rem; padding: 0.5rem 0.75rem; font-weight: 600;">{{ count($fundBreakdown) }} {{ count($fundBreakdown) == 1 ? 'Fund Type' : 'Fund Types' }}</span>
                     </div>
                 </div>
                 <div class="card-body p-0">
@@ -156,10 +156,16 @@
                             <thead class="table-dark">
                                 <tr>
                                     <th class="border-0">
-                                        <i class="fas fa-tag me-2"></i>Offering Type
+                                        <i class="fas fa-tag me-2"></i>Fund Type
                                     </th>
                                     <th class="border-0 text-end">
                                         <i class="fas fa-arrow-up me-2"></i>Total Income
+                                    </th>
+                                    <th class="border-0 text-end">
+                                        <i class="fas fa-gift me-2"></i>From Offerings
+                                    </th>
+                                    <th class="border-0 text-end">
+                                        <i class="fas fa-heart me-2"></i>From Donations
                                     </th>
                                     <th class="border-0 text-end">
                                         <i class="fas fa-arrow-down me-2"></i>Used Amount
@@ -180,7 +186,7 @@
                             </thead>
                             <tbody>
                                 @forelse($fundBreakdown as $index => $fund)
-                                <tr class="fund-row" data-fund="{{ $fund['offering_type'] }}">
+                                <tr class="fund-row" data-fund="{{ $fund['fund_type'] ?? $fund['offering_type'] }}">
                                     <td class="align-middle">
                                         <div class="d-flex align-items-center">
                                             <div class="me-3">
@@ -191,7 +197,7 @@
                                             </div>
                                             <div>
                                                 <h6 class="mb-0 font-weight-bold text-gray-800">{{ $fund['display_name'] }}</h6>
-                                                <small class="text-muted">{{ ucfirst($fund['offering_type']) }}</small>
+                                                <small class="text-muted">{{ ucfirst($fund['fund_type'] ?? $fund['offering_type']) }}</small>
                                             </div>
                                         </div>
                                     </td>
@@ -202,6 +208,30 @@
                                             </span>
                                             <small class="text-muted fw-bold">Total Income</small>
                                         </div>
+                                    </td>
+                                    <td class="align-middle text-end">
+                                        @if(isset($fund['offering_amount']) && $fund['offering_amount'] > 0)
+                                            <div class="d-flex flex-column align-items-end">
+                                                <span class="text-primary font-weight-bold">
+                                                    TZS {{ number_format($fund['offering_amount'], 0) }}
+                                                </span>
+                                                <small class="text-muted">From Offerings</small>
+                                            </div>
+                                        @else
+                                            <span class="text-muted">-</span>
+                                        @endif
+                                    </td>
+                                    <td class="align-middle text-end">
+                                        @if(isset($fund['donation_amount']) && $fund['donation_amount'] > 0)
+                                            <div class="d-flex flex-column align-items-end">
+                                                <span class="text-info font-weight-bold">
+                                                    TZS {{ number_format($fund['donation_amount'], 0) }}
+                                                </span>
+                                                <small class="text-muted">From Donations</small>
+                                            </div>
+                                        @else
+                                            <span class="text-muted">-</span>
+                                        @endif
                                     </td>
                                     <td class="align-middle text-end">
                                         <div class="d-flex flex-column align-items-end">
@@ -341,7 +371,7 @@
 
 @section('scripts')
 <style>
-/* Custom styles for the offering fund breakdown report */
+/* Custom styles for the fund breakdown report */
 .border-left-success {
     border-left: 0.25rem solid #1cc88a !important;
 }
@@ -677,7 +707,7 @@
 
 <script>
 $(document).ready(function() {
-    console.log('Offering Fund Breakdown Report loaded');
+    console.log('Fund Breakdown Report loaded');
     
     // Add hover effects to fund rows
     $('.fund-row').hover(

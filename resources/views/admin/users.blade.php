@@ -68,6 +68,425 @@
         font-weight: 600 !important;
         border-radius: 0.25rem !important;
     }
+
+    /* Mobile Responsive Styles */
+    @media (max-width: 768px) {
+        .container-fluid {
+            padding-left: 0.75rem !important;
+            padding-right: 0.75rem !important;
+            padding-top: 0.25rem !important;
+        }
+
+        .dashboard-header {
+            margin-bottom: 12px !important;
+            border-radius: 12px !important;
+            overflow: hidden !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+        }
+
+        .dashboard-header .card-body {
+            padding: 12px 14px !important;
+        }
+
+        .dashboard-header .rounded-circle {
+            width: 38px !important;
+            height: 38px !important;
+            min-width: 38px !important;
+            flex-shrink: 0 !important;
+            background: rgba(255,255,255,0.2) !important;
+            border: 2px solid rgba(255,255,255,0.3) !important;
+        }
+
+        .dashboard-header .rounded-circle i {
+            font-size: 0.95rem !important;
+        }
+
+        .dashboard-header .d-flex.align-items-center.gap-3 {
+            gap: 12px !important;
+            flex: 1 !important;
+            min-width: 0 !important;
+        }
+
+        .dashboard-header .lh-sm {
+            flex: 1 !important;
+            min-width: 0 !important;
+            overflow: hidden !important;
+        }
+
+        .dashboard-header h5 {
+            font-size: 1rem !important;
+            line-height: 1.3 !important;
+            margin-bottom: 2px !important;
+            font-weight: 600 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+        }
+
+        .dashboard-header small {
+            font-size: 0.75rem !important;
+            line-height: 1.2 !important;
+            display: block !important;
+            opacity: 0.9 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+        }
+
+        .dashboard-header .btn {
+            margin-top: 0 !important;
+            padding: 8px 14px !important;
+            font-size: 0.85rem !important;
+            border-radius: 8px !important;
+            white-space: nowrap !important;
+            flex-shrink: 0 !important;
+            font-weight: 500 !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+            transition: all 0.2s ease !important;
+        }
+
+        .dashboard-header .btn:hover {
+            transform: translateY(-1px) !important;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.15) !important;
+        }
+
+        .dashboard-header .d-flex.justify-content-between {
+            align-items: center !important;
+            flex-wrap: nowrap !important;
+        }
+
+        .dashboard-header .d-flex.justify-content-between > div:first-child {
+            flex: 1 !important;
+            min-width: 0 !important;
+            overflow: hidden !important;
+        }
+
+        /* Table responsive */
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            display: block;
+            width: 100%;
+        }
+
+        .table {
+            font-size: 0.85rem;
+            min-width: 800px;
+        }
+
+        .table th,
+        .table td {
+            padding: 8px 4px !important;
+        }
+
+        /* Actions column - show only icons on mobile */
+        .table td:last-child .d-flex {
+            flex-direction: row !important;
+            flex-wrap: wrap;
+            gap: 4px !important;
+            justify-content: flex-start;
+        }
+
+        /* Actions column - icon only buttons on mobile */
+        .table td:last-child .btn {
+            width: 36px !important;
+            height: 36px !important;
+            min-width: 36px !important;
+            max-width: 36px !important;
+            padding: 0 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            border-radius: 6px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Hide text spans on mobile */
+        .table td:last-child .btn .btn-text-mobile {
+            display: none !important;
+        }
+
+        /* Show ONLY icons - center them properly */
+        .table td:last-child .btn i,
+        .table td:last-child .btn i.fas,
+        .table td:last-child .btn i.fa,
+        .table td:last-child .btn > i {
+            margin: 0 !important;
+            padding: 0 !important;
+            font-size: 1.2rem !important;
+            display: block !important;
+            line-height: 1 !important;
+            width: auto !important;
+            height: auto !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+            font-family: "Font Awesome 6 Free", "Font Awesome 5 Free", "FontAwesome" !important;
+            font-weight: 900 !important;
+            font-style: normal !important;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: auto;
+        }
+
+        /* Force icon color to be visible */
+        .table td:last-child .btn.btn-primary i {
+            color: #ffffff !important;
+        }
+
+        .table td:last-child .btn.btn-info i {
+            color: #ffffff !important;
+        }
+
+        .table td:last-child .btn.btn-success i {
+            color: #ffffff !important;
+        }
+
+        .table td:last-child .btn.btn-danger i {
+            color: #ffffff !important;
+        }
+
+        .table td:last-child .btn.btn-warning i {
+            color: #212529 !important;
+        }
+
+        /* Ensure icon color matches button color */
+        .table td:last-child .btn.btn-primary i {
+            color: #fff !important;
+        }
+
+        .table td:last-child .btn.btn-info i {
+            color: #fff !important;
+        }
+
+        .table td:last-child .btn.btn-success i {
+            color: #fff !important;
+        }
+
+        .table td:last-child .btn.btn-danger i {
+            color: #fff !important;
+        }
+
+        .table td:last-child .btn.btn-warning i {
+            color: #212529 !important;
+        }
+
+        /* Hide any text after icons */
+        .table td:last-child .btn::after {
+            display: none !important;
+        }
+
+        /* Ensure tooltips work for icon-only buttons */
+        .table td:last-child .btn[title] {
+            cursor: pointer;
+        }
+
+        .card-header {
+            padding: 0.75rem 1rem !important;
+        }
+
+        .card-body {
+            padding: 1rem !important;
+        }
+
+        /* Card header text on mobile */
+        .card-header h6 {
+            font-size: 0.95rem !important;
+        }
+
+        .card-header small {
+            font-size: 0.75rem !important;
+            display: block !important;
+            margin-top: 0.25rem !important;
+        }
+
+        /* Table improvements */
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .table {
+            font-size: 0.85rem;
+            min-width: 900px;
+        }
+
+        .table th,
+        .table td {
+            padding: 0.5rem 0.375rem !important;
+            vertical-align: middle !important;
+        }
+
+        .table th {
+            font-size: 0.8rem !important;
+            font-weight: 600 !important;
+            white-space: nowrap;
+        }
+
+        /* Badge improvements on mobile */
+        .badge {
+            font-size: 0.7rem !important;
+            padding: 0.25em 0.5em !important;
+        }
+
+        /* Action buttons on mobile */
+        .table td:last-child {
+            white-space: nowrap;
+        }
+
+        .table td:last-child .btn {
+            padding: 0.375rem 0.5rem !important;
+            font-size: 0.75rem !important;
+            margin: 0.125rem !important;
+        }
+
+        /* Header buttons */
+        .dashboard-header .btn {
+            font-size: 0.8rem !important;
+            padding: 0.5rem 0.75rem !important;
+        }
+
+        .dashboard-header .d-flex.gap-2 {
+            gap: 0.5rem !important;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .container-fluid {
+            padding-left: 0.5rem !important;
+            padding-right: 0.5rem !important;
+            padding-top: 0.15rem !important;
+        }
+
+        .dashboard-header {
+            margin-bottom: 10px !important;
+            border-radius: 10px !important;
+        }
+
+        .dashboard-header .card-body {
+            padding: 10px 12px !important;
+        }
+
+        .dashboard-header .rounded-circle {
+            width: 36px !important;
+            height: 36px !important;
+            min-width: 36px !important;
+        }
+
+        .dashboard-header .rounded-circle i {
+            font-size: 0.9rem !important;
+        }
+
+        .dashboard-header .d-flex.align-items-center.gap-3 {
+            gap: 10px !important;
+        }
+
+        .dashboard-header h5 {
+            font-size: 0.95rem !important;
+            line-height: 1.25 !important;
+            margin-bottom: 1px !important;
+        }
+
+        .dashboard-header small {
+            font-size: 0.72rem !important;
+            line-height: 1.15 !important;
+        }
+
+        .dashboard-header .d-flex.justify-content-between {
+            flex-wrap: wrap !important;
+            gap: 8px !important;
+        }
+
+        .dashboard-header .btn {
+            margin-top: 0 !important;
+            width: auto !important;
+            min-width: fit-content !important;
+            padding: 7px 12px !important;
+            font-size: 0.8rem !important;
+            flex: 0 0 auto !important;
+        }
+
+        /* Stack on very small screens */
+        @media (max-width: 400px) {
+            .dashboard-header .d-flex.justify-content-between {
+                flex-direction: column !important;
+                align-items: stretch !important;
+            }
+
+            .dashboard-header .btn {
+                width: 100% !important;
+                margin-top: 8px !important;
+            }
+        }
+
+        .table {
+            font-size: 0.75rem;
+            min-width: 700px;
+        }
+
+        .table th,
+        .table td {
+            padding: 6px 3px !important;
+        }
+
+        .btn-sm {
+            font-size: 0.7rem;
+            padding: 3px 6px;
+        }
+
+        /* Actions column - icon only on very small screens */
+        .table td:last-child .btn {
+            min-width: 32px;
+            height: 32px;
+            padding: 6px !important;
+        }
+
+        .table td:last-child .btn i {
+            font-size: 0.85rem !important;
+        }
+
+        /* Card header improvements */
+        .card-header h6 {
+            font-size: 0.9rem !important;
+        }
+
+        .card-header small {
+            font-size: 0.7rem !important;
+        }
+
+        /* Table improvements */
+        .table {
+            font-size: 0.8rem;
+            min-width: 800px;
+        }
+
+        .table th,
+        .table td {
+            padding: 0.4rem 0.25rem !important;
+        }
+
+        .table th {
+            font-size: 0.75rem !important;
+        }
+
+        /* Badge improvements */
+        .badge {
+            font-size: 0.65rem !important;
+            padding: 0.2em 0.4em !important;
+        }
+
+        /* Action buttons */
+        .table td:last-child .btn {
+            padding: 0.3rem 0.4rem !important;
+            font-size: 0.7rem !important;
+        }
+
+        /* Header buttons */
+        .dashboard-header .btn {
+            font-size: 0.75rem !important;
+            padding: 0.45rem 0.65rem !important;
+        }
+    }
 </style>
 
 <div class="container-fluid px-4">
@@ -85,12 +504,12 @@
                                 <small style="color: white !important;">Manage leaders and administrators (Pastors, Secretaries, Treasurers, Admins)</small>
                             </div>
                         </div>
-                        <div class="d-flex gap-2">
+                        <div class="d-flex gap-2 flex-wrap">
                             <a href="{{ route('admin.users.create') }}" class="btn btn-success btn-sm">
-                                <i class="fas fa-user-plus"></i> Create New User
+                                <i class="fas fa-user-plus"></i> <span class="d-none d-sm-inline">Create New User</span><span class="d-sm-none">New User</span>
                             </a>
                             <a href="{{ route('admin.dashboard') }}" class="btn btn-light btn-sm">
-                                <i class="fas fa-arrow-left"></i> Back to Dashboard
+                                <i class="fas fa-arrow-left"></i> <span class="d-none d-sm-inline">Back to Dashboard</span><span class="d-sm-none">Back</span>
                             </a>
                         </div>
                     </div>
@@ -102,8 +521,12 @@
     <div class="card shadow mb-4">
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
             <div>
-                <h6 class="m-0 font-weight-bold text-primary">Leaders & Administrators ({{ $users->count() }} total)</h6>
-                <small class="text-muted">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <span class="d-none d-sm-inline">Leaders & Administrators</span>
+                    <span class="d-sm-none">Users</span>
+                    ({{ $users->count() }} total)
+                </h6>
+                <small class="text-muted d-none d-md-block">
                     <i class="fas fa-info-circle me-1"></i>
                     Only users with leadership roles or administrator access are shown here. 
                     Regular members are managed in the <a href="{{ route('members.view') }}" class="text-primary">Member Management</a> page.
@@ -166,16 +589,16 @@
                             <td>
                                 <div class="d-flex gap-1 flex-wrap">
                                     <a href="{{ route('admin.user-activity', $user->id) }}" class="btn btn-sm btn-primary" title="View Activity">
-                                        <i class="fas fa-eye"></i> View Activity
+                                        <i class="fas fa-eye"></i><span class="btn-text-mobile"> View Activity</span>
                                     </a>
                                     <a href="{{ route('admin.users.edit', $user->id) }}" class="btn btn-sm btn-info" title="Edit User">
-                                        <i class="fas fa-edit"></i> Edit
+                                        <i class="fas fa-edit"></i><span class="btn-text-mobile"> Edit</span>
                                     </a>
                                     <button class="btn btn-sm btn-success" onclick="resetPassword({{ $user->id }})" title="Reset Password">
-                                        <i class="fas fa-key"></i> Reset Password
+                                        <i class="fas fa-key"></i><span class="btn-text-mobile"> Reset Password</span>
                                     </button>
                                     <button class="btn btn-sm btn-danger" onclick="deleteUser({{ $user->id }}, '{{ addslashes($user->name) }}')" title="Delete User">
-                                        <i class="fas fa-trash"></i> Delete
+                                        <i class="fas fa-trash"></i><span class="btn-text-mobile"> Delete</span>
                                     </button>
                                     @if($user->is_login_blocked)
                                     <form action="{{ route('admin.users.unblock', $user->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Unblock this user from logging in?');">
@@ -576,6 +999,22 @@ function deleteUser(userId, userName) {
 
 // Make function available globally
 window.deleteUser = deleteUser;
+
+// Ensure icons are visible on mobile - force Font Awesome to render
+if (window.innerWidth <= 768) {
+    document.addEventListener('DOMContentLoaded', function() {
+        const actionButtons = document.querySelectorAll('.table td:last-child .btn i');
+        actionButtons.forEach(function(icon) {
+            // Force icon to be visible
+            icon.style.display = 'block';
+            icon.style.visibility = 'visible';
+            icon.style.opacity = '1';
+            icon.style.fontSize = '1.2rem';
+            icon.style.fontFamily = '"Font Awesome 6 Free"';
+            icon.style.fontWeight = '900';
+        });
+    });
+}
 </script>
 
 @endsection

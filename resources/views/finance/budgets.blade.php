@@ -33,60 +33,265 @@
     </script>
 @endif
 
+<style>
+    /* Mobile Responsive Styles */
+    @media (max-width: 768px) {
+        .container-fluid {
+            padding-left: 0.5rem !important;
+            padding-right: 0.5rem !important;
+        }
+        
+        /* Actions Card */
+        .actions-card {
+            transition: all 0.3s ease;
+        }
+        .actions-card .card-header {
+            user-select: none;
+            transition: background-color 0.2s ease;
+        }
+        .actions-card .card-header:hover {
+            background-color: #f8f9fa !important;
+        }
+        #actionsBody {
+            transition: all 0.3s ease;
+            display: none;
+        }
+        .actions-header {
+            cursor: pointer !important;
+        }
+        #actionsToggleIcon {
+            display: block !important;
+        }
+        
+        /* Filter Section */
+        #filtersForm .card-header {
+            transition: all 0.2s ease;
+        }
+        .filter-header:hover {
+            opacity: 0.9;
+        }
+        #filterBody {
+            transition: all 0.3s ease;
+            display: none;
+            background: #fafbfc;
+        }
+        .filter-header {
+            cursor: pointer !important;
+        }
+        #filterToggleIcon {
+            display: block !important;
+            transition: transform 0.3s ease;
+        }
+        .filter-header.active #filterToggleIcon {
+            transform: rotate(180deg);
+        }
+        #filtersForm .card-body {
+            padding: 0.75rem 0.5rem !important;
+        }
+        #filtersForm .form-label {
+            font-size: 0.7rem !important;
+            margin-bottom: 0.2rem !important;
+            font-weight: 600 !important;
+        }
+        #filtersForm .form-control,
+        #filtersForm .form-select {
+            font-size: 0.8125rem !important;
+            padding: 0.4rem 0.5rem !important;
+            border-radius: 6px !important;
+        }
+        #filtersForm .btn-sm {
+            padding: 0.4rem 0.75rem !important;
+            font-size: 0.8125rem !important;
+            border-radius: 6px !important;
+            font-weight: 600 !important;
+        }
+        #filtersForm .row.g-2 > [class*="col-"] {
+            padding-left: 0.375rem !important;
+            padding-right: 0.375rem !important;
+            margin-bottom: 0.5rem !important;
+        }
+        #filtersForm .row.g-2 {
+            margin-left: -0.375rem !important;
+            margin-right: -0.375rem !important;
+        }
+        
+        /* Table Responsive */
+        .table {
+            font-size: 0.75rem;
+        }
+        .table th,
+        .table td {
+            padding: 0.5rem 0.25rem;
+        }
+        
+        /* Buttons - Icon Only on Mobile */
+        .btn-group .btn {
+            padding: 0.375rem 0.5rem !important;
+        }
+        .btn-group .btn i {
+            margin: 0 !important;
+        }
+        .btn-group .btn span {
+            display: none !important;
+        }
+        
+        /* Header adjustments */
+        h1 {
+            font-size: 1.25rem !important;
+        }
+        
+        /* Progress Bar - Smaller on Mobile */
+        .progress {
+            height: 16px !important;
+            font-size: 0.7rem !important;
+        }
+        
+        /* Modal Full Screen on Mobile */
+        @media (max-width: 576px) {
+            .modal-fullscreen-sm-down {
+                margin: 0;
+                max-width: 100%;
+                height: 100vh;
+            }
+            .modal-fullscreen-sm-down .modal-content {
+                height: 100vh;
+                border-radius: 0 !important;
+            }
+            #filtersForm .card-body {
+                padding: 0.5rem 0.375rem !important;
+            }
+            #filtersForm .form-label {
+                font-size: 0.65rem !important;
+            }
+            #filtersForm .form-control,
+            #filtersForm .form-select {
+                font-size: 0.75rem !important;
+                padding: 0.35rem 0.45rem !important;
+            }
+        }
+    }
+    
+    /* Desktop: Always show actions and filters */
+    @media (min-width: 769px) {
+        .actions-header {
+            cursor: default !important;
+            pointer-events: none !important;
+        }
+        .actions-header .fa-chevron-down {
+            display: none !important;
+        }
+        #actionsBody {
+            display: block !important;
+        }
+        
+        .filter-header {
+            cursor: default !important;
+            pointer-events: none !important;
+        }
+        .filter-header .fa-chevron-down {
+            display: none !important;
+        }
+        #filterBody {
+            display: block !important;
+        }
+    }
+</style>
 <div class="container-fluid px-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="mt-4"><i class="fas fa-wallet me-2"></i>Budgets Management</h1>
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addBudgetModal">
-            <i class="fas fa-plus me-1"></i>Add Budget
-        </button>
+    <!-- Page Title and Quick Actions - Compact Collapsible -->
+    <div class="card border-0 shadow-sm mb-3 actions-card">
+        <div class="card-header bg-white border-bottom p-2 px-3 d-flex align-items-center justify-content-between actions-header" onclick="toggleActions()">
+            <div class="d-flex align-items-center gap-2">
+                <h1 class="mb-0 mt-2" style="font-size: 1.5rem;"><i class="fas fa-wallet me-2"></i>Budgets Management</h1>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <i class="fas fa-chevron-down text-muted d-md-none" id="actionsToggleIcon"></i>
+            </div>
+        </div>
+        <div class="card-body p-3" id="actionsBody">
+            <div class="d-flex flex-wrap gap-2">
+                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addBudgetModal">
+                    <i class="fas fa-plus me-1"></i>
+                    <span class="d-none d-sm-inline">Add Budget</span>
+                    <span class="d-sm-none">Add</span>
+                </button>
+            </div>
+        </div>
     </div>
 
-    <!-- Filters -->
-    <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
-            <i class="fas fa-filter me-1"></i><strong>Filters</strong>
-        </div>
-        <div class="card-body">
-            <form method="GET" action="{{ route('finance.budgets') }}">
-                <div class="row">
-                    <div class="col-md-3">
-                        <label for="fiscal_year" class="form-label">Fiscal Year</label>
-                        <select class="form-select" id="fiscal_year" name="fiscal_year">
-                            <option value="">All Years</option>
-                            @for($year = date('Y') - 2; $year <= date('Y') + 2; $year++)
-                                <option value="{{ $year }}" {{ request('fiscal_year') == $year ? 'selected' : '' }}>{{ $year }}</option>
-                            @endfor
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <label for="budget_type" class="form-label">Budget Type</label>
-                        <select class="form-select" id="budget_type" name="budget_type">
-                            <option value="">All Types</option>
-                            <option value="operational" {{ request('budget_type') == 'operational' ? 'selected' : '' }}>Operational</option>
-                            <option value="capital" {{ request('budget_type') == 'capital' ? 'selected' : '' }}>Capital</option>
-                            <option value="program" {{ request('budget_type') == 'program' ? 'selected' : '' }}>Program</option>
-                            <option value="special" {{ request('budget_type') == 'special' ? 'selected' : '' }}>Special</option>
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <label for="status" class="form-label">Status</label>
-                        <select class="form-select" id="status" name="status">
-                            <option value="">All Statuses</option>
-                            <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
-                            <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
-                            <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>Completed</option>
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">&nbsp;</label>
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">Filter</button>
-                        </div>
-                    </div>
+    <!-- Filters & Search - Collapsible on Mobile -->
+    <form method="GET" action="{{ route('finance.budgets') }}" class="card mb-4 border-0 shadow-sm" id="filtersForm">
+        <!-- Filter Header -->
+        <div class="card-header bg-primary text-white p-2 px-3 filter-header" onclick="toggleFilters()">
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fas fa-filter me-1"></i>
+                    <span class="fw-semibold">Filters</span>
+                    @if(request('fiscal_year') || request('budget_type') || request('status'))
+                        <span class="badge bg-white text-primary rounded-pill ms-2" id="activeFiltersCount">{{ (request('fiscal_year') ? 1 : 0) + (request('budget_type') ? 1 : 0) + (request('status') ? 1 : 0) }}</span>
+                    @endif
                 </div>
-            </form>
+                <i class="fas fa-chevron-down text-white d-md-none" id="filterToggleIcon"></i>
+            </div>
         </div>
-    </div>
+        
+        <!-- Filter Body - Collapsible on Mobile -->
+        <div class="card-body p-3" id="filterBody">
+            <div class="row g-2 mb-2">
+                <!-- Fiscal Year - Full Width on Mobile -->
+                <div class="col-6 col-md-3">
+                    <label for="fiscal_year" class="form-label small text-muted mb-1">
+                        <i class="fas fa-calendar me-1 text-primary"></i>Fiscal Year
+                    </label>
+                    <select class="form-select form-select-sm" id="fiscal_year" name="fiscal_year">
+                        <option value="">All Years</option>
+                        @for($year = date('Y') - 2; $year <= date('Y') + 2; $year++)
+                            <option value="{{ $year }}" {{ request('fiscal_year') == $year ? 'selected' : '' }}>{{ $year }}</option>
+                        @endfor
+                    </select>
+                </div>
+                
+                <!-- Budget Type - Full Width on Mobile -->
+                <div class="col-6 col-md-3">
+                    <label for="budget_type" class="form-label small text-muted mb-1">
+                        <i class="fas fa-tags me-1 text-info"></i>Budget Type
+                    </label>
+                    <select class="form-select form-select-sm" id="budget_type" name="budget_type">
+                        <option value="">All Types</option>
+                        <option value="operational" {{ request('budget_type') == 'operational' ? 'selected' : '' }}>Operational</option>
+                        <option value="capital" {{ request('budget_type') == 'capital' ? 'selected' : '' }}>Capital</option>
+                        <option value="program" {{ request('budget_type') == 'program' ? 'selected' : '' }}>Program</option>
+                        <option value="special" {{ request('budget_type') == 'special' ? 'selected' : '' }}>Special</option>
+                    </select>
+                </div>
+                
+                <!-- Status - Full Width on Mobile -->
+                <div class="col-6 col-md-3">
+                    <label for="status" class="form-label small text-muted mb-1">
+                        <i class="fas fa-info-circle me-1 text-success"></i>Status
+                    </label>
+                    <select class="form-select form-select-sm" id="status" name="status">
+                        <option value="">All Statuses</option>
+                        <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
+                        <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
+                        <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>Completed</option>
+                    </select>
+                </div>
+                
+                <!-- Action Buttons - Full Width on Mobile -->
+                <div class="col-6 col-md-3 d-flex gap-2 align-items-end">
+                    <button type="submit" class="btn btn-primary btn-sm flex-fill">
+                        <i class="fas fa-search me-1"></i>
+                        <span class="d-none d-sm-inline">Filter</span>
+                        <span class="d-sm-none">Apply</span>
+                    </button>
+                    <a href="{{ route('finance.budgets') }}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-times me-1"></i>
+                        <span class="d-none d-sm-inline">Clear</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </form>
 
     <!-- Budgets Table -->
     <div class="card mb-4">
@@ -98,28 +303,44 @@
                 <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
                     <thead>
                         <tr>
-                            <th>Budget Name</th>
+                            <th class="d-none d-md-table-cell">Budget Name</th>
+                            <th class="d-table-cell d-md-none">Budget</th>
                             <th>Type</th>
-                            <th>Fiscal Year</th>
+                            <th class="d-none d-lg-table-cell">Fiscal Year</th>
                             <th>Total Budget</th>
-                            <th>Spent Amount</th>
-                            <th>Remaining</th>
+                            <th class="d-none d-xl-table-cell">Spent</th>
+                            <th class="d-none d-xl-table-cell">Remaining</th>
                             <th>Utilization</th>
                             <th>Status</th>
-                            <th>Actions</th>
+                            <th class="text-end">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($budgets as $budget)
                         <tr>
-                            <td>{{ $budget->budget_name }}</td>
+                            <td>
+                                <div class="fw-bold">{{ $budget->budget_name }}</div>
+                                <div class="d-md-none">
+                                    <small class="text-muted d-block">
+                                        <i class="fas fa-calendar me-1"></i>FY: {{ $budget->fiscal_year }}
+                                    </small>
+                                    <small class="text-muted d-block">
+                                        <i class="fas fa-money-bill-wave me-1"></i>Spent: TZS {{ number_format($budget->spent_amount, 0) }}
+                                    </small>
+                                    <small class="text-muted d-block">
+                                        <i class="fas fa-piggy-bank me-1"></i>Remaining: TZS {{ number_format($budget->remaining_amount, 0) }}
+                                    </small>
+                                </div>
+                            </td>
                             <td>
                                 <span class="badge bg-info">{{ ucfirst($budget->budget_type) }}</span>
                             </td>
-                            <td>{{ $budget->fiscal_year }}</td>
-                            <td class="text-end">TZS {{ number_format($budget->total_budget, 0) }}</td>
-                            <td class="text-end">TZS {{ number_format($budget->spent_amount, 0) }}</td>
-                            <td class="text-end">TZS {{ number_format($budget->remaining_amount, 0) }}</td>
+                            <td class="d-none d-lg-table-cell">{{ $budget->fiscal_year }}</td>
+                            <td class="text-end">
+                                <span class="fw-bold text-primary">TZS {{ number_format($budget->total_budget, 0) }}</span>
+                            </td>
+                            <td class="d-none d-xl-table-cell text-end">TZS {{ number_format($budget->spent_amount, 0) }}</td>
+                            <td class="d-none d-xl-table-cell text-end">TZS {{ number_format($budget->remaining_amount, 0) }}</td>
                             <td>
                                 <div class="progress" style="height: 20px;">
                                     <div class="progress-bar {{ $budget->is_over_budget ? 'bg-danger' : ($budget->is_near_limit ? 'bg-warning' : 'bg-success') }}" 
@@ -137,11 +358,11 @@
                                     <span class="badge bg-secondary">Inactive</span>
                                 @endif
                             </td>
-                            <td>
-                                <div class="btn-group" role="group">
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm" role="group">
                                     <button 
                                         type="button" 
-                                        class="btn btn-sm btn-outline-primary"
+                                        class="btn btn-sm btn-outline-primary text-white"
                                         onclick="viewBudget(this)"
                                         data-id="{{ $budget->id }}"
                                         data-name="{{ $budget->budget_name }}"
@@ -155,12 +376,14 @@
                                         data-start="{{ $budget->start_date }}"
                                         data-end="{{ $budget->end_date }}"
                                         data-description="{{ $budget->description ?? '-' }}"
+                                        title="View Details"
                                     >
                                         <i class="fas fa-eye"></i>
+                                        <span class="d-none d-sm-inline ms-1">View</span>
                                     </button>
                                     <button 
                                         type="button" 
-                                        class="btn btn-sm btn-outline-warning"
+                                        class="btn btn-sm btn-outline-warning text-white"
                                         onclick="editBudget(this)"
                                         data-id="{{ $budget->id }}"
                                         data-name="{{ $budget->budget_name }}"
@@ -171,14 +394,17 @@
                                         data-end="{{ $budget->end_date }}"
                                         data-status="{{ $budget->status }}"
                                         data-description="{{ $budget->description ?? '' }}"
+                                        title="Edit"
                                     >
                                         <i class="fas fa-edit"></i>
+                                        <span class="d-none d-sm-inline ms-1">Edit</span>
                                     </button>
                                     <form class="d-inline" onsubmit="return confirmDeleteBudget(event, {{ $budget->id }})" method="POST" action="{{ route('finance.budgets.destroy', $budget) }}">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger text-white" title="Delete">
                                             <i class="fas fa-trash"></i>
+                                            <span class="d-none d-sm-inline ms-1">Delete</span>
                                         </button>
                                     </form>
                                 </div>
@@ -203,7 +429,7 @@
 
 <!-- Add Budget Modal -->
 <div class="modal fade" id="addBudgetModal" tabindex="-1" aria-labelledby="addBudgetModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-fullscreen-sm-down">
         <div class="modal-content budget-modal-content">
             <div class="modal-header budget-modal-header">
                 <div class="d-flex align-items-center">
@@ -424,7 +650,7 @@
 
 <!-- Edit Budget Modal -->
 <div class="modal fade" id="editBudgetModal" tabindex="-1" aria-labelledby="editBudgetModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-fullscreen-sm-down">
         <div class="modal-content budget-modal-content">
             <div class="modal-header budget-modal-header">
                 <div class="d-flex align-items-center">
@@ -533,6 +759,87 @@
 </div>
 
 <script>
+// Toggle Actions Function
+function toggleActions() {
+    // Only toggle on mobile devices
+    if (window.innerWidth > 768) {
+        return; // Don't toggle on desktop
+    }
+    
+    const actionsBody = document.getElementById('actionsBody');
+    const actionsIcon = document.getElementById('actionsToggleIcon');
+    
+    if (!actionsBody || !actionsIcon) return;
+    
+    // Check computed style to see if it's visible
+    const computedStyle = window.getComputedStyle(actionsBody);
+    const isVisible = computedStyle.display !== 'none';
+    
+    if (isVisible) {
+        actionsBody.style.display = 'none';
+        actionsIcon.classList.remove('fa-chevron-up');
+        actionsIcon.classList.add('fa-chevron-down');
+    } else {
+        actionsBody.style.display = 'block';
+        actionsIcon.classList.remove('fa-chevron-down');
+        actionsIcon.classList.add('fa-chevron-up');
+    }
+}
+
+// Toggle Filters Function
+function toggleFilters() {
+    // Only toggle on mobile devices
+    if (window.innerWidth > 768) {
+        return; // Don't toggle on desktop
+    }
+    
+    const filterBody = document.getElementById('filterBody');
+    const filterIcon = document.getElementById('filterToggleIcon');
+    const filterHeader = document.querySelector('.filter-header');
+    
+    if (!filterBody || !filterIcon) return;
+    
+    // Check computed style to see if it's visible
+    const computedStyle = window.getComputedStyle(filterBody);
+    const isVisible = computedStyle.display !== 'none';
+    
+    if (isVisible) {
+        filterBody.style.display = 'none';
+        filterIcon.classList.remove('fa-chevron-up');
+        filterIcon.classList.add('fa-chevron-down');
+        if (filterHeader) filterHeader.classList.remove('active');
+    } else {
+        filterBody.style.display = 'block';
+        filterIcon.classList.remove('fa-chevron-down');
+        filterIcon.classList.add('fa-chevron-up');
+        if (filterHeader) filterHeader.classList.add('active');
+    }
+}
+
+// Handle window resize
+window.addEventListener('resize', function() {
+    const actionsBody = document.getElementById('actionsBody');
+    const actionsIcon = document.getElementById('actionsToggleIcon');
+    const filterBody = document.getElementById('filterBody');
+    const filterIcon = document.getElementById('filterToggleIcon');
+    
+    if (window.innerWidth > 768) {
+        // Always show on desktop
+        if (actionsBody && actionsIcon) {
+            actionsBody.style.display = 'block';
+            actionsIcon.style.display = 'none';
+        }
+        if (filterBody && filterIcon) {
+            filterBody.style.display = 'block';
+            filterIcon.style.display = 'none';
+        }
+    } else {
+        // On mobile, show chevrons
+        if (actionsIcon) actionsIcon.style.display = 'block';
+        if (filterIcon) filterIcon.style.display = 'block';
+    }
+});
+
 function viewBudget(button) {
     if (!button) return;
     var d = button.dataset;
@@ -718,7 +1025,7 @@ function viewBudget(button) {
         modal.id = 'viewBudgetModal';
         modal.className = 'modal fade';
         modal.innerHTML = `
-            <div class="modal-dialog modal-lg">
+            <div class="modal-dialog modal-lg modal-fullscreen-sm-down">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title">Budget Details</h5>
@@ -898,6 +1205,44 @@ const offeringTypeMapping = {
 
 // Handle custom budget type field using event delegation
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize actions and filters
+    const actionsBody = document.getElementById('actionsBody');
+    const actionsIcon = document.getElementById('actionsToggleIcon');
+    const filterBody = document.getElementById('filterBody');
+    const filterIcon = document.getElementById('filterToggleIcon');
+    
+    if (window.innerWidth <= 768) {
+        // Mobile: start collapsed
+        if (actionsBody && actionsIcon) {
+            actionsBody.style.display = 'none';
+            actionsIcon.classList.remove('fa-chevron-up');
+            actionsIcon.classList.add('fa-chevron-down');
+        }
+        if (filterBody && filterIcon) {
+            filterBody.style.display = 'none';
+            filterIcon.classList.remove('fa-chevron-up');
+            filterIcon.classList.add('fa-chevron-down');
+        }
+    } else {
+        // Desktop: always show
+        if (actionsBody && actionsIcon) {
+            actionsBody.style.display = 'block';
+            actionsIcon.style.display = 'none';
+        }
+        if (filterBody && filterIcon) {
+            filterBody.style.display = 'block';
+            filterIcon.style.display = 'none';
+        }
+    }
+    
+    // Show filters if any are active
+    @if(request('fiscal_year') || request('budget_type') || request('status'))
+        if (window.innerWidth <= 768 && filterBody && filterIcon) {
+            toggleFilters(); // Expand if filters are active
+            const filterHeader = document.querySelector('.filter-header');
+            if (filterHeader) filterHeader.classList.add('active');
+        }
+    @endif
     // Use event delegation to handle budget type changes
     document.addEventListener('change', function(e) {
         // Handle Add Budget Modal - Budget Type
@@ -1558,6 +1903,26 @@ document.addEventListener('DOMContentLoaded', function() {
     .budget-modal-footer .btn-light {
         padding: 0.625rem 1.5rem;
         font-size: 0.9rem;
+    }
+}
+
+/* Full Screen Modal on Small Devices */
+@media (max-width: 576px) {
+    .modal-fullscreen-sm-down {
+        margin: 0;
+        max-width: 100%;
+        height: 100vh;
+    }
+    .modal-fullscreen-sm-down .modal-content {
+        height: 100vh;
+        border-radius: 0 !important;
+        display: flex;
+        flex-direction: column;
+    }
+    .modal-fullscreen-sm-down .modal-body {
+        flex: 1;
+        overflow-y: auto;
+        max-height: calc(100vh - 120px);
     }
 }
 

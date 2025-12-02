@@ -20,8 +20,8 @@
     </div>
 
     <!-- KPI Row -->
-    <div class="row mb-4">
-        <div class="col-xl-3 col-md-6 mb-3">
+    <div class="row mb-4 g-3">
+        <div class="col-12 col-md-6 col-xl-3">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body d-flex align-items-center justify-content-between">
                     <div>
@@ -33,7 +33,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-md-6 mb-3">
+        <div class="col-12 col-md-6 col-xl-3">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body d-flex align-items-center justify-content-between">
                     <div>
@@ -45,7 +45,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-md-6 mb-3">
+        <div class="col-12 col-md-6 col-xl-3">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body d-flex align-items-center justify-content-between">
                     <div>
@@ -57,7 +57,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-md-6 mb-3">
+        <div class="col-12 col-md-6 col-xl-3">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body d-flex align-items-center justify-content-between">
                     <div>
@@ -71,16 +71,16 @@
         </div>
     </div>
 
-    <div class="row">
+    <div class="row g-3">
         <!-- Member Contributions -->
-        <div class="col-lg-6 mb-4">
+        <div class="col-12 col-lg-6">
             <div class="card border-0 shadow-sm rounded-3 h-100">
                 <div class="card-header report-header-primary py-2 rounded-top position-relative">
                     <h6 class="mb-0 fw-semibold text-white position-relative"><i class="fas fa-star me-2"></i>Top Contributors ({{ $start->format('M d') }} - {{ $end->format('M d, Y') }})</h6>
                 </div>
                 <div class="card-body">
                     @if($topContributors->count())
-                    <div class="table-responsive">
+                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
                         <table class="table table-sm align-middle">
                             <thead>
                                 <tr>
@@ -103,15 +103,15 @@
                     @else
                         <p class="text-muted mb-0">No contributor data available for the selected period.</p>
                     @endif
-                    <div class="mt-3 d-flex gap-2">
-                        <a href="{{ route('reports.member-giving') }}" class="btn btn-primary btn-sm"><i class="fas fa-user me-1"></i>Member Giving Report</a>
+                    <div class="mt-3 d-flex flex-wrap gap-2">
+                        <a href="{{ route('reports.member-giving') }}" class="btn btn-primary btn-sm"><i class="fas fa-user me-1"></i><span class="d-none d-sm-inline">Member Giving Report</span><span class="d-sm-none">Member Giving</span></a>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Finance breakdown: Offerings and Donations by Type -->
-        <div class="col-lg-6 mb-4">
+        <div class="col-12 col-lg-6">
             <div class="card border-0 shadow-sm rounded-3 h-100">
                 <div class="card-header report-header-info py-2 rounded-top position-relative">
                     <h6 class="mb-0 fw-semibold text-white position-relative"><i class="fas fa-layer-group me-2"></i>Offering & Donation Types (Approved)</h6>
@@ -121,7 +121,7 @@
                     @if(isset($combinedByType) && count($combinedByType) > 0)
                     <div class="mb-4">
                         <h6 class="text-success mb-3"><i class="fas fa-chart-pie me-2"></i>Combined by Type (Showing Total, Offering, and Donation amounts separately)</h6>
-                        <div class="table-responsive">
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
                             <table class="table table-sm align-middle table-bordered">
                                 <thead class="table-light">
                                     <tr>
@@ -161,11 +161,11 @@
                     <hr>
                     @endif
                     
-                    <div class="row">
-                        <div class="col-md-12 mb-3">
+                    <div class="row g-3">
+                        <div class="col-12 mb-3">
                             <h6 class="text-primary mb-2"><i class="fas fa-gift me-2"></i>Offerings by Type</h6>
                             @if($offeringTypes->count())
-                            <div class="table-responsive">
+                            <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
                                 <table class="table table-sm align-middle">
                                     <thead>
                                         <tr>
@@ -192,7 +192,7 @@
                         <div class="col-md-12">
                             <h6 class="text-info mb-2"><i class="fas fa-heart me-2"></i>Donations by Type</h6>
                             @if($donationTypes->count())
-                            <div class="table-responsive">
+                            <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
                                 <table class="table table-sm align-middle">
                                     <thead>
                                         <tr>
@@ -217,9 +217,9 @@
                             @endif
                         </div>
                     </div>
-                    <div class="mt-3 d-flex gap-2">
-                        <a href="{{ route('reports.department-giving') }}" class="btn btn-success btn-sm"><i class="fas fa-layer-group me-1"></i>Department Giving</a>
-                        <a href="{{ route('reports.offering-fund-breakdown') }}" class="btn btn-warning btn-sm"><i class="fas fa-coins me-1"></i>Fund Breakdown</a>
+                    <div class="mt-3 d-flex flex-wrap gap-2">
+                        <a href="{{ route('reports.department-giving') }}" class="btn btn-success btn-sm"><i class="fas fa-layer-group me-1"></i><span class="d-none d-sm-inline">Department Giving</span><span class="d-sm-none">Dept Giving</span></a>
+                        <a href="{{ route('reports.offering-fund-breakdown') }}" class="btn btn-warning btn-sm"><i class="fas fa-coins me-1"></i><span class="d-none d-sm-inline">Fund Breakdown</span><span class="d-sm-none">Funds</span></a>
                     </div>
                 </div>
             </div>
@@ -235,17 +235,17 @@
                 </div>
                 <div class="card-body">
                     <div class="row g-2">
-                        <div class="col-md-3">
-                            <a href="{{ route('reports.income-vs-expenditure') }}" class="btn btn-outline-primary w-100"><i class="fas fa-balance-scale me-1"></i>Income vs Expenditure</a>
+                        <div class="col-12 col-sm-6 col-md-3">
+                            <a href="{{ route('reports.income-vs-expenditure') }}" class="btn btn-outline-primary w-100"><i class="fas fa-balance-scale me-1"></i><span class="d-none d-md-inline">Income vs Expenditure</span><span class="d-md-none">Income vs Expense</span></a>
                         </div>
-                        <div class="col-md-3">
-                            <a href="{{ route('reports.budget-performance') }}" class="btn btn-outline-secondary w-100"><i class="fas fa-chart-bar me-1"></i>Budget Performance</a>
+                        <div class="col-12 col-sm-6 col-md-3">
+                            <a href="{{ route('reports.budget-performance') }}" class="btn btn-outline-secondary w-100"><i class="fas fa-chart-bar me-1"></i><span class="d-none d-md-inline">Budget Performance</span><span class="d-md-none">Budget</span></a>
                         </div>
-                        <div class="col-md-3">
-                            <a href="{{ route('reports.member-giving') }}" class="btn btn-outline-success w-100"><i class="fas fa-user me-1"></i>Member Giving</a>
+                        <div class="col-12 col-sm-6 col-md-3">
+                            <a href="{{ route('reports.member-giving') }}" class="btn btn-outline-success w-100"><i class="fas fa-user me-1"></i><span class="d-none d-md-inline">Member Giving</span><span class="d-md-none">Member</span></a>
                         </div>
-                        <div class="col-md-3">
-                            <a href="{{ route('reports.department-giving') }}" class="btn btn-outline-info w-100"><i class="fas fa-sitemap me-1"></i>Department Giving</a>
+                        <div class="col-12 col-sm-6 col-md-3">
+                            <a href="{{ route('reports.department-giving') }}" class="btn btn-outline-info w-100"><i class="fas fa-sitemap me-1"></i><span class="d-none d-md-inline">Department Giving</span><span class="d-md-none">Department</span></a>
                         </div>
                     </div>
                     <p class="small text-muted mt-3 mb-0">Period: {{ $start->format('M d, Y') }} - {{ $end->format('M d, Y') }}</p>
@@ -286,6 +286,239 @@
     position: absolute; inset: 0;
     background: rgba(0,0,0,.05);
     border-top-left-radius: .5rem; border-top-right-radius: .5rem;
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+    .container-fluid {
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
+    }
+    
+    /* Header card mobile */
+    .card-body.p-3 {
+        padding: 1rem !important;
+    }
+    
+    .card-body.p-3 h1.h5 {
+        font-size: 1rem !important;
+    }
+    
+    .card-body.p-3 .small {
+        font-size: 0.8rem !important;
+    }
+    
+    .card-body.p-3 .btn-sm {
+        font-size: 0.8rem !important;
+        padding: 0.375rem 0.75rem !important;
+    }
+    
+    /* Icon in header */
+    .card-body.p-3 > div:first-child > div:first-child {
+        width: 40px !important;
+        height: 40px !important;
+        font-size: 18px !important;
+    }
+    
+    /* KPI Cards */
+    .card-body .h5 {
+        font-size: 1.25rem !important;
+    }
+    
+    .card-body .text-xs {
+        font-size: 0.7rem !important;
+    }
+    
+    .card-body small {
+        font-size: 0.75rem !important;
+    }
+    
+    .fa-2x {
+        font-size: 1.5em !important;
+    }
+    
+    /* Card headers */
+    .card-header {
+        padding: 0.75rem !important;
+    }
+    
+    .card-header h6 {
+        font-size: 0.9rem !important;
+    }
+    
+    /* Tables */
+    .table-responsive {
+        font-size: 0.875rem;
+        -webkit-overflow-scrolling: touch;
+        overflow-x: auto;
+        overflow-y: auto;
+    }
+    
+    .table th,
+    .table td {
+        padding: 0.5rem 0.5rem;
+        font-size: 0.875rem;
+        min-width: 80px;
+    }
+    
+    .table th {
+        font-size: 0.8rem;
+        white-space: nowrap;
+        position: sticky;
+        top: 0;
+        background-color: #f8f9fa;
+        z-index: 10;
+    }
+    
+    /* Buttons */
+    .btn-sm {
+        font-size: 0.8rem !important;
+        padding: 0.375rem 0.75rem !important;
+    }
+    
+    /* Section headers in cards */
+    h6.text-success,
+    h6.text-primary,
+    h6.text-info {
+        font-size: 0.85rem !important;
+    }
+}
+
+@media (max-width: 576px) {
+    .container-fluid {
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+    }
+    
+    /* Header card extra small */
+    .card-body.p-3 {
+        padding: 0.75rem !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+    }
+    
+    .card-body.p-3 > div:last-child {
+        width: 100%;
+        margin-top: 0.75rem;
+    }
+    
+    .card-body.p-3 > div:last-child .btn {
+        width: 100%;
+    }
+    
+    .card-body.p-3 h1.h5 {
+        font-size: 0.95rem !important;
+    }
+    
+    .card-body.p-3 .small {
+        font-size: 0.75rem !important;
+    }
+    
+    /* Icon in header */
+    .card-body.p-3 > div:first-child > div:first-child {
+        width: 36px !important;
+        height: 36px !important;
+        font-size: 16px !important;
+    }
+    
+    /* KPI Cards */
+    .card-body {
+        padding: 0.875rem !important;
+    }
+    
+    .card-body .h5 {
+        font-size: 1.1rem !important;
+    }
+    
+    .card-body .text-xs {
+        font-size: 0.65rem !important;
+    }
+    
+    .card-body small {
+        font-size: 0.7rem !important;
+    }
+    
+    .fa-2x {
+        font-size: 1.25em !important;
+    }
+    
+    /* Card headers */
+    .card-header {
+        padding: 0.625rem !important;
+    }
+    
+    .card-header h6 {
+        font-size: 0.85rem !important;
+    }
+    
+    .card-header i {
+        font-size: 0.9rem !important;
+    }
+    
+    /* Tables */
+    .table-responsive {
+        font-size: 0.75rem;
+        max-height: 300px;
+        overflow-x: auto;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .table {
+        font-size: 0.75rem;
+    }
+    
+    .table th,
+    .table td {
+        padding: 0.5rem 0.375rem;
+        font-size: 0.75rem;
+        min-width: 70px;
+    }
+    
+    .table th {
+        font-size: 0.7rem;
+        white-space: nowrap;
+        position: sticky;
+        top: 0;
+        background-color: #f8f9fa;
+        z-index: 10;
+    }
+    
+    .table td {
+        word-break: break-word;
+    }
+    
+    /* Buttons */
+    .btn-sm {
+        font-size: 0.75rem !important;
+        padding: 0.35rem 0.65rem !important;
+    }
+    
+    .btn {
+        font-size: 0.8rem !important;
+    }
+    
+    /* Section headers in cards */
+    h6.text-success,
+    h6.text-primary,
+    h6.text-info {
+        font-size: 0.8rem !important;
+    }
+    
+    /* Button groups */
+    .d-flex.gap-2 {
+        flex-direction: column;
+    }
+    
+    .d-flex.gap-2 .btn {
+        width: 100%;
+    }
+    
+    /* More Reports buttons */
+    .row.g-2 .btn {
+        font-size: 0.75rem !important;
+        padding: 0.5rem 0.75rem !important;
+    }
 }
 </style>
 @endsection

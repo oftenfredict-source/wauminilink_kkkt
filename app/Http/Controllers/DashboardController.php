@@ -13,6 +13,7 @@ use App\Models\Offering;
 use App\Models\Donation;
 use App\Models\Expense;
 use App\Models\Announcement;
+use App\Models\Leader;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -73,6 +74,32 @@ class DashboardController extends Controller
 
         $netIncome = ($monthlyTithes + $monthlyOfferings + $monthlyDonations) - $monthlyExpenses;
 
+        // Get secretary information
+        $secretary = null;
+        $user = Auth::user();
+        if ($user) {
+            // Try to find secretary leader record
+            if ($user->member_id) {
+                $secretary = Leader::with('member')
+                    ->where('member_id', $user->member_id)
+                    ->whereIn('position', ['secretary', 'assistant_secretary'])
+                    ->where('is_active', true)
+                    ->first();
+            }
+            
+            // If no leader record found, try to find by email
+            if (!$secretary && $user->email) {
+                $member = Member::where('email', $user->email)->first();
+                if ($member) {
+                    $secretary = Leader::with('member')
+                        ->where('member_id', $member->id)
+                        ->whereIn('position', ['secretary', 'assistant_secretary'])
+                        ->where('is_active', true)
+                        ->first();
+                }
+            }
+        }
+
         // Calculate family-inclusive demographics
         $familyDemographics = $this->calculateFamilyDemographics();
         
@@ -86,7 +113,9 @@ class DashboardController extends Controller
             'monthlyOfferings',
             'monthlyDonations',
             'monthlyExpenses',
-            'netIncome'
+            'netIncome',
+            'secretary',
+            'user'
         ) + $familyDemographics);
     }
     

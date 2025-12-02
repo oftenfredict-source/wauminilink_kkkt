@@ -13,6 +13,7 @@ class Member extends Model
 
     protected $fillable = [
         'member_id',
+        'biometric_enroll_id',
         'member_type',           // father, mother, independent
         'membership_type',       // permanent, temporary
         'full_name',

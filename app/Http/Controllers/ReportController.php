@@ -417,106 +417,174 @@ class ReportController extends Controller
      */
     public function memberGiving(Request $request)
     {
-        $memberId = $request->get('member_id');
-        $startDate = $request->get('start_date', Carbon::now()->startOfYear());
-        $endDate = $request->get('end_date', Carbon::now()->endOfYear());
-        
-        if (!$memberId) {
-            return view('finance.reports.member-giving', [
-                'members' => Member::orderBy('full_name')->get(),
-                'member' => null,
-                'startDate' => $startDate,
-                'endDate' => $endDate,
-                'totalMembers' => Member::count()
-            ]);
-        }
-        
-        $member = Member::findOrFail($memberId);
-        $members = Member::orderBy('full_name')->get();
-        $totalMembers = Member::count();
-        
-        // Get member's financial data (only approved records)
-        $tithes = Tithe::where('member_id', $memberId)
-            ->where('approval_status', 'approved')
-            ->whereBetween('tithe_date', [$startDate, $endDate])
-            ->orderBy('tithe_date', 'desc')
-            ->get();
+        try {
+            \Log::info('memberGiving method called', ['request_params' => $request->all()]);
             
-        $offerings = Offering::where('member_id', $memberId)
-            ->where('approval_status', 'approved')
-            ->whereBetween('offering_date', [$startDate, $endDate])
-            ->orderBy('offering_date', 'desc')
-            ->get();
+            $memberId = $request->get('member_id');
             
-        $donations = Donation::where('member_id', $memberId)
-            ->where('approval_status', 'approved')
-            ->whereBetween('donation_date', [$startDate, $endDate])
-            ->orderBy('donation_date', 'desc')
-            ->get();
+            // Normalize dates - handle both string and Carbon instances with error handling
+            $startDateInput = $request->get('start_date');
+            $endDateInput = $request->get('end_date');
             
-        $pledges = Pledge::where('member_id', $memberId)
-            ->whereBetween('pledge_date', [$startDate, $endDate])
-            ->orderBy('pledge_date', 'desc')
-            ->get();
-        
-        // Calculate totals
-        $totalTithes = $tithes->sum('amount');
-        $totalOfferings = $offerings->sum('amount');
-        $totalDonations = $donations->sum('amount');
-        $totalPledged = $pledges->sum('pledge_amount');
-        $totalPaid = $pledges->sum('amount_paid');
-        $totalGiving = $totalTithes + $totalOfferings + $totalDonations;
-        
-        // Monthly breakdown
-        $monthlyData = [];
-        $current = Carbon::parse($startDate);
-        $end = Carbon::parse($endDate);
-        
-        while ($current->lte($end)) {
-            $monthStart = $current->copy()->startOfMonth();
-            $monthEnd = $current->copy()->endOfMonth();
+            try {
+                $startDate = $startDateInput ? Carbon::parse($startDateInput)->startOfDay() : Carbon::now()->startOfYear();
+                $endDate = $endDateInput ? Carbon::parse($endDateInput)->endOfDay() : Carbon::now()->endOfYear();
+            } catch (\Exception $e) {
+                \Log::error('Date parsing error in memberGiving: ' . $e->getMessage());
+                $startDate = Carbon::now()->startOfYear();
+                $endDate = Carbon::now()->endOfYear();
+            }
             
-            $monthTithes = Tithe::where('member_id', $memberId)
-                ->whereBetween('tithe_date', [$monthStart, $monthEnd])
-                ->sum('amount');
+            // Ensure start date is before end date
+            if ($startDate->gt($endDate)) {
+                $temp = $startDate;
+                $startDate = $endDate;
+                $endDate = $temp;
+            }
+            
+            if (!$memberId) {
+                \Log::info('No member ID provided, showing member selection');
+                try {
+                    $members = Member::orderBy('full_name')->get();
+                    $totalMembers = Member::count();
+                    
+                    return view('finance.reports.member-giving', [
+                        'members' => $members,
+                        'member' => null,
+                        'startDate' => $startDate,
+                        'endDate' => $endDate,
+                        'totalMembers' => $totalMembers,
+                        'tithes' => collect(),
+                        'offerings' => collect(),
+                        'donations' => collect(),
+                        'pledges' => collect(),
+                        'totalTithes' => 0,
+                        'totalOfferings' => 0,
+                        'totalDonations' => 0,
+                        'totalPledged' => 0,
+                        'totalPaid' => 0,
+                        'totalGiving' => 0,
+                        'monthlyData' => []
+                    ]);
+                } catch (\Exception $e) {
+                    \Log::error('Error rendering view without member: ' . $e->getMessage());
+                    \Log::error('Stack trace: ' . $e->getTraceAsString());
+                    throw $e;
+                }
+            }
+            
+            \Log::info('Fetching member data', ['member_id' => $memberId]);
+            $member = Member::findOrFail($memberId);
+            $members = Member::orderBy('full_name')->get();
+            $totalMembers = Member::count();
+            
+            // Get member's financial data (only approved records)
+            \Log::info('Fetching financial data', ['member_id' => $memberId, 'start_date' => $startDate, 'end_date' => $endDate]);
+            
+            $tithes = Tithe::where('member_id', $memberId)
+                ->where('approval_status', 'approved')
+                ->whereBetween('tithe_date', [$startDate, $endDate])
+                ->orderBy('tithe_date', 'desc')
+                ->get();
                 
-            $monthOfferings = Offering::where('member_id', $memberId)
-                ->whereBetween('offering_date', [$monthStart, $monthEnd])
-                ->sum('amount');
+            $offerings = Offering::where('member_id', $memberId)
+                ->where('approval_status', 'approved')
+                ->whereBetween('offering_date', [$startDate, $endDate])
+                ->orderBy('offering_date', 'desc')
+                ->get();
                 
-            $monthDonations = Donation::where('member_id', $memberId)
-                ->whereBetween('donation_date', [$monthStart, $monthEnd])
-                ->sum('amount');
+            $donations = Donation::where('member_id', $memberId)
+                ->where('approval_status', 'approved')
+                ->whereBetween('donation_date', [$startDate, $endDate])
+                ->orderBy('donation_date', 'desc')
+                ->get();
+                
+            $pledges = Pledge::where('member_id', $memberId)
+                ->whereBetween('pledge_date', [$startDate, $endDate])
+                ->orderBy('pledge_date', 'desc')
+                ->get();
             
-            $monthlyData[] = [
-                'month' => $current->format('M Y'),
-                'tithes' => $monthTithes,
-                'offerings' => $monthOfferings,
-                'donations' => $monthDonations,
-                'total' => $monthTithes + $monthOfferings + $monthDonations
-            ];
+            // Calculate totals
+            $totalTithes = $tithes->sum('amount') ?? 0;
+            $totalOfferings = $offerings->sum('amount') ?? 0;
+            $totalDonations = $donations->sum('amount') ?? 0;
+            $totalPledged = $pledges->sum('pledge_amount') ?? 0;
+            $totalPaid = $pledges->sum('amount_paid') ?? 0;
+            $totalGiving = $totalTithes + $totalOfferings + $totalDonations;
             
-            $current->addMonth();
+            // Monthly breakdown
+            $monthlyData = [];
+            $current = $startDate->copy();
+            $end = $endDate->copy();
+            
+            while ($current->lte($end)) {
+                $monthStart = $current->copy()->startOfMonth();
+                $monthEnd = $current->copy()->endOfMonth();
+                
+                $monthTithes = Tithe::where('member_id', $memberId)
+                    ->where('approval_status', 'approved')
+                    ->whereBetween('tithe_date', [$monthStart, $monthEnd])
+                    ->sum('amount') ?? 0;
+                    
+                $monthOfferings = Offering::where('member_id', $memberId)
+                    ->where('approval_status', 'approved')
+                    ->whereBetween('offering_date', [$monthStart, $monthEnd])
+                    ->sum('amount') ?? 0;
+                    
+                $monthDonations = Donation::where('member_id', $memberId)
+                    ->where('approval_status', 'approved')
+                    ->whereBetween('donation_date', [$monthStart, $monthEnd])
+                    ->sum('amount') ?? 0;
+                
+                $monthlyData[] = [
+                    'month' => $current->format('M Y'),
+                    'tithes' => $monthTithes,
+                    'offerings' => $monthOfferings,
+                    'donations' => $monthDonations,
+                    'total' => $monthTithes + $monthOfferings + $monthDonations
+                ];
+                
+                $current->addMonth();
+            }
+            
+            \Log::info('Rendering view with member data', ['member_id' => $memberId]);
+            
+            return view('finance.reports.member-giving', compact(
+                'member',
+                'members',
+                'totalMembers',
+                'tithes',
+                'offerings',
+                'donations',
+                'pledges',
+                'totalTithes',
+                'totalOfferings',
+                'totalDonations',
+                'totalPledged',
+                'totalPaid',
+                'totalGiving',
+                'monthlyData',
+                'startDate',
+                'endDate'
+            ));
+        } catch (\Exception $e) {
+            \Log::error('Error in memberGiving method: ' . $e->getMessage());
+            \Log::error('Error file: ' . $e->getFile() . ' Line: ' . $e->getLine());
+            \Log::error('Stack trace: ' . $e->getTraceAsString());
+            
+            // Return error response instead of redirect to see the actual error
+            if (config('app.debug')) {
+                return response()->json([
+                    'error' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'trace' => $e->getTraceAsString()
+                ], 500);
+            }
+            
+            return redirect()->route('reports.member-giving')
+                ->with('error', 'An error occurred while generating the report: ' . $e->getMessage());
         }
-        
-        return view('finance.reports.member-giving', compact(
-            'member',
-            'members',
-            'totalMembers',
-            'tithes',
-            'offerings',
-            'donations',
-            'pledges',
-            'totalTithes',
-            'totalOfferings',
-            'totalDonations',
-            'totalPledged',
-            'totalPaid',
-            'totalGiving',
-            'monthlyData',
-            'startDate',
-            'endDate'
-        ));
     }
     
     /**
@@ -1263,6 +1331,23 @@ class ReportController extends Controller
     }
 
     /**
+     * Export report (handles dynamic format: pdf or excel)
+     */
+    public function exportReport(Request $request, $format)
+    {
+        if ($format === 'pdf') {
+            return $this->exportPdf($request);
+        } elseif ($format === 'excel') {
+            return $this->exportExcel($request);
+        }
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Invalid export format. Use pdf or excel.'
+        ], 400);
+    }
+
+    /**
      * Export report to PDF
      */
     public function exportPdf(Request $request)
@@ -1280,7 +1365,8 @@ class ReportController extends Controller
             'department-giving',
             'budget-performance',
             'offering-fund-breakdown',
-            'monthly-financial'
+            'monthly-financial',
+            'weekly-financial'
         ];
 
         if (!$reportType || !in_array($reportType, $validReportTypes)) {
@@ -1328,6 +1414,9 @@ class ReportController extends Controller
             
             case 'monthly-financial':
                 return $this->exportMonthlyFinancialPdf($start, $end);
+            
+            case 'weekly-financial':
+                return $this->exportWeeklyFinancialPdf($start, $end);
             
             default:
                 return response()->json([
@@ -1388,7 +1477,9 @@ class ReportController extends Controller
 
         $netIncome = $totalIncome - $totalExpenses;
 
-        return view('finance.reports.pdf.income-vs-expenditure', [
+        $filename = 'income-vs-expenditure-report-' . ($month ? $month : $start->format('Y-m-d') . '-to-' . $end->format('Y-m-d')) . '.html';
+        
+        return response()->view('finance.reports.pdf.income-vs-expenditure', [
             'reportType' => 'income-vs-expenditure',
             'start' => $start,
             'end' => $end,
@@ -1401,11 +1492,12 @@ class ReportController extends Controller
             'netIncome' => $netIncome,
             'expensesByCategory' => $expensesByCategory,
             'monthlyData' => $monthlyData,
-        ]);
+        ])->header('Content-Type', 'text/html')
+          ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
     }
 
     /**
-     * Export Member Giving PDF (placeholder - to be implemented)
+     * Export Member Giving PDF
      */
     private function exportMemberGivingPdf($request, $start, $end)
     {
@@ -1417,24 +1509,145 @@ class ReportController extends Controller
             ], 400);
         }
 
-        // For now, redirect to the regular view
-        return redirect()->route('reports.member-giving', [
-            'member_id' => $memberId,
-            'start_date' => $start->format('Y-m-d'),
-            'end_date' => $end->format('Y-m-d')
-        ]);
+        $startDate = Carbon::parse($start);
+        $endDate = Carbon::parse($end);
+        
+        $member = Member::findOrFail($memberId);
+        
+        // Get member's financial data (only approved records)
+        $tithes = Tithe::where('member_id', $memberId)
+            ->where('approval_status', 'approved')
+            ->whereBetween('tithe_date', [$startDate, $endDate])
+            ->orderBy('tithe_date', 'desc')
+            ->get();
+            
+        $offerings = Offering::where('member_id', $memberId)
+            ->where('approval_status', 'approved')
+            ->whereBetween('offering_date', [$startDate, $endDate])
+            ->orderBy('offering_date', 'desc')
+            ->get();
+            
+        $donations = Donation::where('member_id', $memberId)
+            ->where('approval_status', 'approved')
+            ->whereBetween('donation_date', [$startDate, $endDate])
+            ->orderBy('donation_date', 'desc')
+            ->get();
+            
+        $pledges = Pledge::where('member_id', $memberId)
+            ->whereBetween('pledge_date', [$startDate, $endDate])
+            ->orderBy('pledge_date', 'desc')
+            ->get();
+        
+        // Calculate totals
+        $totalTithes = $tithes->sum('amount');
+        $totalOfferings = $offerings->sum('amount');
+        $totalDonations = $donations->sum('amount');
+        $totalPledged = $pledges->sum('pledge_amount');
+        $totalPaid = $pledges->sum('amount_paid');
+        $totalGiving = $totalTithes + $totalOfferings + $totalDonations;
+        
+        // Monthly breakdown
+        $monthlyData = [];
+        $current = Carbon::parse($startDate);
+        $end = Carbon::parse($endDate);
+        
+        while ($current->lte($end)) {
+            $monthStart = $current->copy()->startOfMonth();
+            $monthEnd = $current->copy()->endOfMonth();
+            
+            $monthTithes = Tithe::where('member_id', $memberId)
+                ->where('approval_status', 'approved')
+                ->whereBetween('tithe_date', [$monthStart, $monthEnd])
+                ->sum('amount');
+                
+            $monthOfferings = Offering::where('member_id', $memberId)
+                ->where('approval_status', 'approved')
+                ->whereBetween('offering_date', [$monthStart, $monthEnd])
+                ->sum('amount');
+                
+            $monthDonations = Donation::where('member_id', $memberId)
+                ->where('approval_status', 'approved')
+                ->whereBetween('donation_date', [$monthStart, $monthEnd])
+                ->sum('amount');
+            
+            $monthlyData[] = [
+                'month' => $current->format('M Y'),
+                'tithes' => $monthTithes,
+                'offerings' => $monthOfferings,
+                'donations' => $monthDonations,
+                'total' => $monthTithes + $monthOfferings + $monthDonations
+            ];
+            
+            $current->addMonth();
+        }
+        
+        $filename = 'member-giving-report-' . $member->member_id . '-' . $startDate->format('Y-m-d') . '-to-' . $endDate->format('Y-m-d') . '.html';
+        
+        return response()->view('finance.reports.pdf.member-giving', compact(
+            'member',
+            'tithes',
+            'offerings',
+            'donations',
+            'pledges',
+            'totalTithes',
+            'totalOfferings',
+            'totalDonations',
+            'totalPledged',
+            'totalPaid',
+            'totalGiving',
+            'monthlyData',
+            'startDate',
+            'endDate'
+        ))->header('Content-Type', 'text/html')
+          ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
     }
 
     /**
-     * Export Department Giving PDF (placeholder - to be implemented)
+     * Export Department Giving PDF
      */
     private function exportDepartmentGivingPdf($start, $end)
     {
-        // For now, redirect to the regular view
-        return redirect()->route('reports.department-giving', [
-            'start_date' => $start->format('Y-m-d'),
-            'end_date' => $end->format('Y-m-d')
-        ]);
+        $startDate = Carbon::parse($start);
+        $endDate = Carbon::parse($end);
+        
+        // Get combined data by purpose (combines pledges, offerings, and donations)
+        $combinedByPurpose = $this->getCombinedByPurpose($startDate, $endDate);
+        
+        // Also get individual breakdowns for reference
+        $offeringTypes = Offering::whereBetween('offering_date', [$startDate, $endDate])
+            ->where('approval_status', 'approved')
+            ->select('offering_type', DB::raw('SUM(amount) as total_amount'), DB::raw('COUNT(*) as transaction_count'))
+            ->groupBy('offering_type')
+            ->orderBy('total_amount', 'desc')
+            ->get();
+        
+        $donationTypes = Donation::whereBetween('donation_date', [$startDate, $endDate])
+            ->where('approval_status', 'approved')
+            ->select('donation_type', DB::raw('SUM(amount) as total_amount'), DB::raw('COUNT(*) as transaction_count'))
+            ->groupBy('donation_type')
+            ->orderBy('total_amount', 'desc')
+            ->get();
+        
+        $pledgeTypes = Pledge::whereBetween('pledge_date', [$startDate, $endDate])
+            ->select('pledge_type', 
+                DB::raw('SUM(pledge_amount) as total_pledged'), 
+                DB::raw('SUM(amount_paid) as total_paid'),
+                DB::raw('COUNT(*) as pledge_count'))
+            ->groupBy('pledge_type')
+            ->orderBy('total_pledged', 'desc')
+            ->get();
+        
+        $filename = 'department-giving-report-' . $startDate->format('Y-m-d') . '-to-' . $endDate->format('Y-m-d') . '.html';
+        
+        return response()->view('finance.reports.pdf.department-giving', compact(
+            'combinedByPurpose',
+            'offeringTypes',
+            'donationTypes',
+            'pledgeTypes',
+            'startDate',
+            'endDate'
+        ))->header('Content-Type', 'text/html')
+          ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
     }
 
     /**
@@ -1580,7 +1793,9 @@ class ReportController extends Controller
             ->limit(20)
             ->get();
 
-        return view('finance.reports.pdf.monthly-financial', compact(
+        $filename = 'monthly-financial-report-' . $month . '.html';
+        
+        return response()->view('finance.reports.pdf.monthly-financial', compact(
             'start',
             'end',
             'month',
@@ -1601,7 +1816,144 @@ class ReportController extends Controller
             'netIncome',
             'dailyData',
             'topContributors'
-        ));
+        ))->header('Content-Type', 'text/html')
+          ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+    }
+
+    /**
+     * Export Weekly Financial Report PDF
+     */
+    private function exportWeeklyFinancialPdf($start, $end)
+    {
+        // Calculate week start and end from the provided dates
+        $startDate = Carbon::parse($start)->startOfWeek();
+        $endDate = $startDate->copy()->endOfWeek();
+        
+        // Income Sources
+        $tithes = Tithe::whereBetween('tithe_date', [$startDate, $endDate])
+            ->where('approval_status', 'approved')
+            ->get();
+        $totalTithes = $tithes->sum('amount');
+        $tithesCount = $tithes->count();
+
+        $offerings = Offering::whereBetween('offering_date', [$startDate, $endDate])
+            ->where('approval_status', 'approved')
+            ->get();
+        $totalOfferings = $offerings->sum('amount');
+        $offeringsCount = $offerings->count();
+        $offeringsByType = $offerings->groupBy('offering_type')
+            ->map(function ($group) {
+                return [
+                    'total' => $group->sum('amount'),
+                    'count' => $group->count()
+                ];
+            })
+            ->sortByDesc('total');
+
+        $donations = Donation::whereBetween('donation_date', [$startDate, $endDate])
+            ->where('approval_status', 'approved')
+            ->get();
+        $totalDonations = $donations->sum('amount');
+        $donationsCount = $donations->count();
+        $donationsByType = $donations->groupBy('donation_type')
+            ->map(function ($group) {
+                return [
+                    'total' => $group->sum('amount'),
+                    'count' => $group->count()
+                ];
+            })
+            ->sortByDesc('total');
+
+        $pledgePayments = Pledge::whereBetween('updated_at', [$startDate, $endDate])
+            ->where('amount_paid', '>', 0)
+            ->get();
+        $totalPledgePayments = $pledgePayments->sum('amount_paid');
+        $pledgePaymentsCount = $pledgePayments->count();
+
+        $totalIncome = $totalTithes + $totalOfferings + $totalDonations + $totalPledgePayments;
+
+        // Expenses
+        $expenses = Expense::whereBetween('expense_date', [$startDate, $endDate])
+            ->where('status', 'paid')
+            ->get();
+        $totalExpenses = $expenses->sum('amount');
+        $expensesCount = $expenses->count();
+        $expensesByCategory = $expenses->groupBy('expense_category')
+            ->map(function ($group) {
+                return [
+                    'total' => $group->sum('amount'),
+                    'count' => $group->count()
+                ];
+            })
+            ->sortByDesc('total');
+
+        $netIncome = $totalIncome - $totalExpenses;
+
+        // Daily breakdown for the week
+        $dailyData = [];
+        $current = $startDate->copy();
+        while ($current->lte($endDate)) {
+            $dayTithes = Tithe::whereDate('tithe_date', $current->format('Y-m-d'))
+                ->where('approval_status', 'approved')
+                ->sum('amount');
+            $dayOfferings = Offering::whereDate('offering_date', $current->format('Y-m-d'))
+                ->where('approval_status', 'approved')
+                ->sum('amount');
+            $dayDonations = Donation::whereDate('donation_date', $current->format('Y-m-d'))
+                ->where('approval_status', 'approved')
+                ->sum('amount');
+            $dayExpenses = Expense::whereDate('expense_date', $current->format('Y-m-d'))
+                ->where('status', 'paid')
+                ->sum('amount');
+            
+            $dailyData[] = [
+                'date' => $current->format('d M Y'),
+                'day' => $current->format('D'),
+                'income' => $dayTithes + $dayOfferings + $dayDonations,
+                'expenses' => $dayExpenses,
+                'net' => ($dayTithes + $dayOfferings + $dayDonations) - $dayExpenses
+            ];
+            $current->addDay();
+        }
+
+        // Top contributors for the week
+        $topContributors = Member::select('members.id', 'members.full_name', 'members.member_id',
+                DB::raw('(
+                    COALESCE((SELECT SUM(amount) FROM tithes WHERE tithes.member_id = members.id AND tithes.approval_status = "approved" AND tithes.tithe_date BETWEEN "' . $startDate->format('Y-m-d') . '" AND "' . $endDate->format('Y-m-d') . '"), 0)
+                    + COALESCE((SELECT SUM(amount) FROM offerings WHERE offerings.member_id = members.id AND offerings.approval_status = "approved" AND offerings.offering_date BETWEEN "' . $startDate->format('Y-m-d') . '" AND "' . $endDate->format('Y-m-d') . '"), 0)
+                    + COALESCE((SELECT SUM(amount) FROM donations WHERE donations.member_id = members.id AND donations.approval_status = "approved" AND donations.donation_date BETWEEN "' . $startDate->format('Y-m-d') . '" AND "' . $endDate->format('Y-m-d') . '"), 0)
+                ) as total_giving')
+            )
+            ->having('total_giving', '>', 0)
+            ->orderByDesc('total_giving')
+            ->limit(20)
+            ->get();
+
+        // Use PDF-specific view (without sidebar/topbar)
+        $filename = 'weekly-financial-report-' . $startDate->format('Y-m-d') . '-to-' . $endDate->format('Y-m-d') . '.html';
+        
+        return response()->view('finance.reports.pdf.weekly-financial', compact(
+            'startDate',
+            'endDate',
+            'totalTithes',
+            'tithesCount',
+            'totalOfferings',
+            'offeringsCount',
+            'offeringsByType',
+            'totalDonations',
+            'donationsCount',
+            'donationsByType',
+            'totalPledgePayments',
+            'pledgePaymentsCount',
+            'totalIncome',
+            'totalExpenses',
+            'expensesCount',
+            'expensesByCategory',
+            'netIncome',
+            'dailyData',
+            'topContributors'
+        ))->header('Content-Type', 'text/html')
+          ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
     }
 
     /**
@@ -1940,12 +2292,12 @@ class ReportController extends Controller
         $totalPaid = $pledges->sum('amount_paid');
         $totalGiving = $totalTithes + $totalOfferings + $totalDonations;
         
-        // Church information
+        // Church information (used in member receipt header)
         $churchInfo = [
-            'name' => 'Waumini Link Ministry',
-            'address' => 'Dar es Salaam, Tanzania',
-            'phone' => '+255 XXX XXX XXX',
-            'email' => 'info@wauminilink.org',
+            'name'    => 'AIC Moshi Kilimanjaro',
+            'address' => 'P.O. Box 8765, Moshi, Kilimanjaro, Tanzania',
+            'phone'   => '+255 756 330 509',
+            'email'   => 'info@wauminilink.org',
             'website' => 'www.wauminilink.org'
         ];
         

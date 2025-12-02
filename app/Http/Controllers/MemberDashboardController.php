@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage;
 use App\Models\Member;
 use App\Models\Tithe;
 use App\Models\Offering;
@@ -75,7 +76,7 @@ class MemberDashboardController extends Controller
         // Get leadership data
         $leadershipData = $this->getLeadershipData($member);
 
-        return view('members.dashboard', compact('memberInfo', 'financialSummary', 'announcements', 'unreadCount', 'leadershipData'));
+        return view('members.dashboard', compact('member', 'memberInfo', 'financialSummary', 'announcements', 'unreadCount', 'leadershipData'));
     }
 
     /**
@@ -466,6 +467,97 @@ class MemberDashboardController extends Controller
 
         return redirect()->route('member.change-password')
             ->with('success', 'Password changed successfully!');
+    }
+
+    /**
+     * Show member settings page
+     */
+    public function settings()
+    {
+        $user = Auth::user();
+        
+        if (!$user->isMember() || !$user->member_id) {
+            return redirect()->route('member.dashboard')->withErrors(['error' => 'Unauthorized access.']);
+        }
+
+        $member = $user->member;
+        
+        return view('members.settings', compact('member', 'user'));
+    }
+
+    /**
+     * Update member profile (photo, phone, email)
+     */
+    public function updateProfile(Request $request)
+    {
+        $user = Auth::user();
+        
+        if (!$user->isMember() || !$user->member_id) {
+            return redirect()->route('member.dashboard')->withErrors(['error' => 'Unauthorized access.']);
+        }
+
+        $member = $user->member;
+
+        $validator = Validator::make($request->all(), [
+            'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'phone_number' => 'nullable|string|max:20',
+            'email' => 'nullable|email|max:255|unique:members,email,' . $member->id,
+        ], [
+            'profile_picture.image' => 'The profile picture must be an image.',
+            'profile_picture.mimes' => 'The profile picture must be a JPEG, PNG, or JPG file.',
+            'profile_picture.max' => 'The profile picture must not be larger than 2MB.',
+            'phone_number.max' => 'Phone number must not exceed 20 characters.',
+            'email.email' => 'Please enter a valid email address.',
+            'email.unique' => 'This email address is already in use by another member.',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator)->withInput();
+        }
+
+        $updated = false;
+
+        // Handle profile picture upload
+        if ($request->hasFile('profile_picture')) {
+            $file = $request->file('profile_picture');
+            
+            // Delete old profile picture if exists
+            if ($member->profile_picture && Storage::disk('public')->exists($member->profile_picture)) {
+                Storage::disk('public')->delete($member->profile_picture);
+            }
+            
+            // Store new profile picture
+            $profilePicturePath = $file->store('members/profile-pictures', 'public');
+            $member->profile_picture = $profilePicturePath;
+            $updated = true;
+        }
+
+        // Update phone number if provided
+        if ($request->filled('phone_number') && $request->phone_number !== $member->phone_number) {
+            $member->phone_number = $request->phone_number;
+            $updated = true;
+        }
+
+        // Update email if provided
+        if ($request->filled('email') && $request->email !== $member->email) {
+            $member->email = $request->email;
+            $updated = true;
+        }
+
+        if ($updated) {
+            $member->save();
+            
+            \Log::info('Member profile updated', [
+                'user_id' => $user->id,
+                'member_id' => $member->id,
+            ]);
+
+            return redirect()->route('member.settings')
+                ->with('success', 'Profile updated successfully!');
+        }
+
+        return redirect()->route('member.settings')
+            ->with('info', 'No changes were made.');
     }
 }
 

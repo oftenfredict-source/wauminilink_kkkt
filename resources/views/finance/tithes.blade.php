@@ -34,62 +34,104 @@
 @endif
 
 <div class="container-fluid px-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="mt-4"><i class="fas fa-coins me-2"></i>Tithes Management</h1>
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTitheModal">
-            <i class="fas fa-plus me-1"></i>Add Tithe
-        </button>
+    <!-- Page Title and Quick Actions - Compact Collapsible -->
+    <div class="card border-0 shadow-sm mb-3 actions-card">
+        <div class="card-header bg-white border-bottom p-2 px-3 d-flex align-items-center justify-content-between actions-header" onclick="toggleActions()">
+            <div class="d-flex align-items-center gap-2">
+                <h1 class="mb-0 mt-2" style="font-size: 1.5rem;"><i class="fas fa-coins me-2"></i>Tithes Management</h1>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <i class="fas fa-chevron-down text-muted d-md-none" id="actionsToggleIcon"></i>
+            </div>
+        </div>
+        <div class="card-body p-3" id="actionsBody">
+            <div class="d-flex flex-wrap gap-2">
+                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addTitheModal">
+                    <i class="fas fa-plus me-1"></i>
+                    <span class="d-none d-sm-inline">Add Tithe</span>
+                    <span class="d-sm-none">Add</span>
+                </button>
+            </div>
+        </div>
     </div>
 
-    <!-- Filters -->
-    <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
-            <i class="fas fa-filter me-1"></i><strong>Filters</strong>
-        </div>
-        <div class="card-body">
-            <form method="GET" action="{{ route('finance.tithes') }}">
-                <div class="row g-3">
-                        <div class="col-md-3">
-                            <label for="member_id" class="form-label">Member</label>
-                            <select class="form-select select2-member" id="member_id" name="member_id">
-                                <option value="">All Members</option>
-                                @foreach($members as $member)
-                                    <option value="{{ $member->id }}" {{ request('member_id') == $member->id ? 'selected' : '' }}>
-                                        {{ $member->full_name }} ({{ $member->member_id }})
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                    <div class="col-md-2">
-                        <label for="date_from" class="form-label">From Date</label>
-                        <input type="date" class="form-control" id="date_from" name="date_from" value="{{ request('date_from') }}">
-                    </div>
-                    <div class="col-md-2">
-                        <label for="date_to" class="form-label">To Date</label>
-                        <input type="date" class="form-control" id="date_to" name="date_to" value="{{ request('date_to') }}">
-                    </div>
-                    <div class="col-md-2">
-                        <label for="payment_method" class="form-label">Payment Method</label>
-                        <select class="form-select" id="payment_method" name="payment_method">
-                            <option value="">All Methods</option>
-                            <option value="cash" {{ request('payment_method') == 'cash' ? 'selected' : '' }}>Cash</option>
-                            <option value="check" {{ request('payment_method') == 'check' ? 'selected' : '' }}>Check</option>
-                            <option value="bank_transfer" {{ request('payment_method') == 'bank_transfer' ? 'selected' : '' }}>Bank Transfer</option>
-                            <option value="mobile_money" {{ request('payment_method') == 'mobile_money' ? 'selected' : '' }}>Mobile Money</option>
-                        </select>
-                    </div>
-                    <div class="col-md-3 d-flex align-items-end">
-                        <button type="submit" class="btn btn-primary me-2">
-                            <i class="fas fa-search me-1"></i>Filter
-                        </button>
-                        <a href="{{ route('finance.tithes') }}" class="btn btn-outline-secondary">
-                            <i class="fas fa-times me-1"></i>Clear
-                        </a>
-                    </div>
+    <!-- Filters & Search - Collapsible on Mobile -->
+    <form method="GET" action="{{ route('finance.tithes') }}" class="card mb-4 border-0 shadow-sm" id="filtersForm">
+        <!-- Filter Header -->
+        <div class="card-header bg-primary text-white p-2 px-3 filter-header" onclick="toggleFilters()">
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fas fa-filter me-1"></i>
+                    <span class="fw-semibold">Filters</span>
+                    @if(request('member_id') || request('date_from') || request('date_to') || request('payment_method'))
+                        <span class="badge bg-white text-primary rounded-pill ms-2" id="activeFiltersCount">{{ (request('member_id') ? 1 : 0) + (request('date_from') ? 1 : 0) + (request('date_to') ? 1 : 0) + (request('payment_method') ? 1 : 0) }}</span>
+                    @endif
                 </div>
-            </form>
+                <i class="fas fa-chevron-down text-white d-md-none" id="filterToggleIcon"></i>
+            </div>
         </div>
-    </div>
+        
+        <!-- Filter Body - Collapsible on Mobile -->
+        <div class="card-body p-3" id="filterBody">
+            <div class="row g-2 mb-2">
+                <!-- Member - Full Width on Mobile -->
+                <div class="col-12 col-md-3">
+                    <label for="member_id" class="form-label small text-muted mb-1">
+                        <i class="fas fa-user me-1 text-primary"></i>Member
+                    </label>
+                    <select class="form-select form-select-sm select2-member" id="member_id" name="member_id">
+                        <option value="">All Members</option>
+                        @foreach($members as $member)
+                            <option value="{{ $member->id }}" {{ request('member_id') == $member->id ? 'selected' : '' }}>
+                                {{ $member->full_name }} ({{ $member->member_id }})
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                
+                <!-- Date Range - Side by Side on Mobile -->
+                <div class="col-6 col-md-2">
+                    <label for="date_from" class="form-label small text-muted mb-1">
+                        <i class="fas fa-calendar me-1 text-info"></i>From Date
+                    </label>
+                    <input type="date" class="form-control form-control-sm" id="date_from" name="date_from" value="{{ request('date_from') }}">
+                </div>
+                <div class="col-6 col-md-2">
+                    <label for="date_to" class="form-label small text-muted mb-1">
+                        <i class="fas fa-calendar-check me-1 text-info"></i>To Date
+                    </label>
+                    <input type="date" class="form-control form-control-sm" id="date_to" name="date_to" value="{{ request('date_to') }}">
+                </div>
+                
+                <!-- Payment Method - Full Width on Mobile -->
+                <div class="col-12 col-md-2">
+                    <label for="payment_method" class="form-label small text-muted mb-1">
+                        <i class="fas fa-credit-card me-1 text-success"></i>Payment Method
+                    </label>
+                    <select class="form-select form-select-sm" id="payment_method" name="payment_method">
+                        <option value="">All Methods</option>
+                        <option value="cash" {{ request('payment_method') == 'cash' ? 'selected' : '' }}>Cash</option>
+                        <option value="check" {{ request('payment_method') == 'check' ? 'selected' : '' }}>Check</option>
+                        <option value="bank_transfer" {{ request('payment_method') == 'bank_transfer' ? 'selected' : '' }}>Bank Transfer</option>
+                        <option value="mobile_money" {{ request('payment_method') == 'mobile_money' ? 'selected' : '' }}>Mobile Money</option>
+                    </select>
+                </div>
+                
+                <!-- Action Buttons - Full Width on Mobile -->
+                <div class="col-12 col-md-3 d-flex gap-2 align-items-end">
+                    <button type="submit" class="btn btn-primary btn-sm flex-fill">
+                        <i class="fas fa-search me-1"></i>
+                        <span class="d-none d-sm-inline">Filter</span>
+                        <span class="d-sm-none">Apply</span>
+                    </button>
+                    <a href="{{ route('finance.tithes') }}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-times me-1"></i>
+                        <span class="d-none d-sm-inline">Clear</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </form>
 
     <!-- Tithes Table -->
     <div class="card mb-4">
@@ -113,14 +155,15 @@
                     <table class="table table-bordered table-striped table-hover">
                         <thead>
                             <tr>
-                                <th>Member</th>
+                                <th class="d-none d-md-table-cell">Member</th>
+                                <th class="d-table-cell d-md-none">Tithe</th>
                                 <th>Amount</th>
                                 <th>Date</th>
-                                <th>Payment Method</th>
-                                <th>Reference</th>
+                                <th class="d-none d-lg-table-cell">Payment Method</th>
+                                <th class="d-none d-xl-table-cell">Reference</th>
                                 <th>Status</th>
-                                <th>Recorded By</th>
-                                <th>Actions</th>
+                                <th class="d-none d-lg-table-cell">Recorded By</th>
+                                <th class="text-end">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -133,7 +176,20 @@
                                             </div>
                                             <div>
                                                 <div class="fw-bold">{{ $tithe->member ? $tithe->member->full_name : 'Unknown Member' }}</div>
-                                                <small class="text-muted">{{ $tithe->member ? $tithe->member->member_id : ($tithe->member_id ? 'ID: ' . $tithe->member_id : 'N/A') }}</small>
+                                                <small class="text-muted d-none d-md-inline">{{ $tithe->member ? $tithe->member->member_id : ($tithe->member_id ? 'ID: ' . $tithe->member_id : 'N/A') }}</small>
+                                                <div class="d-md-none">
+                                                    <small class="text-muted d-block">
+                                                        <i class="fas fa-credit-card me-1"></i>
+                                                        <span class="badge bg-{{ $tithe->payment_method == 'cash' ? 'success' : ($tithe->payment_method == 'bank_transfer' ? 'info' : 'warning') }} badge-sm">
+                                                            {{ ucfirst(str_replace('_', ' ', $tithe->payment_method)) }}
+                                                        </span>
+                                                    </small>
+                                                    @if($tithe->reference_number)
+                                                        <small class="text-muted d-block">
+                                                            <i class="fas fa-hashtag me-1"></i>{{ $tithe->reference_number }}
+                                                        </small>
+                                                    @endif
+                                                </div>
                                             </div>
                                         </div>
                                     </td>
@@ -141,12 +197,12 @@
                                         <span class="fw-bold text-primary">TZS {{ number_format($tithe->amount, 0) }}</span>
                                     </td>
                                     <td>{{ $tithe->tithe_date->format('M d, Y') }}</td>
-                                    <td>
+                                    <td class="d-none d-lg-table-cell">
                                         <span class="badge bg-{{ $tithe->payment_method == 'cash' ? 'success' : ($tithe->payment_method == 'bank_transfer' ? 'info' : 'warning') }}">
                                             {{ ucfirst(str_replace('_', ' ', $tithe->payment_method)) }}
                                         </span>
                                     </td>
-                                    <td>{{ $tithe->reference_number ?? 'N/A' }}</td>
+                                    <td class="d-none d-xl-table-cell">{{ $tithe->reference_number ?? 'N/A' }}</td>
                                     <td>
                                         @if($tithe->approval_status == 'approved')
                                             <span class="badge bg-success">
@@ -158,15 +214,16 @@
                                             </span>
                                         @else
                                             <span class="badge bg-warning">
-                                                <i class="fas fa-clock me-1"></i>Pending Approval
+                                                <i class="fas fa-clock me-1"></i>Pending
                                             </span>
                                         @endif
                                     </td>
-                                    <td>{{ $tithe->recorded_by ?? 'System' }}</td>
-                                    <td>
+                                    <td class="d-none d-lg-table-cell">{{ $tithe->recorded_by ?? 'System' }}</td>
+                                    <td class="text-end">
                                         <div class="btn-group btn-group-sm" role="group">
-                                            <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#viewTitheModal{{ $tithe->id }}">
+                                            <button type="button" class="btn btn-outline-primary text-white" data-bs-toggle="modal" data-bs-target="#viewTitheModal{{ $tithe->id }}" title="View Details">
                                                 <i class="fas fa-eye"></i>
+                                                <span class="d-none d-sm-inline ms-1">View</span>
                                             </button>
                                         </div>
                                     </td>
@@ -381,8 +438,127 @@
 @endforeach
 
 <script>
+// Toggle Actions Function
+function toggleActions() {
+    // Only toggle on mobile devices
+    if (window.innerWidth > 768) {
+        return; // Don't toggle on desktop
+    }
+    
+    const actionsBody = document.getElementById('actionsBody');
+    const actionsIcon = document.getElementById('actionsToggleIcon');
+    
+    if (!actionsBody || !actionsIcon) return;
+    
+    // Check computed style to see if it's visible
+    const computedStyle = window.getComputedStyle(actionsBody);
+    const isVisible = computedStyle.display !== 'none';
+    
+    if (isVisible) {
+        actionsBody.style.display = 'none';
+        actionsIcon.classList.remove('fa-chevron-up');
+        actionsIcon.classList.add('fa-chevron-down');
+    } else {
+        actionsBody.style.display = 'block';
+        actionsIcon.classList.remove('fa-chevron-down');
+        actionsIcon.classList.add('fa-chevron-up');
+    }
+}
+
+// Toggle Filters Function
+function toggleFilters() {
+    // Only toggle on mobile devices
+    if (window.innerWidth > 768) {
+        return; // Don't toggle on desktop
+    }
+    
+    const filterBody = document.getElementById('filterBody');
+    const filterIcon = document.getElementById('filterToggleIcon');
+    const filterHeader = document.querySelector('.filter-header');
+    
+    if (!filterBody || !filterIcon) return;
+    
+    // Check computed style to see if it's visible
+    const computedStyle = window.getComputedStyle(filterBody);
+    const isVisible = computedStyle.display !== 'none';
+    
+    if (isVisible) {
+        filterBody.style.display = 'none';
+        filterIcon.classList.remove('fa-chevron-up');
+        filterIcon.classList.add('fa-chevron-down');
+        if (filterHeader) filterHeader.classList.remove('active');
+    } else {
+        filterBody.style.display = 'block';
+        filterIcon.classList.remove('fa-chevron-down');
+        filterIcon.classList.add('fa-chevron-up');
+        if (filterHeader) filterHeader.classList.add('active');
+    }
+}
+
+// Handle window resize
+window.addEventListener('resize', function() {
+    const actionsBody = document.getElementById('actionsBody');
+    const actionsIcon = document.getElementById('actionsToggleIcon');
+    const filterBody = document.getElementById('filterBody');
+    const filterIcon = document.getElementById('filterToggleIcon');
+    
+    if (window.innerWidth > 768) {
+        // Always show on desktop
+        if (actionsBody && actionsIcon) {
+            actionsBody.style.display = 'block';
+            actionsIcon.style.display = 'none';
+        }
+        if (filterBody && filterIcon) {
+            filterBody.style.display = 'block';
+            filterIcon.style.display = 'none';
+        }
+    } else {
+        // On mobile, show chevrons
+        if (actionsIcon) actionsIcon.style.display = 'block';
+        if (filterIcon) filterIcon.style.display = 'block';
+    }
+});
+
 // Initialize Select2 using DOMContentLoaded so jQuery isn't required at registration time
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize actions and filters
+    const actionsBody = document.getElementById('actionsBody');
+    const actionsIcon = document.getElementById('actionsToggleIcon');
+    const filterBody = document.getElementById('filterBody');
+    const filterIcon = document.getElementById('filterToggleIcon');
+    
+    if (window.innerWidth <= 768) {
+        // Mobile: start collapsed
+        if (actionsBody && actionsIcon) {
+            actionsBody.style.display = 'none';
+            actionsIcon.classList.remove('fa-chevron-up');
+            actionsIcon.classList.add('fa-chevron-down');
+        }
+        if (filterBody && filterIcon) {
+            filterBody.style.display = 'none';
+            filterIcon.classList.remove('fa-chevron-up');
+            filterIcon.classList.add('fa-chevron-down');
+        }
+    } else {
+        // Desktop: always show
+        if (actionsBody && actionsIcon) {
+            actionsBody.style.display = 'block';
+            actionsIcon.style.display = 'none';
+        }
+        if (filterBody && filterIcon) {
+            filterBody.style.display = 'block';
+            filterIcon.style.display = 'none';
+        }
+    }
+    
+    // Show filters if any are active
+    @if(request('member_id') || request('date_from') || request('date_to') || request('payment_method'))
+        if (window.innerWidth <= 768 && filterBody && filterIcon) {
+            toggleFilters(); // Expand if filters are active
+            const filterHeader = document.querySelector('.filter-header');
+            if (filterHeader) filterHeader.classList.add('active');
+        }
+    @endif
     function initSelect2Now() {
         if (window.jQuery && jQuery.fn && typeof jQuery.fn.select2 === 'function') {
             // Filter dropdown at top
@@ -646,6 +822,151 @@ document.addEventListener('DOMContentLoaded', function() {
             width: 40px;
             height: 40px;
             font-size: 20px;
+        }
+        
+        .container-fluid {
+            padding-left: 0.5rem !important;
+            padding-right: 0.5rem !important;
+        }
+        
+        /* Actions Card */
+        .actions-card {
+            transition: all 0.3s ease;
+        }
+        .actions-card .card-header {
+            user-select: none;
+            transition: background-color 0.2s ease;
+        }
+        .actions-card .card-header:hover {
+            background-color: #f8f9fa !important;
+        }
+        #actionsBody {
+            transition: all 0.3s ease;
+            display: none;
+        }
+        .actions-header {
+            cursor: pointer !important;
+        }
+        #actionsToggleIcon {
+            display: block !important;
+        }
+        
+        /* Filter Section */
+        #filtersForm .card-header {
+            transition: all 0.2s ease;
+        }
+        .filter-header:hover {
+            opacity: 0.9;
+        }
+        #filterBody {
+            transition: all 0.3s ease;
+            display: none;
+            background: #fafbfc;
+        }
+        .filter-header {
+            cursor: pointer !important;
+        }
+        #filterToggleIcon {
+            display: block !important;
+            transition: transform 0.3s ease;
+        }
+        .filter-header.active #filterToggleIcon {
+            transform: rotate(180deg);
+        }
+        #filtersForm .card-body {
+            padding: 0.75rem 0.5rem !important;
+        }
+        #filtersForm .form-label {
+            font-size: 0.7rem !important;
+            margin-bottom: 0.2rem !important;
+            font-weight: 600 !important;
+        }
+        #filtersForm .form-control,
+        #filtersForm .form-select {
+            font-size: 0.8125rem !important;
+            padding: 0.4rem 0.5rem !important;
+            border-radius: 6px !important;
+        }
+        #filtersForm .btn-sm {
+            padding: 0.4rem 0.75rem !important;
+            font-size: 0.8125rem !important;
+            border-radius: 6px !important;
+            font-weight: 600 !important;
+        }
+        #filtersForm .row.g-2 > [class*="col-"] {
+            padding-left: 0.375rem !important;
+            padding-right: 0.375rem !important;
+            margin-bottom: 0.5rem !important;
+        }
+        #filtersForm .row.g-2 {
+            margin-left: -0.375rem !important;
+            margin-right: -0.375rem !important;
+        }
+        
+        /* Table Responsive */
+        .table {
+            font-size: 0.75rem;
+        }
+        .table th,
+        .table td {
+            padding: 0.5rem 0.25rem;
+        }
+        
+        /* Buttons - Icon Only on Mobile */
+        .btn-group .btn {
+            padding: 0.375rem 0.5rem !important;
+        }
+        .btn-group .btn i {
+            margin: 0 !important;
+        }
+        
+        /* Modal Full Screen on Mobile */
+        @media (max-width: 576px) {
+            .modal-dialog {
+                margin: 0;
+                max-width: 100%;
+                height: 100vh;
+            }
+            .modal-content {
+                height: 100vh;
+                border-radius: 0 !important;
+            }
+            #filtersForm .card-body {
+                padding: 0.5rem 0.375rem !important;
+            }
+            #filtersForm .form-label {
+                font-size: 0.65rem !important;
+            }
+            #filtersForm .form-control,
+            #filtersForm .form-select {
+                font-size: 0.75rem !important;
+                padding: 0.35rem 0.45rem !important;
+            }
+        }
+    }
+    
+    /* Desktop: Always show actions and filters */
+    @media (min-width: 769px) {
+        .actions-header {
+            cursor: default !important;
+            pointer-events: none !important;
+        }
+        .actions-header .fa-chevron-down {
+            display: none !important;
+        }
+        #actionsBody {
+            display: block !important;
+        }
+        
+        .filter-header {
+            cursor: default !important;
+            pointer-events: none !important;
+        }
+        .filter-header .fa-chevron-down {
+            display: none !important;
+        }
+        #filterBody {
+            display: block !important;
         }
     }
 </style>

@@ -96,34 +96,244 @@
         #layoutSidenav_content { flex: 1; }
         .sb-nav-fixed #layoutSidenav #layoutSidenav_nav { position: fixed; top: 56px; left: 0; width: 225px; height: calc(100vh - 56px); z-index: 1039; }
         .sb-nav-fixed #layoutSidenav #layoutSidenav_content { padding-left: 225px; }
+        
+        /* Mobile Responsive Styles */
+        @media (max-width: 768px) {
+            .container-fluid {
+                padding-left: 0.5rem !important;
+                padding-right: 0.5rem !important;
+            }
+            
+            /* Actions Card */
+            .actions-card {
+                transition: all 0.3s ease;
+            }
+            .actions-card .card-header {
+                user-select: none;
+                transition: background-color 0.2s ease;
+            }
+            .actions-card .card-header:hover {
+                background-color: #f8f9fa !important;
+            }
+            #actionsBody {
+                transition: all 0.3s ease;
+                display: none;
+            }
+            .actions-header {
+                cursor: pointer !important;
+            }
+            #actionsToggleIcon {
+                display: block !important;
+            }
+            
+            /* Filter Section */
+            #filtersForm {
+                border-radius: 8px !important;
+                overflow: hidden;
+            }
+            #filtersForm .card-header {
+                transition: all 0.2s ease;
+                background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%) !important;
+                border-bottom: 2px solid #e9ecef !important;
+            }
+            .filter-header:hover {
+                background: linear-gradient(135deg, #f0f0f0 0%, #f8f9fa 100%) !important;
+            }
+            #filterBody {
+                transition: all 0.3s ease;
+                display: none;
+                background: #fafbfc;
+            }
+            .filter-header {
+                cursor: pointer !important;
+            }
+            #filterToggleIcon {
+                display: block !important;
+                transition: transform 0.3s ease;
+            }
+            .filter-header.active #filterToggleIcon {
+                transform: rotate(180deg);
+            }
+            #filtersForm .card-body {
+                padding: 0.75rem 0.5rem !important;
+            }
+            #filtersForm .form-label {
+                font-size: 0.7rem !important;
+                margin-bottom: 0.2rem !important;
+                font-weight: 600 !important;
+                color: #495057 !important;
+            }
+            #filtersForm .form-control,
+            #filtersForm .form-select {
+                font-size: 0.8125rem !important;
+                padding: 0.4rem 0.5rem !important;
+                border-radius: 6px !important;
+                border: 1.5px solid #dee2e6 !important;
+            }
+            #filtersForm .form-control:focus,
+            #filtersForm .form-select:focus {
+                border-color: #667eea !important;
+                box-shadow: 0 0 0 0.15rem rgba(102, 126, 234, 0.15) !important;
+            }
+            #filtersForm .btn-sm {
+                padding: 0.4rem 0.75rem !important;
+                font-size: 0.8125rem !important;
+                border-radius: 6px !important;
+                font-weight: 600 !important;
+            }
+            #filtersForm .row.g-2 > [class*="col-"] {
+                padding-left: 0.375rem !important;
+                padding-right: 0.375rem !important;
+                margin-bottom: 0.5rem !important;
+            }
+            #filtersForm .row.g-2 {
+                margin-left: -0.375rem !important;
+                margin-right: -0.375rem !important;
+            }
+            
+            /* Table Responsive */
+            .table {
+                font-size: 0.75rem;
+            }
+            .table th,
+            .table td {
+                padding: 0.5rem 0.25rem;
+            }
+            
+            /* Buttons - Icon Only on Mobile */
+            .btn-group .btn {
+                padding: 0.375rem 0.5rem !important;
+            }
+            .btn-group .btn i {
+                margin: 0 !important;
+            }
+            
+            /* Card View - Full Width on Mobile */
+            #cardView .col-lg-4 {
+                flex: 0 0 100%;
+                max-width: 100%;
+            }
+            
+            /* Modal Full Screen on Mobile */
+            @media (max-width: 576px) {
+                .modal-dialog {
+                    margin: 0;
+                    max-width: 100%;
+                    height: 100vh;
+                }
+                .modal-content {
+                    height: 100vh;
+                    border-radius: 0 !important;
+                }
+                #filtersForm .card-body {
+                    padding: 0.5rem 0.375rem !important;
+                }
+                #filtersForm .form-label {
+                    font-size: 0.65rem !important;
+                }
+                #filtersForm .form-control,
+                #filtersForm .form-select {
+                    font-size: 0.75rem !important;
+                    padding: 0.35rem 0.45rem !important;
+                }
+            }
+        }
+        
+        /* Desktop: Always show actions and filters */
+        @media (min-width: 769px) {
+            .actions-header {
+                cursor: default !important;
+                pointer-events: none !important;
+            }
+            .actions-header .fa-chevron-down {
+                display: none !important;
+            }
+            #actionsBody {
+                display: block !important;
+            }
+            
+            .filter-header {
+                cursor: default !important;
+                pointer-events: none !important;
+            }
+            .filter-header .fa-chevron-down {
+                display: none !important;
+            }
+            #filterBody {
+                display: block !important;
+            }
+        }
     </style>
 <div class="container-fluid px-4">
-                    <div class="d-flex flex-wrap align-items-center justify-content-between mt-4 mb-3 gap-2">
-                        <h2 class="mb-0">Celebrations</h2>
-                        <div class="d-flex gap-2">
-                            <div class="btn-group" role="group">
-                                <button class="btn btn-outline-primary view-toggle-btn active" id="listViewBtn" onclick="switchView('list')">
-                                    <i class="fas fa-list me-1"></i>List View
-                                </button>
-                                <button class="btn btn-outline-primary view-toggle-btn" id="cardViewBtn" onclick="switchView('card')">
-                                    <i class="fas fa-th-large me-1"></i>Card View
+                    <!-- Page Title and Quick Actions - Compact Collapsible -->
+                    <div class="card border-0 shadow-sm mb-3 actions-card">
+                        <div class="card-header bg-white border-bottom p-2 px-3 d-flex align-items-center justify-content-between actions-header" onclick="toggleActions()">
+                            <div class="d-flex align-items-center gap-2">
+                                <h2 class="mb-0 mt-2" style="font-size: 1.5rem;">Celebrations</h2>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="fas fa-chevron-down text-muted d-md-none" id="actionsToggleIcon"></i>
+                            </div>
+                        </div>
+                        <div class="card-body p-3" id="actionsBody">
+                            <div class="d-flex flex-wrap gap-2">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <button class="btn btn-outline-primary view-toggle-btn active" id="listViewBtn" onclick="switchView('list')">
+                                        <i class="fas fa-list me-1"></i>
+                                        <span class="d-none d-sm-inline">List</span>
+                                    </button>
+                                    <button class="btn btn-outline-primary view-toggle-btn" id="cardViewBtn" onclick="switchView('card')">
+                                        <i class="fas fa-th-large me-1"></i>
+                                        <span class="d-none d-sm-inline">Card</span>
+                                    </button>
+                                </div>
+                                <a href="{{ route('celebrations.export.csv', request()->query()) }}" class="btn btn-outline-success btn-sm">
+                                    <i class="fas fa-file-excel me-1"></i>
+                                    <span class="d-none d-sm-inline">Export CSV</span>
+                                    <span class="d-sm-none">Export</span>
+                                </a>
+                                <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addCelebrationModal" onclick="openAddCelebration()">
+                                    <i class="fas fa-plus me-1"></i>
+                                    <span class="d-none d-sm-inline">Add Celebration</span>
+                                    <span class="d-sm-none">Add</span>
                                 </button>
                             </div>
-                            <a href="{{ route('celebrations.export.csv', request()->query()) }}" class="btn btn-outline-success"><i class="fas fa-file-excel me-2"></i>Export CSV</a>
-                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCelebrationModal" onclick="openAddCelebration()"><i class="fas fa-plus me-2"></i>Add Celebration</button>
                         </div>
                     </div>
 
-                    <form method="GET" action="{{ route('celebrations.index') }}" class="card mb-3" id="filtersForm">
-                        <div class="card-body">
-                            <div class="row g-3 align-items-end">
-                                <div class="col-md-3">
-                                    <label class="form-label">Search</label>
-                                    <input type="text" name="search" value="{{ request('search') }}" class="form-control" placeholder="Search title, celebrant, venue, type">
+                    <!-- Filters & Search - Collapsible on Mobile -->
+                    <form method="GET" action="{{ route('celebrations.index') }}" class="card mb-3 border-0 shadow-sm" id="filtersForm">
+                        <!-- Filter Header -->
+                        <div class="card-header bg-white border-bottom p-2 px-3 filter-header" onclick="toggleFilters()">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="fas fa-filter text-primary"></i>
+                                    <span class="fw-semibold">Filters</span>
+                                    @if(request('search') || request('type') || request('from') || request('to'))
+                                        <span class="badge bg-primary rounded-pill" id="activeFiltersCount">{{ (request('search') ? 1 : 0) + (request('type') ? 1 : 0) + (request('from') ? 1 : 0) + (request('to') ? 1 : 0) }}</span>
+                                    @endif
                                 </div>
-                                <div class="col-md-2">
-                                    <label class="form-label">Type</label>
-                                    <select name="type" class="form-select">
+                                <i class="fas fa-chevron-down text-muted d-md-none" id="filterToggleIcon"></i>
+                            </div>
+                        </div>
+                        
+                        <!-- Filter Body - Collapsible on Mobile -->
+                        <div class="card-body p-3" id="filterBody">
+                            <div class="row g-2 mb-2">
+                                <!-- Search Field - Full Width on Mobile -->
+                                <div class="col-12 col-md-3">
+                                    <label class="form-label small text-muted mb-1">
+                                        <i class="fas fa-search me-1 text-primary"></i>Search
+                                    </label>
+                                    <input type="text" name="search" value="{{ request('search') }}" class="form-control form-control-sm" placeholder="Search title, celebrant, venue, type">
+                                </div>
+                                
+                                <!-- Type - Full Width on Mobile -->
+                                <div class="col-6 col-md-2">
+                                    <label class="form-label small text-muted mb-1">
+                                        <i class="fas fa-tags me-1 text-info"></i>Type
+                                    </label>
+                                    <select name="type" class="form-select form-select-sm">
                                         <option value="">All Types</option>
                                         <option value="Birthday" {{ request('type') == 'Birthday' ? 'selected' : '' }}>Birthday</option>
                                         <option value="Anniversary" {{ request('type') == 'Anniversary' ? 'selected' : '' }}>Anniversary</option>
@@ -132,18 +342,41 @@
                                         <option value="Other" {{ request('type') == 'Other' ? 'selected' : '' }}>Other</option>
                                     </select>
                                 </div>
-                                <div class="col-md-2">
-                                    <label class="form-label">From</label>
-                                    <input type="date" name="from" value="{{ request('from') }}" class="form-control">
+                                
+                                <!-- Date Range - Side by Side on Mobile -->
+                                <div class="col-6 col-md-2">
+                                    <label class="form-label small text-muted mb-1">
+                                        <i class="fas fa-calendar me-1 text-warning"></i>From
+                                    </label>
+                                    <input type="date" name="from" value="{{ request('from') }}" class="form-control form-control-sm">
                                 </div>
-                                <div class="col-md-2">
-                                    <label class="form-label">To</label>
-                                    <input type="date" name="to" value="{{ request('to') }}" class="form-control">
+                                <div class="col-6 col-md-2">
+                                    <label class="form-label small text-muted mb-1">
+                                        <i class="fas fa-calendar-check me-1 text-warning"></i>To
+                                    </label>
+                                    <input type="date" name="to" value="{{ request('to') }}" class="form-control form-control-sm">
                                 </div>
-                                <div class="col-md-3 d-flex gap-2">
-                                    <button type="submit" class="btn btn-primary w-100"><i class="fas fa-filter me-2"></i>Apply</button>
-                                    <a href="{{ route('celebrations.index') }}" class="btn btn-outline-secondary"><i class="fas fa-times"></i></a>
+                                
+                                <!-- Apply Button - Full Width on Mobile -->
+                                <div class="col-12 col-md-3 d-flex gap-2">
+                                    <button type="submit" class="btn btn-primary btn-sm flex-fill">
+                                        <i class="fas fa-filter me-1"></i>
+                                        <span class="d-none d-sm-inline">Apply</span>
+                                        <span class="d-sm-none">Filter</span>
+                                    </button>
+                                    <a href="{{ route('celebrations.index') }}" class="btn btn-outline-secondary btn-sm">
+                                        <i class="fas fa-times"></i>
+                                    </a>
                                 </div>
+                            </div>
+                            
+                            <!-- Action Buttons - Compact, Full Width on Mobile -->
+                            <div class="d-flex gap-2 flex-wrap">
+                                <a href="{{ route('celebrations.index') }}" class="btn btn-outline-secondary btn-sm flex-fill flex-md-grow-0">
+                                    <i class="fas fa-redo me-1"></i>
+                                    <span class="d-none d-sm-inline">Reset</span>
+                                    <span class="d-sm-none">Clear</span>
+                                </a>
                             </div>
                         </div>
                     </form>
@@ -156,14 +389,15 @@
                                     <table class="table table-hover mb-0">
                                         <thead class="table-light">
                                             <tr>
-                                                <th>Title</th>
-                                                <th>Celebrant</th>
+                                                <th class="d-none d-md-table-cell">Title</th>
+                                                <th class="d-table-cell d-md-none">Celebration</th>
+                                                <th class="d-none d-lg-table-cell">Celebrant</th>
                                                 <th>Type</th>
                                                 <th>Date</th>
-                                                <th>Time</th>
-                                                <th>Venue</th>
-                                                <th>Guests</th>
-                                                <th>Actions</th>
+                                                <th class="d-none d-xl-table-cell">Time</th>
+                                                <th class="d-none d-md-table-cell">Venue</th>
+                                                <th class="d-none d-lg-table-cell">Guests</th>
+                                                <th class="text-end">Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -172,10 +406,20 @@
                                                 <td>
                                                     <div class="fw-bold">{{ $celebration->title }}</div>
                                                     @if($celebration->description)
-                                                        <small class="text-muted">{{ Str::limit($celebration->description, 50) }}</small>
+                                                        <small class="text-muted d-none d-md-inline">{{ Str::limit($celebration->description, 50) }}</small>
                                                     @endif
+                                                    <div class="d-md-none">
+                                                        <small class="text-muted d-block">
+                                                            <i class="fas fa-user me-1"></i>{{ $celebration->celebrant_name ?? '—' }}
+                                                        </small>
+                                                        @if($celebration->venue)
+                                                            <small class="text-muted d-block">
+                                                                <i class="fas fa-map-marker-alt me-1"></i>{{ $celebration->venue }}
+                                                            </small>
+                                                        @endif
+                                                    </div>
                                                 </td>
-                                                <td>{{ $celebration->celebrant_name ?? '—' }}</td>
+                                                <td class="d-none d-lg-table-cell">{{ $celebration->celebrant_name ?? '—' }}</td>
                                                 <td>
                                                     @if($celebration->type)
                                                         <span class="celebration-type-badge">{{ $celebration->type }}</span>
@@ -188,7 +432,7 @@
                                                         {{ $celebration->celebration_date ? $celebration->celebration_date->format('M d, Y') : '—' }}
                                                     </span>
                                                 </td>
-                                                <td>
+                                                <td class="d-none d-xl-table-cell">
                                                     @if($celebration->start_time && $celebration->end_time)
                                                         {{ \Carbon\Carbon::parse($celebration->start_time)->format('g:i A') }} - {{ \Carbon\Carbon::parse($celebration->end_time)->format('g:i A') }}
                                                     @elseif($celebration->start_time)
@@ -197,18 +441,21 @@
                                                         —
                                                     @endif
                                                 </td>
-                                                <td>{{ $celebration->venue ?? '—' }}</td>
-                                                <td>{{ $celebration->expected_guests ?? '—' }}</td>
-                                                <td>
-                                                    <div class="btn-group" role="group">
-                                                        <button class="btn btn-outline-info btn-sm" onclick="viewDetails({{ $celebration->id }})" title="View Details">
+                                                <td class="d-none d-md-table-cell">{{ $celebration->venue ?? '—' }}</td>
+                                                <td class="d-none d-lg-table-cell">{{ $celebration->expected_guests ?? '—' }}</td>
+                                                <td class="text-end">
+                                                    <div class="btn-group btn-group-sm" role="group">
+                                                        <button class="btn btn-outline-info btn-sm text-white" onclick="viewDetails({{ $celebration->id }})" title="View Details">
                                                             <i class="fas fa-eye"></i>
+                                                            <span class="d-none d-sm-inline ms-1">View</span>
                                                         </button>
-                                                        <button class="btn btn-outline-primary btn-sm" onclick="openEdit({{ $celebration->id }})" title="Edit Celebration">
+                                                        <button class="btn btn-outline-primary btn-sm text-white" onclick="openEdit({{ $celebration->id }})" title="Edit Celebration">
                                                             <i class="fas fa-edit"></i>
+                                                            <span class="d-none d-sm-inline ms-1">Edit</span>
                                                         </button>
-                                                        <button class="btn btn-outline-danger btn-sm" onclick="confirmDelete({{ $celebration->id }})" title="Delete Celebration">
+                                                        <button class="btn btn-outline-danger btn-sm text-white" onclick="confirmDelete({{ $celebration->id }})" title="Delete Celebration">
                                                             <i class="fas fa-trash"></i>
+                                                            <span class="d-none d-sm-inline ms-1">Delete</span>
                                                         </button>
                                                     </div>
                                                 </td>
@@ -468,7 +715,7 @@
                 <div class="modal-footer d-flex justify-content-between align-items-center">
                     <div class="small">
                         <span class="me-1">Powered by</span>
-                        <a href="https://emca.tech/#" target="_blank" rel="noopener" class="emca-link fw-semibold">EmCa Technologies</a>
+                        <a href="https://emca.tech/#" target="_blank" rel="noopener" class="emca-link fw-semibold" style="color: #940000 !important;">EmCa Technologies</a>
                     </div>
                     <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
                 </div>
@@ -501,8 +748,128 @@
             }
         }
 
+        // Toggle Actions Function
+        function toggleActions() {
+            // Only toggle on mobile devices
+            if (window.innerWidth > 768) {
+                return; // Don't toggle on desktop
+            }
+            
+            const actionsBody = document.getElementById('actionsBody');
+            const actionsIcon = document.getElementById('actionsToggleIcon');
+            
+            if (!actionsBody || !actionsIcon) return;
+            
+            // Check computed style to see if it's visible
+            const computedStyle = window.getComputedStyle(actionsBody);
+            const isVisible = computedStyle.display !== 'none';
+            
+            if (isVisible) {
+                actionsBody.style.display = 'none';
+                actionsIcon.classList.remove('fa-chevron-up');
+                actionsIcon.classList.add('fa-chevron-down');
+            } else {
+                actionsBody.style.display = 'block';
+                actionsIcon.classList.remove('fa-chevron-down');
+                actionsIcon.classList.add('fa-chevron-up');
+            }
+        }
+
+        // Toggle Filters Function
+        function toggleFilters() {
+            // Only toggle on mobile devices
+            if (window.innerWidth > 768) {
+                return; // Don't toggle on desktop
+            }
+            
+            const filterBody = document.getElementById('filterBody');
+            const filterIcon = document.getElementById('filterToggleIcon');
+            const filterHeader = document.querySelector('.filter-header');
+            
+            if (!filterBody || !filterIcon) return;
+            
+            // Check computed style to see if it's visible
+            const computedStyle = window.getComputedStyle(filterBody);
+            const isVisible = computedStyle.display !== 'none';
+            
+            if (isVisible) {
+                filterBody.style.display = 'none';
+                filterIcon.classList.remove('fa-chevron-up');
+                filterIcon.classList.add('fa-chevron-down');
+                if (filterHeader) filterHeader.classList.remove('active');
+            } else {
+                filterBody.style.display = 'block';
+                filterIcon.classList.remove('fa-chevron-down');
+                filterIcon.classList.add('fa-chevron-up');
+                if (filterHeader) filterHeader.classList.add('active');
+            }
+        }
+
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            const actionsBody = document.getElementById('actionsBody');
+            const actionsIcon = document.getElementById('actionsToggleIcon');
+            const filterBody = document.getElementById('filterBody');
+            const filterIcon = document.getElementById('filterToggleIcon');
+            
+            if (window.innerWidth > 768) {
+                // Always show on desktop
+                if (actionsBody && actionsIcon) {
+                    actionsBody.style.display = 'block';
+                    actionsIcon.style.display = 'none';
+                }
+                if (filterBody && filterIcon) {
+                    filterBody.style.display = 'block';
+                    filterIcon.style.display = 'none';
+                }
+            } else {
+                // On mobile, show chevrons
+                if (actionsIcon) actionsIcon.style.display = 'block';
+                if (filterIcon) filterIcon.style.display = 'block';
+            }
+        });
+
         // Load saved view preference
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize actions and filters
+            const actionsBody = document.getElementById('actionsBody');
+            const actionsIcon = document.getElementById('actionsToggleIcon');
+            const filterBody = document.getElementById('filterBody');
+            const filterIcon = document.getElementById('filterToggleIcon');
+            
+            if (window.innerWidth <= 768) {
+                // Mobile: start collapsed
+                if (actionsBody && actionsIcon) {
+                    actionsBody.style.display = 'none';
+                    actionsIcon.classList.remove('fa-chevron-up');
+                    actionsIcon.classList.add('fa-chevron-down');
+                }
+                if (filterBody && filterIcon) {
+                    filterBody.style.display = 'none';
+                    filterIcon.classList.remove('fa-chevron-up');
+                    filterIcon.classList.add('fa-chevron-down');
+                }
+            } else {
+                // Desktop: always show
+                if (actionsBody && actionsIcon) {
+                    actionsBody.style.display = 'block';
+                    actionsIcon.style.display = 'none';
+                }
+                if (filterBody && filterIcon) {
+                    filterBody.style.display = 'block';
+                    filterIcon.style.display = 'none';
+                }
+            }
+            
+            // Show filters if any are active
+            @if(request('search') || request('type') || request('from') || request('to'))
+                if (window.innerWidth <= 768 && filterBody && filterIcon) {
+                    toggleFilters(); // Expand if filters are active
+                    const filterHeader = document.querySelector('.filter-header');
+                    if (filterHeader) filterHeader.classList.add('active');
+                }
+            @endif
+            
             const savedView = localStorage.getItem('celebrationView') || 'list';
             switchView(savedView);
             

@@ -16,6 +16,7 @@ use App\Models\User;
 use App\Services\SmsService;
 use App\Services\SettingsService;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 
 class MemberController extends Controller
 {
@@ -238,6 +239,7 @@ class MemberController extends Controller
             
             $memberData = [
                 'member_id' => $memberId,
+                // biometric_enroll_id will be filled after successful device registration
                 'member_type' => $request->member_type,
                 'membership_type' => $request->membership_type,
                 'full_name' => $request->full_name,
@@ -286,6 +288,44 @@ class MemberController extends Controller
             \Log::info('=== MEMBER CREATED SUCCESSFULLY ===');
             \Log::info('Created member ID: ' . $member->id);
             \Log::info('Created member data:', $member->toArray());
+
+            // Register member on biometric attendance device
+            try {
+                $biometricResponse = Http::timeout(5)->post(
+                    'http://192.168.100.100:8000/api/v1/users/register',
+                    [
+                        // Use internal numeric ID as enroll_id basis; device will return actual enroll_id
+                        'id' => (string) $member->id,
+                        'name' => $member->full_name,
+                    ]
+                );
+
+                if ($biometricResponse->successful()) {
+                    $biometricJson = $biometricResponse->json();
+
+                    \Log::info('Biometric registration response', [
+                        'member_id' => $member->id,
+                        'response' => $biometricJson,
+                    ]);
+
+                    if (!empty($biometricJson['data']['enroll_id'])) {
+                        $member->biometric_enroll_id = (string) $biometricJson['data']['enroll_id'];
+                        $member->save();
+                    }
+                } else {
+                    \Log::warning('Biometric registration HTTP error', [
+                        'member_id' => $member->id,
+                        'status' => $biometricResponse->status(),
+                        'body' => $biometricResponse->body(),
+                    ]);
+                }
+            } catch (\Throwable $e) {
+                \Log::error('Biometric registration failed', [
+                    'member_id' => $member->id,
+                    'error' => $e->getMessage(),
+                ]);
+                // Continue flow even if biometric registration fails
+            }
 
             // Create User account for member
             try {

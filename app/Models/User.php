@@ -152,13 +152,63 @@ class User extends Authenticatable
 
     /**
      * Get remaining block time in minutes
+     * Returns the actual remaining time until the user can login again
      */
     public function getRemainingBlockTime(): ?int
     {
-        if (!$this->isLoginBlocked()) {
+        if (!$this->login_blocked_until) {
             return null;
         }
         
-        return now()->diffInMinutes($this->login_blocked_until);
+        // Compare in UTC (how it's stored in database) for accuracy
+        // Get raw timestamp from database to avoid timezone conversion issues
+        $rawBlockedUntil = \Illuminate\Support\Facades\DB::table('users')
+            ->where('id', $this->id)
+            ->value('login_blocked_until');
+        
+        if (!$rawBlockedUntil) {
+            return null;
+        }
+        
+        // Parse as UTC directly (how it's stored in database)
+        $blockedUntil = \Carbon\Carbon::createFromFormat('Y-m-d H:i:s', $rawBlockedUntil, 'UTC');
+        $now = \Carbon\Carbon::now('UTC');
+        
+        // If block has expired, return null
+        if ($blockedUntil->lte($now)) {
+            return null;
+        }
+        
+        // Calculate remaining minutes: blockedUntil - now (both in UTC)
+        // diffInMinutes with false returns signed value (positive if future)
+        $remaining = $blockedUntil->diffInMinutes($now, false);
+        
+        // Ensure we return a positive value
+        return $remaining > 0 ? (int)$remaining : null;
+    }
+    
+    /**
+     * Get remaining block time formatted (e.g., "2h 30m" or "45m")
+     */
+    public function getRemainingBlockTimeFormatted(): ?string
+    {
+        $minutes = $this->getRemainingBlockTime();
+        
+        if ($minutes === null) {
+            return null;
+        }
+        
+        if ($minutes < 60) {
+            return "{$minutes}m";
+        }
+        
+        $hours = floor($minutes / 60);
+        $remainingMinutes = $minutes % 60;
+        
+        if ($remainingMinutes > 0) {
+            return "{$hours}h {$remainingMinutes}m";
+        }
+        
+        return "{$hours}h";
     }
 }

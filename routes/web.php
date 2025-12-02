@@ -12,6 +12,17 @@ Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.post');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
+// OTP verification routes
+Route::get('/login/otp/verify', [AuthController::class, 'showOtpVerification'])->name('login.otp.verify');
+Route::post('/login/otp/verify', [AuthController::class, 'verifyOtp'])->name('login.otp.verify.post');
+Route::post('/login/otp/resend', [AuthController::class, 'resendOtp'])->name('login.otp.resend');
+
+// Password reset routes
+Route::get('/forgot-password', [AuthController::class, 'showForgotPassword'])->name('password.request');
+Route::post('/forgot-password', [AuthController::class, 'sendPasswordResetLink'])->name('password.email');
+Route::get('/reset-password/{token}', [AuthController::class, 'showResetPassword'])->name('password.reset');
+Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
+
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\MemberDashboardController;
 use App\Http\Controllers\AnnouncementController;
@@ -25,6 +36,7 @@ use App\Http\Controllers\PastorDashboardController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\AdminController;
 use Illuminate\Http\Request;
+use App\Http\Controllers\AttendanceController;
 
 // Leader password change routes - accessible to all leaders (pastor, secretary, treasurer, admin)
 Route::middleware(['auth', PreventBackHistory::class])->group(function () {
@@ -185,8 +197,11 @@ Route::middleware(['auth', PreventBackHistory::class, 'treasurer'])->group(funct
         Route::get('/offering-fund-breakdown', [App\Http\Controllers\ReportController::class, 'offeringFundBreakdown'])->name('offering-fund-breakdown');
         Route::get('/monthly-financial', [App\Http\Controllers\ReportController::class, 'monthlyFinancialReport'])->name('monthly-financial');
         Route::get('/weekly-financial', [App\Http\Controllers\ReportController::class, 'weeklyFinancialReport'])->name('weekly-financial');
+        // Specific routes first (for backward compatibility)
         Route::get('/export/pdf', [App\Http\Controllers\ReportController::class, 'exportPdf'])->name('export.pdf');
         Route::get('/export/excel', [App\Http\Controllers\ReportController::class, 'exportExcel'])->name('export.excel');
+        // Dynamic route (handles /reports/export/pdf and /reports/export/excel)
+        Route::get('/export/{format}', [App\Http\Controllers\ReportController::class, 'exportReport'])->name('export')->where('format', 'pdf|excel');
         Route::get('/member-receipt/{memberId}', [App\Http\Controllers\ReportController::class, 'generateMemberReceipt'])->name('member-receipt');
     });
 });
@@ -410,7 +425,9 @@ Route::middleware(['auth', 'treasurer'])->group(function () {
     // Sunday services routes
     Route::post('/services/sunday', [SundayServiceController::class, 'store'])->name('services.sunday.store');
     // Specific routes must come before parameterized routes
+    Route::get('/services/sunday/coordinators', [SundayServiceController::class, 'getCoordinators'])->name('services.sunday.coordinators');
     Route::get('/services/sunday/church-elders', [SundayServiceController::class, 'getChurchElders'])->name('services.sunday.church.elders');
+    Route::get('/services/sunday/preachers', [SundayServiceController::class, 'getPreachers'])->name('services.sunday.preachers');
     Route::get('/services/sunday/weekly-assignment', [SundayServiceController::class, 'getWeeklyAssignmentForDate'])->name('services.sunday.weekly.assignment');
     Route::get('/services/sunday-export/csv', [SundayServiceController::class, 'exportCsv'])->name('services.sunday.export.csv');
     // Parameterized routes come last
@@ -426,13 +443,14 @@ Route::middleware(['auth', 'treasurer'])->group(function () {
     Route::get('/special-events-members/notification', [SpecialEventController::class, 'getMembersForNotification'])->name('special.events.members.notification');
 
     // Attendance routes
-    Route::get('/attendance', [App\Http\Controllers\AttendanceController::class, 'index'])->name('attendance.index');
-    Route::post('/attendance', [App\Http\Controllers\AttendanceController::class, 'store'])->name('attendance.store');
-    Route::get('/attendance/member/{memberId}/history', [App\Http\Controllers\AttendanceController::class, 'memberHistory'])->name('attendance.member.history');
-    Route::get('/attendance/service/{serviceType}/{serviceId}/report', [App\Http\Controllers\AttendanceController::class, 'serviceReport'])->name('attendance.service.report');
-    Route::get('/attendance/statistics', [App\Http\Controllers\AttendanceController::class, 'statistics'])->name('attendance.statistics');
-    Route::post('/attendance/trigger-notifications', [App\Http\Controllers\AttendanceController::class, 'triggerNotifications'])->name('attendance.trigger.notifications');
-    Route::get('/attendance/missed-members', [App\Http\Controllers\AttendanceController::class, 'getMembersWithMissedAttendance'])->name('attendance.missed.members');
+    Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
+    Route::post('/attendance', [AttendanceController::class, 'store'])->name('attendance.store');
+    Route::get('/attendance/member/{memberId}/history', [AttendanceController::class, 'memberHistory'])->name('attendance.member.history');
+    Route::get('/attendance/service/{serviceType}/{serviceId}/report', [AttendanceController::class, 'serviceReport'])->name('attendance.service.report');
+    Route::get('/attendance/statistics', [AttendanceController::class, 'statistics'])->name('attendance.statistics');
+    Route::post('/attendance/trigger-notifications', [AttendanceController::class, 'triggerNotifications'])->name('attendance.trigger.notifications');
+    Route::get('/attendance/missed-members', [AttendanceController::class, 'getMembersWithMissedAttendance'])->name('attendance.missed.members');
+    Route::post('/attendance/biometric-sync', [AttendanceController::class, 'syncBiometricAttendance'])->name('attendance.biometric.sync');
 
     // Promise Guests routes
     Route::resource('promise-guests', App\Http\Controllers\PromiseGuestController::class);
@@ -1130,9 +1148,13 @@ Route::get('/create-approval-test-data', function() {
 // Admin routes - Only accessible by administrators
 Route::middleware(['auth', PreventBackHistory::class])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
+    Route::get('/logs', [AdminController::class, 'logs'])->name('logs');
     Route::get('/activity-logs', [AdminController::class, 'activityLogs'])->name('activity-logs');
+    Route::post('/logs/block-ip', [AdminController::class, 'blockIp'])->name('logs.block-ip');
+    Route::post('/logs/unblock-ip', [AdminController::class, 'unblockIp'])->name('logs.unblock-ip');
+    Route::get('/system-logs/{logId}/device-details', [AdminController::class, 'getDeviceDetails'])->name('logs.device-details');
     Route::get('/sessions', [AdminController::class, 'sessions'])->name('sessions');
-    Route::delete('/sessions/{sessionId}/revoke', [AdminController::class, 'revokeSession'])->name('sessions.revoke');
+    Route::post('/sessions/{sessionId}/revoke', [AdminController::class, 'revokeSession'])->name('sessions.revoke');
     Route::get('/users', [AdminController::class, 'users'])->name('users');
     Route::get('/users/create', [AdminController::class, 'create'])->name('users.create');
     Route::post('/users', [AdminController::class, 'store'])->name('users.store');
@@ -1144,6 +1166,9 @@ Route::middleware(['auth', PreventBackHistory::class])->prefix('admin')->name('a
     Route::post('/users/{userId}/reset-password', [AdminController::class, 'resetPassword'])->name('users.reset-password');
     Route::get('/roles-permissions', [AdminController::class, 'rolesPermissions'])->name('roles-permissions');
     Route::post('/roles-permissions/update', [AdminController::class, 'updateRolePermissions'])->name('roles-permissions.update');
+    Route::get('/system-monitor', [AdminController::class, 'systemMonitor'])->name('system-monitor');
+    Route::get('/system-info', [AdminController::class, 'getSystemInfo'])->name('system-info');
+    Route::post('/clear-cache', [AdminController::class, 'clearCache'])->name('clear-cache');
 });
 
 // Announcements routes (for secretary/admin)
@@ -1159,6 +1184,8 @@ Route::middleware(['auth', PreventBackHistory::class])->prefix('member')->name('
     Route::get('/finance', [MemberDashboardController::class, 'finance'])->name('finance');
     Route::get('/announcements', [MemberDashboardController::class, 'announcements'])->name('announcements');
     Route::get('/leaders', [MemberDashboardController::class, 'leaders'])->name('leaders');
+    Route::get('/settings', [MemberDashboardController::class, 'settings'])->name('settings');
+    Route::post('/profile/update', [MemberDashboardController::class, 'updateProfile'])->name('profile.update');
     Route::get('/change-password', [MemberDashboardController::class, 'showChangePassword'])->name('change-password');
     Route::post('/change-password', [MemberDashboardController::class, 'updatePassword'])->name('password.update');
     Route::post('/notifications/{notification}/read', [MemberDashboardController::class, 'markNotificationAsRead'])->name('notifications.read');

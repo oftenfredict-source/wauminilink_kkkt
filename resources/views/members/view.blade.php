@@ -30,6 +30,145 @@
         <!-- SweetAlert2 CDN -->
         <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
         <style>
+            /* Compact Filter Section Styles */
+            #filtersForm {
+                transition: all 0.3s ease;
+            }
+            #filtersForm .card-header {
+                transition: background-color 0.2s ease;
+            }
+            #filterBody {
+                transition: all 0.3s ease;
+            }
+            
+            /* Desktop: Always show filters, make header non-clickable */
+            @media (min-width: 769px) {
+                .filter-header {
+                    cursor: default !important;
+                    pointer-events: none !important;
+                }
+                .filter-header .fa-chevron-down {
+                    display: none !important;
+                }
+                #filterBody {
+                    display: block !important;
+                }
+            }
+            
+            /* Mobile: Collapsible */
+            @media (max-width: 768px) {
+                .filter-header {
+                    cursor: pointer !important;
+                    pointer-events: auto !important;
+                }
+                #filterBody {
+                    display: none;
+                }
+                #filterToggleIcon {
+                    font-size: 1.1rem !important;
+                    width: 24px !important;
+                    height: 24px !important;
+                    display: inline-flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    cursor: pointer !important;
+                    transition: transform 0.3s ease !important;
+                    flex-shrink: 0 !important;
+                }
+            }
+            
+            /* Compact Actions Section Styles */
+            .actions-card {
+                transition: all 0.3s ease;
+            }
+            .actions-card .card-header {
+                user-select: none;
+                transition: background-color 0.2s ease;
+            }
+            .actions-card .card-header:hover {
+                background-color: #f8f9fa !important;
+            }
+            .actions-card .card-header i {
+                transition: transform 0.3s ease;
+            }
+            .actions-card .card-header h1 {
+                color: #212529 !important;
+            }
+            .actions-card .card-header h1 i {
+                color: #212529 !important;
+            }
+            #actionsBody {
+                transition: all 0.3s ease;
+            }
+            #actionsBody .btn-sm {
+                font-size: 0.875rem;
+                padding: 0.375rem 0.75rem;
+            }
+            
+            /* Desktop: Always show actions, make header non-clickable */
+            @media (min-width: 769px) {
+                .actions-header {
+                    cursor: default !important;
+                    pointer-events: none !important;
+                }
+                .actions-header .fa-chevron-down {
+                    display: none !important;
+                }
+                #actionsBody {
+                    display: block !important;
+                }
+            }
+            
+            /* Desktop Sidebar Toggle Button - Ensure proper size */
+            @media (min-width: 769px) {
+                #sidebarToggle {
+                    font-size: 1.5rem !important;
+                    padding: 0.5rem !important;
+                    min-width: 44px !important;
+                    min-height: 44px !important;
+                }
+                
+                #sidebarToggle i {
+                    font-size: 1.5rem !important;
+                }
+            }
+            
+            /* Mobile: Collapsible */
+            @media (max-width: 768px) {
+                .actions-header {
+                    cursor: pointer !important;
+                    pointer-events: auto !important;
+                }
+                #actionsBody {
+                    display: none;
+                    transition: all 0.3s ease;
+                }
+                #actionsToggleIcon {
+                    display: block !important;
+                    font-size: 1.1rem !important;
+                    width: 24px !important;
+                    height: 24px !important;
+                    display: inline-flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    cursor: pointer !important;
+                    transition: transform 0.3s ease !important;
+                    flex-shrink: 0 !important;
+                }
+            }
+            #filtersForm .input-group-text {
+                border-right: none;
+            }
+            #filtersForm .form-control:focus,
+            #filtersForm .form-select:focus {
+                border-left: none;
+                box-shadow: none;
+            }
+            #filtersForm .form-control:focus + .input-group-text,
+            #filtersForm .input-group:focus-within .input-group-text {
+                border-color: #86b7fe;
+            }
+            
             .logo-white-section {
                 background-color: white !important;
                 border-radius: 8px;
@@ -108,6 +247,24 @@
                 color: white !important;
                 font-weight: 600;
             }
+            /* Override for actions card header - white background needs dark text */
+            .actions-card .card-header {
+                color: #212529 !important;
+            }
+            .actions-card .card-header h1 {
+                color: #212529 !important;
+            }
+            .actions-card .card-header h1 i {
+                color: #212529 !important;
+            }
+            
+            /* Reduce gap between topbar and content */
+            #layoutSidenav_content main {
+                padding-top: 0 !important;
+            }
+            .container-fluid {
+                padding-top: 0 !important;
+            }
             .card .small.text-white-50 {
                 color: white !important;
                 font-weight: 500;
@@ -137,30 +294,67 @@
             
             /* Mobile Responsive Styles */
             @media (max-width: 768px) {
+                #layoutSidenav_content {
+                    margin-top: -50px !important;
+                }
                 .container-fluid {
-                    padding-left: 0.75rem !important;
-                    padding-right: 0.75rem !important;
+                    padding-left: 0.5rem !important;
+                    padding-right: 0.5rem !important;
+                }
+                
+                /* Actions card improvements */
+                .actions-card {
+                    margin-bottom: 1rem !important;
+                    transition: all 0.3s ease;
+                }
+                .actions-card .card-header {
+                    padding: 0.5rem 0.75rem !important;
+                    user-select: none;
+                    transition: background-color 0.2s ease;
+                }
+                .actions-card .card-header:hover {
+                    background-color: #f8f9fa !important;
+                }
+                .actions-card .card-header h1 {
+                    font-size: 1.25rem !important;
+                    margin: 0 !important;
+                }
+                .actions-card .card-body {
+                    padding: 0.75rem !important;
+                }
+                #actionsBody .btn-sm {
+                    font-size: 0.8125rem !important;
+                    padding: 0.375rem 0.625rem !important;
+                }
+                
+                /* Header adjustments */
+                h1 {
+                    font-size: 1.25rem !important;
                 }
                 
                 /* Hide button text on mobile, show only icons */
                 .btn-mobile-icon-only {
-                    padding: 0.375rem 0.5rem !important;
+                    padding: 0.5rem !important;
+                    min-width: 44px !important;
+                    height: 44px !important;
+                    display: flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
                 }
                 .btn-mobile-icon-only .btn-text {
-                    display: none;
+                    display: none !important;
                 }
                 .btn-mobile-icon-only i {
                     margin: 0 !important;
+                    font-size: 1rem !important;
                 }
                 
-                /* Stack buttons vertically on mobile */
-                .btn-group-mobile {
-                    flex-direction: column;
-                    width: 100%;
+                /* View toggle buttons */
+                .btn-group {
+                    width: 100% !important;
                 }
-                .btn-group-mobile .btn {
-                    width: 100%;
-                    margin-bottom: 0.5rem;
+                .btn-group .btn {
+                    flex: 1 !important;
                 }
                 
                 /* Make tabs scrollable on mobile */
@@ -168,22 +362,40 @@
                     overflow-x: auto;
                     flex-wrap: nowrap;
                     -webkit-overflow-scrolling: touch;
+                    display: flex !important;
+                    border-bottom: 2px solid #dee2e6;
+                    padding-bottom: 0;
                 }
                 .nav-tabs .nav-item {
                     white-space: nowrap;
                     flex-shrink: 0;
+                    min-width: auto;
+                }
+                .nav-tabs .nav-link {
+                    padding: 0.75rem 1rem !important;
+                    font-size: 0.875rem !important;
+                    border-radius: 0.5rem 0.5rem 0 0 !important;
+                }
+                
+                /* Tab content */
+                .tab-content {
+                    padding: 1rem 0.5rem !important;
+                    border: none !important;
                 }
                 
                 /* Table responsive improvements */
                 .table-responsive {
                     border: none;
+                    overflow-x: auto;
+                    -webkit-overflow-scrolling: touch;
                 }
                 .table {
                     font-size: 0.875rem;
+                    min-width: 600px;
                 }
                 .table th,
                 .table td {
-                    padding: 0.5rem 0.25rem;
+                    padding: 0.5rem 0.5rem;
                     white-space: nowrap;
                 }
                 
@@ -194,20 +406,179 @@
                 
                 /* Modal improvements */
                 .modal-dialog {
-                    margin: 0.5rem;
+                    margin: 0.5rem !important;
+                    max-width: calc(100% - 1rem) !important;
+                }
+                .modal-dialog.modal-lg {
+                    max-width: calc(100% - 1rem) !important;
                 }
                 .modal-content {
                     border-radius: 0.5rem;
                 }
+                .modal-header,
+                .modal-body,
+                .modal-footer {
+                    padding: 1rem !important;
+                }
                 
-                /* Header adjustments */
-                .navbar-text {
+                /* Sidebar Toggle Button - Match size with other toggle buttons */
+                #sidebarToggle {
+                    font-size: 1.1rem !important;
+                    padding: 0.5rem !important;
+                    min-width: 40px !important;
+                    min-height: 40px !important;
+                    display: flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    margin-right: 0.75rem !important;
+                    margin-left: 0 !important;
+                    order: -1 !important;
+                }
+                
+                #sidebarToggle i {
+                    font-size: 1.1rem !important;
+                }
+                
+                /* Ensure navbar has proper padding on mobile to prevent cutoff */
+                .sb-topnav {
+                    padding-left: 0.75rem !important;
+                    padding-right: 0.5rem !important;
+                    overflow-x: hidden !important;
+                    position: relative !important;
+                    max-width: 100vw !important;
+                    width: 100% !important;
+                }
+                
+                /* Ensure navbar container doesn't cut off content */
+                body.sb-nav-fixed .sb-topnav {
+                    margin-left: 0 !important;
+                    width: 100% !important;
+                    max-width: 100vw !important;
+                }
+                
+                /* Ensure navbar content doesn't overflow */
+                .sb-topnav .navbar-nav,
+                .sb-topnav .d-flex {
+                    max-width: 100% !important;
+                    overflow-x: hidden !important;
+                }
+                
+                /* Welcome message on mobile */
+                .sb-topnav .navbar-text {
+                    font-size: 0.85rem !important;
+                    margin-left: 0.5rem !important;
+                    margin-right: auto !important;
+                    flex: 1 !important;
+                    min-width: 0 !important;
+                    white-space: nowrap !important;
+                }
+                
+                /* Ensure profile dropdown menu is hidden by default, visible when active */
+                .sb-topnav .dropdown-menu {
+                    position: absolute !important;
+                    z-index: 1050 !important;
+                    right: 0 !important;
+                    left: auto !important;
+                    margin-top: 0.5rem !important;
+                    min-width: 180px !important;
+                    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+                    background-color: #fff !important;
+                    border: 1px solid rgba(0, 0, 0, 0.15) !important;
+                    border-radius: 0.375rem !important;
+                    display: none !important;
+                    opacity: 0 !important;
+                    visibility: hidden !important;
+                }
+                
+                .sb-topnav .dropdown-menu.show {
+                    display: block !important;
+                    opacity: 1 !important;
+                    visibility: visible !important;
+                }
+                
+                /* Ensure dropdown items are visible */
+                .sb-topnav .dropdown-menu .dropdown-item {
+                    padding: 0.5rem 1rem !important;
                     font-size: 0.9rem !important;
+                    white-space: nowrap !important;
+                    color: #212529 !important;
+                    display: block !important;
+                }
+                
+                .sb-topnav .dropdown-menu .dropdown-item:hover {
+                    background-color: #f8f9fa !important;
+                }
+                
+                /* Hide logo on mobile */
+                .sb-topnav .navbar-brand,
+                .sb-topnav .logo-white-section {
+                    display: none !important;
+                }
+                
+                /* Ensure navbar nav items are visible and don't shrink */
+                .sb-topnav .navbar-nav {
+                    flex-shrink: 0 !important;
+                    display: flex !important;
+                    align-items: center !important;
+                    margin-left: auto !important;
+                }
+                
+                .sb-topnav .navbar-nav .nav-item {
+                    flex-shrink: 0 !important;
+                    display: flex !important;
+                    align-items: center !important;
+                }
+                
+                /* Profile dropdown icon - ensure it's always visible */
+                #navbarDropdown {
+                    display: flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    padding: 0.5rem !important;
+                    min-width: 40px !important;
+                    min-height: 40px !important;
+                }
+                
+                #navbarDropdown i {
+                    font-size: 1.1rem !important;
+                    display: block !important;
+                }
+                
+                /* Notification icon spacing on mobile */
+                #notificationDropdown {
+                    margin-right: 0.5rem !important;
+                }
+                
+                /* Filter section improvements - Compact */
+                #filtersForm {
+                    margin-bottom: 1rem !important;
+                }
+                #filtersForm .card-header {
+                    padding: 0.75rem 1rem !important;
+                }
+                #filtersForm .card-body {
+                    padding: 1rem !important;
+                }
+                #filtersForm .form-label {
+                    font-size: 0.75rem !important;
+                    margin-bottom: 0.25rem !important;
+                }
+                #filtersForm .form-control,
+                #filtersForm .form-select {
+                    font-size: 0.875rem !important;
+                    padding: 0.375rem 0.5rem !important;
+                }
+                #filtersForm .input-group-sm {
+                    height: auto;
+                }
+                #filtersForm .btn-sm {
+                    padding: 0.375rem 0.75rem !important;
+                    font-size: 0.875rem !important;
                 }
                 
                 /* Action buttons in table */
                 .table .btn {
-                    padding: 0.25rem 0.5rem;
+                    padding: 0.375rem 0.5rem;
                     font-size: 0.75rem;
                 }
                 .table .btn i {
@@ -216,17 +587,65 @@
                 .table .btn .btn-text {
                     display: none;
                 }
+                
+                /* Better spacing */
+                .mb-3 {
+                    margin-bottom: 1rem !important;
+                }
+                .mt-4 {
+                    margin-top: 1rem !important;
+                }
             }
             
             @media (max-width: 576px) {
                 /* Extra small devices */
+                #layoutSidenav_content {
+                    margin-top: -50px !important;
+                }
+                .container-fluid {
+                    padding-left: 0.25rem !important;
+                    padding-right: 0.25rem !important;
+                }
+                
+                /* Actions card on mobile */
+                .actions-card .card-header {
+                    padding: 0.5rem 0.625rem !important;
+                }
+                
+                /* Toggle icons - Extra small mobile */
+                #actionsToggleIcon,
+                #filterToggleIcon {
+                    font-size: 1rem !important;
+                    width: 22px !important;
+                    height: 22px !important;
+                }
+                .actions-card .card-header h1 {
+                    font-size: 1.1rem !important;
+                }
+                .actions-card .card-body {
+                    padding: 0.75rem 0.5rem !important;
+                }
+                #actionsBody .d-flex {
+                    gap: 0.5rem !important;
+                }
+                #actionsBody .btn-sm {
+                    font-size: 0.75rem !important;
+                    padding: 0.375rem 0.5rem !important;
+                }
+                
                 h2 {
-                    font-size: 1.5rem;
+                    font-size: 1.25rem !important;
                 }
                 
                 .btn {
-                    font-size: 0.875rem;
-                    padding: 0.375rem 0.75rem;
+                    font-size: 0.8125rem !important;
+                    padding: 0.5rem 0.625rem !important;
+                }
+                
+                .btn-mobile-icon-only {
+                    padding: 0.5rem !important;
+                    min-width: 40px !important;
+                    height: 40px !important;
                 }
                 
                 .table {
@@ -234,29 +653,268 @@
                 }
                 
                 .tab-badge {
-                    font-size: 0.75rem;
-                    padding: 1px 6px;
+                    font-size: 0.7rem !important;
+                    padding: 2px 6px !important;
+                    margin-left: 4px !important;
                 }
                 
-                /* Hide welcome message on very small screens */
-                .navbar-text {
+                /* Sidebar Toggle Button - Extra Small Mobile */
+                #sidebarToggle {
+                    font-size: 1rem !important;
+                    padding: 0.45rem !important;
+                    min-width: 38px !important;
+                    min-height: 38px !important;
+                    margin-right: 0.5rem !important;
+                    margin-left: 0 !important;
+                    order: -1 !important;
+                }
+                
+                #sidebarToggle i {
+                    font-size: 1rem !important;
+                }
+                
+                /* Ensure navbar has proper padding on extra small mobile */
+                .sb-topnav {
+                    padding-left: 0.5rem !important;
+                    padding-right: 0.25rem !important;
+                    overflow-x: hidden !important;
+                    position: relative !important;
+                    max-width: 100vw !important;
+                    width: 100% !important;
+                }
+                
+                /* Ensure navbar container doesn't cut off content on extra small */
+                body.sb-nav-fixed .sb-topnav {
+                    margin-left: 0 !important;
+                    width: 100% !important;
+                    max-width: 100vw !important;
+                }
+                
+                /* Ensure navbar content doesn't overflow on extra small */
+                .sb-topnav .navbar-nav,
+                .sb-topnav .d-flex {
+                    max-width: 100% !important;
+                    overflow-x: hidden !important;
+                }
+                
+                /* Welcome message on extra small mobile */
+                .sb-topnav .navbar-text {
+                    font-size: 0.8rem !important;
+                    margin-left: 0.25rem !important;
+                    white-space: nowrap !important;
+                    overflow: hidden !important;
+                    text-overflow: ellipsis !important;
+                }
+                
+                /* Ensure profile dropdown menu is hidden by default on extra small mobile */
+                .sb-topnav .dropdown-menu {
+                    position: absolute !important;
+                    z-index: 1050 !important;
+                    right: 0 !important;
+                    left: auto !important;
+                    margin-top: 0.5rem !important;
+                    min-width: 160px !important;
+                    max-width: calc(100vw - 1rem) !important;
+                    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+                    background-color: #fff !important;
+                    border: 1px solid rgba(0, 0, 0, 0.15) !important;
+                    border-radius: 0.375rem !important;
+                    display: none !important;
+                    opacity: 0 !important;
+                    visibility: hidden !important;
+                }
+                
+                .sb-topnav .dropdown-menu.show {
+                    display: block !important;
+                    opacity: 1 !important;
+                    visibility: visible !important;
+                }
+                
+                /* Ensure dropdown items are visible on extra small */
+                .sb-topnav .dropdown-menu .dropdown-item {
+                    padding: 0.5rem 1rem !important;
+                    font-size: 0.85rem !important;
+                    white-space: nowrap !important;
+                    color: #212529 !important;
+                    display: block !important;
+                }
+                
+                .sb-topnav .dropdown-menu .dropdown-item:hover {
+                    background-color: #f8f9fa !important;
+                }
+                
+                /* Ensure navbar doesn't clip dropdown on extra small */
+                .sb-topnav {
+                    overflow: visible !important;
+                }
+                
+                .sb-topnav .navbar-nav {
+                    overflow: visible !important;
+                }
+                
+                /* Hide logo on extra small mobile */
+                .sb-topnav .navbar-brand,
+                .sb-topnav .logo-white-section {
                     display: none !important;
                 }
                 
+                /* Ensure navbar nav items are visible on extra small mobile */
+                .sb-topnav .navbar-nav {
+                    flex-shrink: 0 !important;
+                    display: flex !important;
+                    align-items: center !important;
+                    margin-left: auto !important;
+                }
+                
+                .sb-topnav .navbar-nav .nav-item {
+                    flex-shrink: 0 !important;
+                    display: flex !important;
+                    align-items: center !important;
+                }
+                
+                /* Profile dropdown icon - ensure it's visible on extra small */
+                #navbarDropdown {
+                    display: flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    padding: 0.45rem !important;
+                    min-width: 38px !important;
+                    min-height: 38px !important;
+                }
+                
+                #navbarDropdown i {
+                    font-size: 1rem !important;
+                    display: block !important;
+                }
+                
+                /* Notification icon spacing on extra small mobile */
+                #notificationDropdown {
+                    margin-right: 0.5rem !important;
+                }
+                
                 /* Make tabs more compact */
+                .nav-tabs {
+                    padding: 0 0.25rem;
+                }
                 .nav-tabs .nav-link {
-                    padding: 0.5rem 0.75rem;
-                    font-size: 0.875rem;
+                    padding: 0.625rem 0.75rem !important;
+                    font-size: 0.8125rem !important;
+                }
+                
+                /* Tab content */
+                .tab-content {
+                    padding: 0.75rem 0.25rem !important;
+                }
+                
+                /* Mobile card improvements */
+                .mobile-card-row {
+                    padding: 0.75rem !important;
+                }
+                
+                .mobile-card-row .card-body-row {
+                    grid-template-columns: 1fr !important;
+                    gap: 0.5rem !important;
                 }
                 
                 /* Card view full width on mobile */
                 .card-view-item {
-                    margin-bottom: 1rem;
+                    margin-bottom: 0.75rem;
                 }
                 
                 /* Better spacing for filters */
                 .card-body {
-                    padding: 1rem !important;
+                    padding: 0.75rem 0.5rem !important;
+                }
+                
+                /* Filter form improvements - Extra compact on mobile */
+                #filtersForm .card-body {
+                    padding: 0.75rem 0.5rem !important;
+                }
+                #filtersForm .row.g-2 {
+                    margin: 0 !important;
+                }
+                #filtersForm .row.g-2 > [class*="col-"] {
+                    padding-left: 0.375rem !important;
+                    padding-right: 0.375rem !important;
+                    margin-bottom: 0.5rem !important;
+                }
+                #filtersForm .mb-3 {
+                    margin-bottom: 0.75rem !important;
+                }
+                #filtersForm .form-label {
+                    font-size: 0.7rem !important;
+                }
+                #filtersForm .form-control,
+                #filtersForm .form-select {
+                    font-size: 0.8125rem !important;
+                    padding: 0.25rem 0.5rem !important;
+                }
+                #filtersForm .input-group-sm .input-group-text {
+                    padding: 0.25rem 0.5rem !important;
+                    font-size: 0.8125rem !important;
+                }
+                
+                /* Button group full width */
+                .d-flex.gap-2 {
+                    width: 100% !important;
+                }
+                
+                .d-flex.gap-2 > * {
+                    flex: 1 1 auto !important;
+                    min-width: 0 !important;
+                }
+                
+                /* Modal full screen on very small devices */
+                .modal-dialog {
+                    margin: 0 !important;
+                    max-width: 100% !important;
+                }
+                .modal-dialog.modal-lg {
+                    max-width: 100% !important;
+                    height: 100vh !important;
+                }
+                .modal-content {
+                    border-radius: 0 !important;
+                    height: 100% !important;
+                    display: flex !important;
+                    flex-direction: column !important;
+                }
+                .modal-body {
+                    flex: 1 !important;
+                    overflow-y: auto !important;
+                }
+                
+                /* Table horizontal scroll indicator */
+                .table-responsive {
+                    position: relative;
+                }
+                .table-responsive::after {
+                    content: '← Swipe to see more →';
+                    display: block;
+                    text-align: center;
+                    padding: 0.5rem;
+                    color: #6c757d;
+                    font-size: 0.7rem;
+                    background: #f8f9fa;
+                    border-top: 1px solid #dee2e6;
+                    font-weight: 500;
+                }
+                
+                /* Modal full screen on very small devices */
+                .modal-dialog {
+                    margin: 0 !important;
+                    max-width: 100% !important;
+                    height: 100vh !important;
+                }
+                .modal-content {
+                    border-radius: 0 !important;
+                    height: 100% !important;
+                    display: flex !important;
+                    flex-direction: column !important;
+                }
+                .modal-body {
+                    flex: 1 !important;
+                    overflow-y: auto !important;
                 }
             }
         </style>
@@ -268,14 +926,14 @@
             $navStyle = 'background: #212529 !important;';
         @endphp
         <nav class="{{ $navClasses }}" @if($navStyle)style="{{ $navStyle }}"@endif>
-            <!-- Navbar Brand-->
-            <a class="navbar-brand ps-3 d-flex align-items-center logo-white-section" href="{{ route('dashboard') }}">
+            <!-- Navbar Brand - Hidden on Mobile -->
+            <a class="navbar-brand ps-3 d-none d-lg-flex align-items-center logo-white-section" href="{{ route('dashboard') }}">
                 <img src="{{ asset('assets/images/waumini_link_logo.png') }}" alt="Waumini Link Logo" class="logo" style="height: 45px; max-width: 200px; object-fit: contain;">
             </a>
-            <!-- Sidebar Toggle-->
-            <button class="btn btn-link btn-sm order-1 order-lg-0 me-4 me-lg-0" id="sidebarToggle" href="#!" style="font-size: 1.5rem;"><i class="fas fa-bars" style="color: #ffffff !important;"></i></button>
+            <!-- Sidebar Toggle - First on Mobile -->
+            <button class="btn btn-link btn-sm order-first order-lg-0 me-3 me-lg-0" id="sidebarToggle" href="#!"><i class="fas fa-bars" style="color: #ffffff !important;"></i></button>
             <!-- Welcome Message -->
-            <div class="navbar-text me-auto ms-3" style="font-size: 1.1rem; font-weight: 600; color: #ffffff !important; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);">
+            <div class="navbar-text me-auto ms-2 ms-md-3" style="font-size: 1.1rem; font-weight: 600; color: #ffffff !important; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);">
                 <strong>AIC Moshi Kilimanjaro</strong>
             </div>
             <!-- Date and Time Display -->
@@ -287,9 +945,9 @@
             </div>
 
             <!-- Navbar-->
-            <ul class="navbar-nav ms-auto ms-md-0 me-3 me-lg-4">
+            <ul class="navbar-nav ms-auto me-2 me-md-3 me-lg-4">
                 <!-- Notification Icon -->
-                <li class="nav-item dropdown me-3" id="notificationDropdown">
+                <li class="nav-item dropdown me-2 me-md-3" id="notificationDropdown">
                     <a class="nav-link position-relative" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notifications" style="color: #ffffff !important;">
                         <!-- Inline SVG bell to avoid external icon dependency -->
                         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="#ffffff" viewBox="0 0 16 16" class="align-text-top" style="color: #ffffff !important;">
@@ -356,8 +1014,7 @@
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" id="navbarDropdown" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="color: #ffffff !important;"><i class="fas fa-user fa-fw" style="color: #ffffff !important;"></i></a>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                        <li><a class="dropdown-item" href="#!">Settings</a></li>
-                        <li><a class="dropdown-item" href="#!">Activity Log</a></li>
+                        <li><a class="dropdown-item" href="{{ route('member.settings') }}"><i class="fas fa-cog me-2"></i>Settings</a></li>
                         <li><hr class="dropdown-divider" /></li>
                         <li>
                             <a class="dropdown-item" href="{{ route('logout') }}" 
@@ -378,11 +1035,56 @@
                 <nav class="sb-sidenav accordion sb-sidenav-dark" id="sidenavAccordion">
                     <div class="sb-sidenav-menu">
                         <div class="nav">
+                            @if(auth()->user()->isAdmin())
+                            {{-- Admin Menu --}}
+                            <div class="sb-sidenav-menu-heading">Administration</div>
+                            <a class="nav-link" href="{{ route('admin.dashboard') }}">
+                                <div class="sb-nav-link-icon"><i class="fas fa-shield-alt"></i></div>
+                                Admin Dashboard
+                            </a>
+                            <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapseAdmin" aria-expanded="false" aria-controls="collapseAdmin">
+                                <div class="sb-nav-link-icon"><i class="fas fa-cogs"></i></div>
+                                System Management
+                                <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                            </a>
+                            <div class="collapse" id="collapseAdmin" aria-labelledby="headingAdmin" data-bs-parent="#sidenavAccordion">
+                                <nav class="sb-sidenav-menu-nested nav">
+                                    <a class="nav-link" href="{{ route('admin.logs') }}">
+                                        <i class="fas fa-list-alt me-2"></i>Logs
+                                    </a>
+                                    <a class="nav-link" href="{{ route('admin.sessions') }}">
+                                        <i class="fas fa-user-check me-2"></i>User Sessions
+                                    </a>
+                                    <a class="nav-link" href="{{ route('admin.users') }}">
+                                        <i class="fas fa-users me-2"></i>Manage Users
+                                    </a>
+                                    <a class="nav-link" href="{{ route('admin.roles-permissions') }}">
+                                        <i class="fas fa-shield-alt me-2"></i>Roles & Permissions
+                                    </a>
+                                    <a class="nav-link" href="{{ route('admin.system-monitor') }}">
+                                        <i class="fas fa-server me-2"></i>System Monitor
+                                    </a>
+                                </nav>
+                            </div>
+                            @endif
+                            
+                            @if(!auth()->user()->isTreasurer() && !auth()->user()->isAdmin())
                             <div class="sb-sidenav-menu-heading">Main</div>
                             <a class="nav-link" href="{{ route('dashboard') }}">
                                 <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
                                 Dashboard
                             </a>
+                            @elseif(auth()->user()->isAdmin())
+                            <div class="sb-sidenav-menu-heading">Main</div>
+                            <a class="nav-link" href="{{ route('dashboard') }}">
+                                <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
+                                Dashboard
+                            </a>
+                            @endif
+                            
+                            @if(!auth()->user()->isTreasurer() || auth()->user()->isAdmin())
+                            @if(!auth()->user()->isMember())
+                            
                             <div class="sb-sidenav-menu-heading">Management</div>
                             <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapseMembers" aria-expanded="false" aria-controls="collapseMembers">
                                 <div class="sb-nav-link-icon"><i class="fas fa-users"></i></div>
@@ -391,10 +1093,16 @@
                             </a>
                             <div class="collapse" id="collapseMembers" aria-labelledby="headingOne" data-bs-parent="#sidenavAccordion">
                                 <nav class="sb-sidenav-menu-nested nav">
+                                    @if(auth()->user()->hasPermission('members.create') || auth()->user()->isAdmin())
                                     <a class="nav-link" href="{{ route('members.add') }}">
                                         <i class="fas fa-user-plus me-2"></i>Add New Member
                                     </a>
-                                    <a class="nav-link" href="{{ route('members.view') }}"><i class="fas fa-list me-2"></i>All Members</a>
+                                    @endif
+                                    @if(auth()->user()->hasPermission('members.view') || auth()->user()->isAdmin())
+                                    <a class="nav-link" href="{{ route('members.view') }}">
+                                        <i class="fas fa-list me-2"></i>All Members
+                                    </a>
+                                    @endif
                                 </nav>
                             </div>
                             
@@ -419,6 +1127,10 @@
                                 </nav>
                             </div>
                             
+                            <a class="nav-link" href="{{ route('announcements.index') }}">
+                                <div class="sb-nav-link-icon"><i class="fas fa-bullhorn"></i></div>
+                                Announcements
+                            </a>
                             <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapseEvents" aria-expanded="false" aria-controls="collapseEvents">
                                 <div class="sb-nav-link-icon"><i class="fas fa-calendar-alt"></i></div>
                                 Events & Services
@@ -426,14 +1138,65 @@
                             </a>
                             <div class="collapse" id="collapseEvents" aria-labelledby="headingTwo" data-bs-parent="#sidenavAccordion">
                                 <nav class="sb-sidenav-menu-nested nav">
-                                    <a class="nav-link" href="{{ route('services.sunday.index') }}"><i class="fas fa-church me-2"></i>Sunday Services</a>
+                                    <a class="nav-link" href="{{ route('services.sunday.index') }}"><i class="fas fa-church me-2"></i>Services</a>
                                     <a class="nav-link" href="{{ route('special.events.index') }}"><i class="fas fa-calendar-plus me-2"></i>Special Events</a>
                                     <a class="nav-link" href="{{ route('attendance.index') }}"><i class="fas fa-users me-2"></i>Record Attendance</a>
                                     <a class="nav-link" href="{{ route('attendance.statistics') }}"><i class="fas fa-chart-bar me-2"></i>Attendance Statistics</a>
+                                    <a class="nav-link" href="{{ route('promise-guests.index') }}"><i class="fas fa-user-check me-2"></i>Promise Guests</a>
                                     <a class="nav-link" href="{{ route('celebrations.index') }}"><i class="fas fa-birthday-cake me-2"></i>Celebrations</a>
+                                    <a class="nav-link" href="{{ route('bereavement.index') }}"><i class="fas fa-heart-broken me-2"></i>Bereavement</a>
                                 </nav>
                             </div>
+                            @endif
+                            @endif
                             
+                            @if(auth()->user()->isTreasurer())
+                            {{-- For Treasurer: Show finance menu items directly without dropdown --}}
+                            <a class="nav-link" href="{{ route('finance.dashboard') }}">
+                                <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
+                                Dashboard
+                            </a>
+                            @if(auth()->user()->canApproveFinances())
+                            <a class="nav-link" href="{{ route('finance.approval.dashboard') }}">
+                                <div class="sb-nav-link-icon"><i class="fas fa-check-circle"></i></div>
+                                Approval Dashboard
+                            </a>
+                            @endif
+                            <a class="nav-link" href="{{ route('finance.tithes') }}">
+                                <div class="sb-nav-link-icon"><i class="fas fa-coins"></i></div>
+                                Tithes
+                            </a>
+                            <a class="nav-link" href="{{ route('finance.offerings') }}">
+                                <div class="sb-nav-link-icon"><i class="fas fa-gift"></i></div>
+                                Offerings
+                            </a>
+                            <a class="nav-link" href="{{ route('finance.donations') }}">
+                                <div class="sb-nav-link-icon"><i class="fas fa-heart"></i></div>
+                                Donations
+                            </a>
+                            <a class="nav-link" href="{{ route('finance.pledges') }}">
+                                <div class="sb-nav-link-icon"><i class="fas fa-handshake"></i></div>
+                                Pledges
+                            </a>
+                            <a class="nav-link" href="{{ route('finance.budgets') }}">
+                                <div class="sb-nav-link-icon"><i class="fas fa-wallet"></i></div>
+                                Budgets
+                            </a>
+                            <a class="nav-link" href="{{ route('finance.expenses') }}">
+                                <div class="sb-nav-link-icon"><i class="fas fa-receipt"></i></div>
+                                Expenses
+                            </a>
+                            <a class="nav-link" href="{{ route('reports.index') }}">
+                                <div class="sb-nav-link-icon"><i class="fas fa-chart-pie"></i></div>
+                                Reports
+                            </a>
+                            <div class="sb-sidenav-menu-heading">Account</div>
+                            <a class="nav-link" href="{{ route('leader.change-password') }}">
+                                <div class="sb-nav-link-icon"><i class="fas fa-key"></i></div>
+                                Change Password
+                            </a>
+                            @elseif(!auth()->user()->isMember())
+                            {{-- For other users (not treasurer, not member): Show finance menu as collapsed dropdown --}}
                             <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapseFinance" aria-expanded="false" aria-controls="collapseFinance">
                                 <div class="sb-nav-link-icon"><i class="fas fa-chart-line"></i></div>
                                 Finance
@@ -454,7 +1217,9 @@
                                     <a class="nav-link" href="{{ route('reports.index') }}"><i class="fas fa-chart-pie me-2"></i>Reports</a>
                                 </nav>
                             </div>
+                            @endif
                             
+                            @if((!auth()->user()->isTreasurer() || auth()->user()->isAdmin()) && !auth()->user()->isMember())
                             <div class="sb-sidenav-menu-heading">Reports</div>
                             <a class="nav-link" href="{{ route('analytics.index') }}">
                                 <div class="sb-nav-link-icon"><i class="fas fa-chart-line"></i></div>
@@ -465,11 +1230,22 @@
                                 All Reports
                             </a>
                             
+                            @if(!auth()->user()->isMember())
+                            <div class="sb-sidenav-menu-heading">Account</div>
+                            <a class="nav-link" href="{{ route('leader.change-password') }}">
+                                <div class="sb-nav-link-icon"><i class="fas fa-key"></i></div>
+                                Change Password
+                            </a>
+                            @endif
+                            @endif
+                            
+                            @if(auth()->user()->isAdmin())
                             <div class="sb-sidenav-menu-heading">Settings</div>
                             <a class="nav-link" href="{{ route('settings.index') }}">
                                 <div class="sb-nav-link-icon"><i class="fas fa-cog"></i></div>
                                 System Settings
                             </a>
+                            @endif
                         </div>
                     </div>
                     <div class="sb-sidenav-footer">
@@ -481,44 +1257,62 @@
             
             <div id="layoutSidenav_content">
                 <main>
-                    <div class="container-fluid px-4">
-                        <div class="d-flex flex-column flex-md-row flex-wrap align-items-start align-items-md-center justify-content-between mt-4 mb-3 gap-2">
-                            <h2 class="mb-0 mb-md-0">Members</h2>
-                            <div class="d-flex flex-wrap gap-2 w-100 w-md-auto">
-                                <a href="{{ route('attendance.index') }}" class="btn btn-info btn-mobile-icon-only">
-                                    <i class="fas fa-users"></i>
-                                    <span class="btn-text ms-2 d-none d-md-inline">Record Attendance</span>
-                                </a>
-                                <a href="{{ route('attendance.statistics') }}" class="btn btn-outline-info btn-mobile-icon-only">
-                                    <i class="fas fa-chart-bar"></i>
-                                    <span class="btn-text ms-2 d-none d-md-inline">Statistics</span>
-                                </a>
-                                <div class="btn-group" role="group" aria-label="View toggle">
-                                    <button type="button" class="btn btn-outline-secondary active" id="listViewBtn" onclick="switchView('list')">
-                                        <i class="fas fa-list"></i>
-                                        <span class="d-none d-md-inline ms-1">List</span>
+                    <div class="container-fluid px-4 pt-0">
+                        <!-- Page Title and Quick Actions - Compact Collapsible -->
+                        <div class="card border-0 shadow-sm mb-2 mt-1 actions-card">
+                            <div class="card-header bg-white border-bottom p-2 px-3 d-flex align-items-center justify-content-between actions-header" onclick="toggleActions()">
+                                <div class="d-flex align-items-center gap-2">
+                                    <h1 class="mb-0 mt-2" style="font-size: 1.5rem;"><i class="fas fa-users me-2"></i>Members</h1>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="fas fa-chevron-down text-muted d-md-none" id="actionsToggleIcon"></i>
+                                </div>
+                            </div>
+                            <div class="card-body p-3" id="actionsBody">
+                                <div class="d-flex flex-wrap gap-2">
+                                    <a href="{{ route('attendance.index') }}" class="btn btn-info btn-sm">
+                                        <i class="fas fa-users me-1"></i>
+                                        <span class="d-none d-sm-inline">Record Attendance</span>
+                                        <span class="d-sm-none">Attendance</span>
+                                    </a>
+                                    <a href="{{ route('attendance.statistics') }}" class="btn btn-outline-info btn-sm">
+                                        <i class="fas fa-chart-bar me-1"></i>
+                                        <span class="d-none d-sm-inline">Statistics</span>
+                                        <span class="d-sm-none">Stats</span>
+                                    </a>
+                                    <div class="btn-group btn-group-sm" role="group" aria-label="View toggle">
+                                        <button type="button" class="btn btn-outline-secondary active" id="listViewBtn" onclick="switchView('list')">
+                                            <i class="fas fa-list"></i>
+                                            <span class="d-none d-md-inline ms-1">List</span>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary" id="cardViewBtn" onclick="switchView('card')">
+                                            <i class="fas fa-th-large"></i>
+                                            <span class="d-none d-md-inline ms-1">Card</span>
+                                        </button>
+                                    </div>
+                                    @if(auth()->user()->hasPermission('members.create') || auth()->user()->isAdmin())
+                                    <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#addChildModal">
+                                        <i class="fas fa-child me-1"></i>
+                                        <span class="d-none d-sm-inline">Add Child</span>
+                                        <span class="d-sm-none">Child</span>
                                     </button>
-                                    <button type="button" class="btn btn-outline-secondary" id="cardViewBtn" onclick="switchView('card')">
-                                        <i class="fas fa-th-large"></i>
-                                        <span class="d-none d-md-inline ms-1">Card</span>
+                                    <a href="{{ route('members.add') }}" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-user-plus me-1"></i>
+                                        <span class="d-none d-sm-inline">Add Member</span>
+                                        <span class="d-sm-none">Add</span>
+                                    </a>
+                                    @endif
+                                    <a href="{{ route('members.export.csv', request()->query()) }}" class="btn btn-outline-success btn-sm">
+                                        <i class="fas fa-file-excel me-1"></i>
+                                        <span class="d-none d-sm-inline">Export</span>
+                                        <span class="d-sm-none">Export</span>
+                                    </a>
+                                    <button class="btn btn-outline-secondary btn-sm" onclick="window.print()">
+                                        <i class="fas fa-print me-1"></i>
+                                        <span class="d-none d-sm-inline">Print</span>
+                                        <span class="d-sm-none">Print</span>
                                     </button>
                                 </div>
-                                <button type="button" class="btn btn-success btn-mobile-icon-only" data-bs-toggle="modal" data-bs-target="#addChildModal">
-                                    <i class="fas fa-child"></i>
-                                    <span class="btn-text ms-2 d-none d-md-inline">Add Child</span>
-                                </button>
-                                <a href="{{ route('members.add') }}" class="btn btn-primary btn-mobile-icon-only">
-                                    <i class="fas fa-user-plus"></i>
-                                    <span class="btn-text ms-2 d-none d-md-inline">Add Member</span>
-                                </a>
-                                <a href="{{ route('members.export.csv', request()->query()) }}" class="btn btn-outline-success btn-mobile-icon-only">
-                                    <i class="fas fa-file-excel"></i>
-                                    <span class="btn-text ms-2 d-none d-md-inline">Export</span>
-                                </a>
-                                <button class="btn btn-outline-secondary btn-mobile-icon-only" onclick="window.print()">
-                                    <i class="fas fa-print"></i>
-                                    <span class="btn-text ms-2 d-none d-md-inline">Print</span>
-                                </button>
                             </div>
                         </div>
 
@@ -701,7 +1495,7 @@
                             <div class="modal-footer d-flex justify-content-between align-items-center">
                                 <div class="small">
                                     <span class="me-1">Powered by</span>
-                                    <a href="https://emca.tech/#" target="_blank" rel="noopener" class="emca-link fw-semibold">EmCa Technologies</a>
+                                    <a href="https://emca.tech/#" target="_blank" rel="noopener" class="emca-link fw-semibold" style="color: #940000 !important;">EmCa Technologies</a>
                                 </div>
                                 <div class="d-flex gap-2">
                                     <button type="button" class="btn btn-outline-light" id="btnAttendanceHistory" onclick="viewAttendanceHistory()" style="display: none;">
@@ -1048,7 +1842,7 @@
       <div class="col-md-6 text-center text-md-end">
         <small>
           Powered by 
-          <a href="https://emca.tech/#" class="text-decoration-none text-info fw-semibold">
+          <a href="https://emca.tech/#" class="text-decoration-none fw-semibold" style="color: #940000 !important;">
             EmCa Technologies
           </a>
         </small>
@@ -1283,6 +2077,68 @@
             function handleAction(fn){ confirmThen('Proceed with this action?', fn); return false; }
 
             // View switching functionality
+            function toggleActions() {
+                // Only toggle on mobile devices
+                if (window.innerWidth > 768) {
+                    return; // Don't toggle on desktop
+                }
+                
+                const actionsBody = document.getElementById('actionsBody');
+                const actionsIcon = document.getElementById('actionsToggleIcon');
+                
+                // Check computed style to see if it's visible
+                const computedStyle = window.getComputedStyle(actionsBody);
+                const isVisible = computedStyle.display !== 'none';
+                
+                if (isVisible) {
+                    actionsBody.style.display = 'none';
+                    actionsIcon.classList.remove('fa-chevron-up');
+                    actionsIcon.classList.add('fa-chevron-down');
+                } else {
+                    actionsBody.style.display = 'block';
+                    actionsIcon.classList.remove('fa-chevron-down');
+                    actionsIcon.classList.add('fa-chevron-up');
+                }
+            }
+            
+            // Handle window resize
+            window.addEventListener('resize', function() {
+                const actionsBody = document.getElementById('actionsBody');
+                const actionsIcon = document.getElementById('actionsToggleIcon');
+                
+                if (window.innerWidth > 768) {
+                    // Always show on desktop
+                    actionsBody.style.display = 'block';
+                    actionsIcon.classList.remove('fa-chevron-up');
+                    actionsIcon.classList.add('fa-chevron-down');
+                } else {
+                    // On mobile, ensure it starts collapsed
+                    const computedStyle = window.getComputedStyle(actionsBody);
+                    if (computedStyle.display !== 'none' && !actionsBody.hasAttribute('data-user-opened')) {
+                        actionsBody.style.display = 'none';
+                        actionsIcon.classList.remove('fa-chevron-up');
+                        actionsIcon.classList.add('fa-chevron-down');
+                    }
+                }
+            });
+            
+            // Initialize on page load
+            document.addEventListener('DOMContentLoaded', function() {
+                const actionsBody = document.getElementById('actionsBody');
+                const actionsIcon = document.getElementById('actionsToggleIcon');
+                
+                if (window.innerWidth <= 768) {
+                    // Mobile: start collapsed
+                    actionsBody.style.display = 'none';
+                    actionsIcon.classList.remove('fa-chevron-up');
+                    actionsIcon.classList.add('fa-chevron-down');
+                } else {
+                    // Desktop: always show
+                    actionsBody.style.display = 'block';
+                    actionsIcon.style.display = 'none';
+                }
+            });
+            
             function switchView(view) {
                 console.log('Switching to view:', view);
                 const listView = document.getElementById('listView');
@@ -2695,7 +3551,26 @@
                                     } else if (response.status === 404) {
                                         throw new Error('Member not found');
                                     } else if (response.status === 419) {
-                                        throw new Error('CSRF token mismatch. Please refresh the page.');
+                                        // CSRF token expired - reload page to get new token
+                                        if (typeof Swal !== 'undefined') {
+                                            Swal.fire({
+                                                icon: 'info',
+                                                title: 'Refreshing...',
+                                                text: 'Please wait while we refresh your session.',
+                                                allowOutsideClick: false,
+                                                allowEscapeKey: false,
+                                                showConfirmButton: false,
+                                                didOpen: () => {
+                                                    Swal.showLoading();
+                                                }
+                                            });
+                                            setTimeout(() => {
+                                                window.location.reload();
+                                            }, 500);
+                                        } else {
+                                            window.location.reload();
+                                        }
+                                        return;
                                     } else if (response.status === 422) {
                                         // Parse the 422 response to get the actual error message
                                         return response.json().then(data => {
@@ -2956,7 +3831,7 @@
 
                 // Footer
                 w.document.write(`<div class="footer">
-                    Printed on ${printedAt} by ${printedBy} • © ${yearNow} Waumini Link • Powered by <a href="https://emca.tech/#" target="_blank" rel="noopener">EmCa Technologies</a>
+                    Printed on ${printedAt} by ${printedBy} • © ${yearNow} Waumini Link • Powered by <a href="https://emca.tech/#" target="_blank" rel="noopener" style="color: #940000 !important;">EmCa Technologies</a>
                 </div>`);
 
                 w.document.write('</div>');
@@ -3036,7 +3911,7 @@
                 html += '<table style="width:100%;border-collapse:separate;border-spacing:0"><tbody>'+
                         row('Living with family', m.living_with_family)+row('Family relationship', m.family_relationship)+row('Tribe', (m.tribe || '') + (m.other_tribe ? (' ('+m.other_tribe+')') : ''))+
                         '</tbody></table>';
-                html += '<div style="margin-top:18px;padding-top:10px;border-top:1px dashed #ced4da;font-size:12px;color:#6c757d;text-align:center">Powered by <a href="https://emca.tech/#" target="_blank" style="color:#5b2a86;text-decoration:none">EmCa Technologies</a></div>';
+                html += '<div style="margin-top:18px;padding-top:10px;border-top:1px dashed #ced4da;font-size:12px;color:#6c757d;text-align:center">Powered by <a href="https://emca.tech/#" target="_blank" style="color:#940000;text-decoration:none">EmCa Technologies</a></div>';
                 container.innerHTML = html;
                 document.body.appendChild(container);
                 // Preload images before generating PDF
@@ -3908,6 +4783,132 @@
                 loadNotifications();
                 // Refresh notifications every 5 minutes
                 setInterval(loadNotifications, 300000);
+                
+                // Handle mobile dropdown positioning
+                const notificationDropdown = document.getElementById('notificationDropdown');
+                if (notificationDropdown) {
+                    const dropdownMenu = notificationDropdown.querySelector('.notification-dropdown');
+                    if (dropdownMenu) {
+                        // Function to apply mobile positioning
+                        function applyMobilePositioning() {
+                            if (window.innerWidth <= 576) {
+                                dropdownMenu.style.setProperty('position', 'fixed', 'important');
+                                dropdownMenu.style.setProperty('top', '60px', 'important');
+                                dropdownMenu.style.setProperty('left', '0.25rem', 'important');
+                                dropdownMenu.style.setProperty('right', '0.25rem', 'important');
+                                dropdownMenu.style.setProperty('width', 'calc(100vw - 0.5rem)', 'important');
+                                dropdownMenu.style.setProperty('max-width', 'calc(100vw - 0.5rem)', 'important');
+                                dropdownMenu.style.setProperty('margin', '0', 'important');
+                                dropdownMenu.style.setProperty('transform', 'none', 'important');
+                                dropdownMenu.style.setProperty('z-index', '1055', 'important');
+                                dropdownMenu.style.setProperty('inset', '60px 0.25rem auto 0.25rem', 'important');
+                            } else if (window.innerWidth <= 768) {
+                                dropdownMenu.style.setProperty('position', 'fixed', 'important');
+                                dropdownMenu.style.setProperty('top', '60px', 'important');
+                                dropdownMenu.style.setProperty('left', '0.5rem', 'important');
+                                dropdownMenu.style.setProperty('right', '0.5rem', 'important');
+                                dropdownMenu.style.setProperty('width', 'calc(100vw - 1rem)', 'important');
+                                dropdownMenu.style.setProperty('max-width', 'calc(100vw - 1rem)', 'important');
+                                dropdownMenu.style.setProperty('margin', '0', 'important');
+                                dropdownMenu.style.setProperty('transform', 'none', 'important');
+                                dropdownMenu.style.setProperty('z-index', '1055', 'important');
+                                dropdownMenu.style.setProperty('inset', '60px 0.5rem auto 0.5rem', 'important');
+                            } else {
+                                // Desktop - reset styles
+                                dropdownMenu.style.removeProperty('position');
+                                dropdownMenu.style.removeProperty('top');
+                                dropdownMenu.style.removeProperty('left');
+                                dropdownMenu.style.removeProperty('right');
+                                dropdownMenu.style.removeProperty('width');
+                                dropdownMenu.style.removeProperty('max-width');
+                                dropdownMenu.style.removeProperty('margin');
+                                dropdownMenu.style.removeProperty('transform');
+                                dropdownMenu.style.removeProperty('z-index');
+                                dropdownMenu.style.removeProperty('inset');
+                            }
+                        }
+                        
+                        // Handle dropdown show event for mobile positioning
+                        notificationDropdown.addEventListener('show.bs.dropdown', function() {
+                            setTimeout(applyMobilePositioning, 10);
+                        });
+                        
+                        // Also handle after shown to ensure positioning
+                        notificationDropdown.addEventListener('shown.bs.dropdown', function() {
+                            applyMobilePositioning();
+                            // Use MutationObserver to watch for Bootstrap's style changes
+                            const observer = new MutationObserver(function(mutations) {
+                                mutations.forEach(function(mutation) {
+                                    if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+                                        applyMobilePositioning();
+                                    }
+                                });
+                            });
+                            observer.observe(dropdownMenu, { attributes: true, attributeFilter: ['style'] });
+                            // Disconnect observer after dropdown is hidden
+                            notificationDropdown.addEventListener('hide.bs.dropdown', function() {
+                                observer.disconnect();
+                            }, { once: true });
+                        });
+                        
+                        // Handle window resize
+                        window.addEventListener('resize', function() {
+                            if (window.innerWidth > 768) {
+                                // Reset to desktop styles
+                                dropdownMenu.style.position = '';
+                                dropdownMenu.style.top = '';
+                                dropdownMenu.style.left = '';
+                                dropdownMenu.style.right = '';
+                                dropdownMenu.style.width = '';
+                                dropdownMenu.style.maxWidth = '';
+                                dropdownMenu.style.transform = '';
+                                dropdownMenu.style.zIndex = '';
+                            }
+                        });
+                        
+                        // Handle dropdown hide to reset styles
+                        notificationDropdown.addEventListener('hide.bs.dropdown', function() {
+                            if (window.innerWidth > 768) {
+                                dropdownMenu.style.position = '';
+                                dropdownMenu.style.top = '';
+                                dropdownMenu.style.left = '';
+                                dropdownMenu.style.right = '';
+                                dropdownMenu.style.width = '';
+                                dropdownMenu.style.maxWidth = '';
+                                dropdownMenu.style.transform = '';
+                                dropdownMenu.style.zIndex = '';
+                            }
+                        });
+                    }
+                }
+                
+                // Ensure dropdowns close properly - close one when the other opens
+                const profileDropdown = document.getElementById('navbarDropdown');
+                const notificationDropdownEl = document.getElementById('notificationDropdown');
+                
+                if (notificationDropdownEl && profileDropdown) {
+                    // Close profile dropdown when notification opens
+                    notificationDropdownEl.addEventListener('show.bs.dropdown', function() {
+                        // Use Bootstrap API to close profile dropdown
+                        if (typeof bootstrap !== 'undefined') {
+                            const profileDropdownInstance = bootstrap.Dropdown.getInstance(profileDropdown);
+                            if (profileDropdownInstance) {
+                                profileDropdownInstance.hide();
+                            }
+                        }
+                    });
+                    
+                    // Close notification dropdown when profile opens
+                    profileDropdown.addEventListener('show.bs.dropdown', function() {
+                        // Use Bootstrap API to close notification dropdown
+                        if (typeof bootstrap !== 'undefined') {
+                            const notificationDropdownInstance = bootstrap.Dropdown.getInstance(notificationDropdownEl);
+                            if (notificationDropdownInstance) {
+                                notificationDropdownInstance.hide();
+                            }
+                        }
+                    });
+                }
             });
             
             // Update date and time display
@@ -3957,12 +4958,12 @@
                             document.body.classList.toggle('sb-sidenav-toggled');
                             
                             const isToggled = layoutSidenav ? layoutSidenav.classList.contains('sb-sidenav-toggled') : document.body.classList.contains('sb-sidenav-toggled');
-                            localStorage.setItem('sb|sidebar-toggle', isToggled ? 'true' : 'false');
+                            localStorage.setItem('sb-sidebar-toggle', isToggled ? 'true' : 'false');
                             
                             return false;
                         }, true);
                         
-                        const savedState = localStorage.getItem('sb|sidebar-toggle');
+                        const savedState = localStorage.getItem('sb-sidebar-toggle');
                         if (savedState === 'true') {
                             if (layoutSidenav) {
                                 layoutSidenav.classList.add('sb-sidenav-toggled');

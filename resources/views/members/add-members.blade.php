@@ -160,6 +160,310 @@
                 from { opacity: 1; transform: none; }
                 to { opacity: 0; transform: translateY(-24px); }
             }
+            
+            /* Mobile Responsive Styles for Navbar */
+            @media (max-width: 991.98px) {
+                /* Hide logo on mobile */
+                .sb-topnav .navbar-brand {
+                    display: none !important;
+                }
+                
+                /* Ensure navbar has proper padding on mobile to prevent cutoff */
+                .sb-topnav {
+                    padding-left: 0.75rem !important;
+                    padding-right: 0.5rem !important;
+                    overflow-x: hidden !important;
+                    position: fixed !important;
+                    top: 0 !important;
+                    left: 0 !important;
+                    right: 0 !important;
+                    z-index: 1040 !important;
+                    max-width: 100vw !important;
+                    width: 100% !important;
+                }
+                
+                /* Add margin-top to content to account for fixed navbar */
+                #layoutSidenav_content {
+                    margin-top: -10px !important;
+                }
+                
+                /* Ensure sidebar doesn't override navbar */
+                #layoutSidenav_nav,
+                .sb-sidenav {
+                    z-index: 1035 !important;
+                }
+                
+                /* Ensure sidebar links are clickable on mobile */
+                #sidenavAccordion .nav-link {
+                    pointer-events: auto !important;
+                    z-index: 1040 !important;
+                }
+                
+                /* Remove overlay that might block clicks */
+                body.sb-sidenav-toggled #layoutSidenav #layoutSidenav_content:before,
+                #layoutSidenav.sb-sidenav-toggled #layoutSidenav_content:before {
+                    pointer-events: none !important;
+                    z-index: 1034 !important;
+                }
+                
+                /* Ensure main content is always clickable */
+                #layoutSidenav_content {
+                    pointer-events: auto !important;
+                }
+                
+                /* Ensure sidebar overlay doesn't cover navbar */
+                #layoutSidenav_content:before,
+                body.sb-sidenav-toggled #layoutSidenav_content:before {
+                    z-index: 1034 !important;
+                }
+                
+                /* Notification dropdown positioning on mobile */
+                #notificationDropdown .notification-dropdown,
+                #notificationDropdown .dropdown-menu-end.notification-dropdown,
+                #notificationDropdown.show .notification-dropdown,
+                #notificationDropdown.show .dropdown-menu-end.notification-dropdown,
+                .notification-dropdown.dropdown-menu-end,
+                .dropdown-menu-end.notification-dropdown {
+                    width: calc(100vw - 1rem) !important;
+                    max-width: calc(100vw - 1rem) !important;
+                    margin: 0 !important;
+                    left: 0.5rem !important;
+                    right: 0.5rem !important;
+                    transform: none !important;
+                    position: fixed !important;
+                    top: 60px !important;
+                    max-height: calc(100vh - 120px) !important;
+                    border-radius: 12px !important;
+                    z-index: 1055 !important;
+                    inset: 60px 0.5rem auto 0.5rem !important;
+                }
+                
+                /* Ensure dropdown parent has proper positioning */
+                .sb-topnav .nav-item.dropdown {
+                    position: relative !important;
+                }
+                
+                /* Ensure profile dropdown menu is visible when active */
+                .sb-topnav .dropdown-menu:not(.notification-dropdown) {
+                    position: absolute !important;
+                    z-index: 1050 !important;
+                    right: 0 !important;
+                    left: auto !important;
+                    margin-top: 0.5rem !important;
+                    min-width: 180px !important;
+                    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+                    background-color: #fff !important;
+                    border: 1px solid rgba(0, 0, 0, 0.15) !important;
+                    border-radius: 0.375rem !important;
+                }
+                
+                .sb-topnav .dropdown-menu:not(.notification-dropdown).show {
+                    display: block !important;
+                }
+                
+                /* Ensure dropdown items are visible */
+                .sb-topnav .dropdown-menu .dropdown-item {
+                    padding: 0.5rem 1rem !important;
+                    font-size: 0.9rem !important;
+                    white-space: nowrap !important;
+                    color: #212529 !important;
+                    display: block !important;
+                }
+                
+                .sb-topnav .dropdown-menu .dropdown-item:hover {
+                    background-color: #f8f9fa !important;
+                    color: #212529 !important;
+                }
+                
+                /* Ensure profile dropdown is positioned correctly on mobile */
+                @media (max-width: 575.98px) {
+                    .sb-topnav .dropdown-menu:not(.notification-dropdown) {
+                        min-width: 160px !important;
+                        max-width: calc(100vw - 1rem) !important;
+                    }
+                }
+                
+                /* Ensure navbar container doesn't cut off content */
+                body.sb-nav-fixed .sb-topnav {
+                    margin-left: 0 !important;
+                    width: 100% !important;
+                    max-width: 100vw !important;
+                }
+                
+                /* Ensure navbar content doesn't overflow */
+                .sb-topnav .navbar-nav,
+                .sb-topnav .d-flex {
+                    max-width: 100% !important;
+                    overflow-x: hidden !important;
+                }
+                
+                /* Ensure navbar doesn't clip dropdown menus */
+                .sb-topnav {
+                    overflow: visible !important;
+                }
+                
+                .sb-topnav .navbar-nav {
+                    overflow: visible !important;
+                }
+                
+                /* Ensure navbar nav items are visible and don't shrink */
+                .sb-topnav .navbar-nav {
+                    flex-shrink: 0 !important;
+                    display: flex !important;
+                    align-items: center !important;
+                }
+                
+                .sb-topnav .navbar-nav .nav-item {
+                    flex-shrink: 0 !important;
+                    display: flex !important;
+                    align-items: center !important;
+                }
+                
+                /* Profile dropdown icon - ensure it's always visible */
+                #navbarDropdown {
+                    display: flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    padding: 0.5rem !important;
+                    min-width: 40px !important;
+                    min-height: 40px !important;
+                }
+                
+                #navbarDropdown i {
+                    font-size: 1.1rem !important;
+                    display: block !important;
+                }
+                
+                /* Welcome message on mobile */
+                .sb-topnav .navbar-text {
+                    font-size: 0.9rem !important;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    max-width: 150px;
+                }
+                
+                /* Notification dropdown on mobile */
+                .notification-dropdown {
+                    width: calc(100vw - 2rem) !important;
+                    max-width: 400px !important;
+                }
+                
+                /* Form card responsive padding */
+                .main-form-card {
+                    margin: 0.5rem !important;
+                }
+                
+                .card-body {
+                    padding: 1rem !important;
+                }
+                
+                /* Card header responsive */
+                .card-header {
+                    padding: 1rem !important;
+                }
+                
+                /* Wizard steps responsive */
+                .wizard-step {
+                    flex: 0 0 auto;
+                    min-width: 60px;
+                }
+                
+                .step-label {
+                    font-size: 0.7rem !important;
+                }
+                
+                /* Form columns stack on mobile */
+                .row.g-4 > [class*="col-"] {
+                    margin-bottom: 1rem;
+                }
+            }
+            
+            @media (max-width: 575.98px) {
+                /* Extra small devices */
+                #layoutSidenav_content {
+                    margin-top: -10px !important;
+                }
+                
+                .sb-topnav .navbar-text {
+                    font-size: 0.8rem !important;
+                    max-width: 120px;
+                }
+                
+                .card-header .btn {
+                    font-size: 0.75rem !important;
+                    padding: 0.25rem 0.5rem !important;
+                }
+                
+                .card-header .btn i {
+                    margin-right: 0.25rem !important;
+                }
+                
+                .wizard-step {
+                    min-width: 50px;
+                }
+                
+                .step-circle {
+                    width: 30px !important;
+                    height: 30px !important;
+                    font-size: 0.8rem !important;
+                }
+                
+                /* Form inputs on mobile */
+                .form-floating > label {
+                    font-size: 0.875rem !important;
+                }
+                
+                .form-control,
+                .form-select {
+                    font-size: 0.9rem !important;
+                }
+                
+                /* Card header title on mobile */
+                .card-header .fs-5 {
+                    font-size: 1rem !important;
+                }
+                
+                /* Button spacing on mobile */
+                .card-header .mt-3 {
+                    margin-top: 0.75rem !important;
+                }
+                
+                .card-header .btn {
+                    margin-bottom: 0.5rem;
+                }
+                
+                /* Wizard step labels */
+                .step-label {
+                    font-size: 0.65rem !important;
+                }
+                
+                /* Form row gaps */
+                .row.g-4 {
+                    --bs-gutter-y: 1rem;
+                }
+                
+                /* Notification dropdown on extra small mobile */
+                #notificationDropdown .notification-dropdown,
+                #notificationDropdown .dropdown-menu-end.notification-dropdown,
+                #notificationDropdown.show .notification-dropdown,
+                #notificationDropdown.show .dropdown-menu-end.notification-dropdown,
+                .notification-dropdown.dropdown-menu-end,
+                .dropdown-menu-end.notification-dropdown {
+                    width: calc(100vw - 0.5rem) !important;
+                    max-width: calc(100vw - 0.5rem) !important;
+                    margin: 0 !important;
+                    left: 0.25rem !important;
+                    right: 0.25rem !important;
+                    transform: none !important;
+                    position: fixed !important;
+                    top: 60px !important;
+                    max-height: calc(100vh - 100px) !important;
+                    border-radius: 10px !important;
+                    z-index: 1055 !important;
+                    inset: 60px 0.25rem auto 0.25rem !important;
+                }
+            }
         </style>
     </head>
     <body class="sb-nav-fixed">
@@ -169,26 +473,26 @@
             $navStyle = 'background: #212529 !important;';
         @endphp
         <nav class="{{ $navClasses }}" @if($navStyle)style="{{ $navStyle }}"@endif>
-            <!-- Navbar Brand-->
-            <a class="navbar-brand ps-3 d-flex align-items-center logo-white-section" href="{{ route('dashboard') }}">
+            <!-- Navbar Brand - Hidden on Mobile -->
+            <a class="navbar-brand ps-3 d-none d-lg-flex align-items-center logo-white-section" href="{{ route('dashboard') }}">
                 <img src="{{ asset('assets/images/waumini_link_logo.png') }}" alt="Waumini Link Logo" class="logo" style="height: 45px; max-width: 200px; object-fit: contain;">
             </a>
-            <!-- Sidebar Toggle-->
-            <button class="btn btn-link btn-sm order-1 order-lg-0 me-4 me-lg-0" id="sidebarToggle" href="#!" style="font-size: 1.5rem;"><i class="fas fa-bars" style="color: #ffffff !important;"></i></button>
+            <!-- Sidebar Toggle - First on Mobile -->
+            <button class="btn btn-link btn-sm order-first order-lg-0 me-3 me-lg-0" id="sidebarToggle" href="#!"><i class="fas fa-bars" style="color: #ffffff !important;"></i></button>
             <!-- Welcome Message -->
-            <div class="navbar-text me-auto ms-3" style="font-size: 1.1rem; font-weight: 600; color: #ffffff !important; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);">
+            <div class="navbar-text me-auto ms-2 ms-md-3" style="font-size: 1.1rem; font-weight: 600; color: #ffffff !important; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);">
                 <strong>AIC Moshi Kilimanjaro</strong>
-            </div>
-            <!-- Date and Time Display -->
-            <div class="d-none d-md-flex align-items-center ms-auto me-0 me-md-3">
-                <div class="text-end" style="color: #ffffff !important;">
-                    <div id="currentDate" style="font-size: 0.9rem; font-weight: 500; color: #ffffff !important;"></div>
-                    <div id="currentTime" style="font-size: 1.1rem; font-weight: 600; color: #ffffff !important;"></div>
-                </div>
             </div>
 
             <!-- Navbar-->
-            <ul class="navbar-nav ms-auto ms-md-0 me-3 me-lg-4">
+            <ul class="navbar-nav ms-auto me-2 me-md-3 me-lg-4">
+                <!-- Date and Time Display - Hidden on Mobile -->
+                <li class="nav-item d-none d-md-flex align-items-center me-2 me-md-3" id="dateTimeDisplay">
+                    <div class="text-end" style="color: #ffffff !important;">
+                        <div id="currentDate" class="d-none d-md-block" style="font-size: 0.9rem; font-weight: 500; color: #ffffff !important;"></div>
+                        <div id="currentTime" class="d-none d-md-block" style="font-size: 1.1rem; font-weight: 600; color: #ffffff !important;"></div>
+                    </div>
+                </li>
                 <!-- Notification Icon -->
                 <li class="nav-item dropdown me-3" id="notificationDropdown">
                     <a class="nav-link position-relative" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notifications" style="color: #ffffff !important;">
@@ -257,8 +561,12 @@
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" id="navbarDropdown" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="color: #ffffff !important;"><i class="fas fa-user fa-fw" style="color: #ffffff !important;"></i></a>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                        <li><a class="dropdown-item" href="#!">Settings</a></li>
-                        <li><a class="dropdown-item" href="#!">Activity Log</a></li>
+                        @if(auth()->user()->isMember())
+                            <li><a class="dropdown-item" href="{{ route('member.settings') }}"><i class="fas fa-cog me-2"></i>Settings</a></li>
+                        @else
+                            <li><a class="dropdown-item" href="#!">Settings</a></li>
+                            <li><a class="dropdown-item" href="#!">Activity Log</a></li>
+                        @endif
                         <li><hr class="dropdown-divider" /></li>
                         <li>
                             <a class="dropdown-item" href="{{ route('logout') }}" 
@@ -2054,8 +2362,8 @@
                       </div>
                       <div class="col-md-6 text-center text-md-end">
                         <small>
-                          Powered by 
-                          <a href="https://emca.tech/#" class="text-decoration-none text-info fw-semibold">
+                          <span style="color: #ffffff !important;">Powered by</span> 
+                          <a href="https://emca.tech/#" class="text-decoration-none fw-bold" style="color: #940000 !important;">
                             EmCa Technologies
                           </a>
                         </small>
@@ -2217,17 +2525,22 @@
                     })
                     .then(data => {
                         if (data && data.success) {
-                            window.currentNotificationData = data;
+                            window.currentNotificationData = {
+                                events: data.events || [],
+                                celebrations: data.celebrations || [],
+                                services: data.services || [],
+                                counts: data.counts || { events: 0, celebrations: 0, services: 0, total: 0 }
+                            };
                             
                             const eventsCountEl = document.getElementById('eventsCount');
                             const celebrationsCountEl = document.getElementById('celebrationsCount');
                             const servicesCountEl = document.getElementById('servicesCount');
                             
-                            if (eventsCountEl) eventsCountEl.textContent = data.counts.events || 0;
-                            if (celebrationsCountEl) celebrationsCountEl.textContent = data.counts.celebrations || 0;
-                            if (servicesCountEl) servicesCountEl.textContent = data.counts.services || 0;
+                            if (eventsCountEl) eventsCountEl.textContent = (data.counts && data.counts.events) || 0;
+                            if (celebrationsCountEl) celebrationsCountEl.textContent = (data.counts && data.counts.celebrations) || 0;
+                            if (servicesCountEl) servicesCountEl.textContent = (data.counts && data.counts.services) || 0;
                             
-                            const totalCount = data.counts.total || 0;
+                            const totalCount = (data.counts && data.counts.total) || 0;
                             const badge = document.getElementById('notificationBadge');
                             if (badge) {
                                 badge.textContent = totalCount;
@@ -2235,18 +2548,18 @@
                             }
                             
                             const eventsList = document.getElementById('eventsList');
-                            if (eventsList && data.events) {
-                                eventsList.innerHTML = generateEventList(data.events);
+                            if (eventsList) {
+                                eventsList.innerHTML = generateEventList(data.events || []);
                             }
                             
                             const celebrationsList = document.getElementById('celebrationsList');
-                            if (celebrationsList && data.celebrations) {
-                                celebrationsList.innerHTML = generateCelebrationList(data.celebrations);
+                            if (celebrationsList) {
+                                celebrationsList.innerHTML = generateCelebrationList(data.celebrations || []);
                             }
                             
                             const servicesList = document.getElementById('servicesList');
-                            if (servicesList && data.services) {
-                                servicesList.innerHTML = generateServiceList(data.services);
+                            if (servicesList) {
+                                servicesList.innerHTML = generateServiceList(data.services || []);
                             }
                         }
                     })
@@ -2429,12 +2742,16 @@
                     modal = document.createElement('div');
                     modal.id = 'eventDetailsModal';
                     modal.className = 'modal fade';
+                    modal.setAttribute('tabindex', '-1');
+                    modal.setAttribute('aria-labelledby', 'eventDetailsTitle');
+                    modal.setAttribute('aria-hidden', 'true');
+                    document.body.appendChild(modal);
                     modal.innerHTML = `
                         <div class="modal-dialog modal-lg">
                             <div class="modal-content">
                                 <div class="modal-header bg-light">
                                     <h5 class="modal-title" id="eventDetailsTitle">Event Details</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
                                 <div class="modal-body p-4" id="eventDetailsBody">
                                     <div class="text-center">
@@ -2478,11 +2795,11 @@
                 setTimeout(() => {
                     let eventData = null;
                     if (window.currentNotificationData) {
-                        if (type === 'event') {
+                        if (type === 'event' && window.currentNotificationData.events) {
                             eventData = window.currentNotificationData.events.find(e => e.id === id);
-                        } else if (type === 'celebration') {
+                        } else if (type === 'celebration' && window.currentNotificationData.celebrations) {
                             eventData = window.currentNotificationData.celebrations.find(c => c.id === id);
-                        } else if (type === 'service') {
+                        } else if (type === 'service' && window.currentNotificationData.services) {
                             eventData = window.currentNotificationData.services.find(s => s.id === id);
                         }
                     }
@@ -2609,6 +2926,60 @@
             document.addEventListener('DOMContentLoaded', function() {
                 loadNotifications();
                 setInterval(loadNotifications, 300000);
+                
+                // Handle mobile dropdown positioning
+                const notificationDropdown = document.getElementById('notificationDropdown');
+                if (notificationDropdown) {
+                    const dropdownMenu = notificationDropdown.querySelector('.notification-dropdown');
+                    if (dropdownMenu) {
+                        // Function to apply mobile positioning
+                        function applyMobilePositioning() {
+                            if (window.innerWidth <= 576) {
+                                dropdownMenu.style.setProperty('position', 'fixed', 'important');
+                                dropdownMenu.style.setProperty('top', '60px', 'important');
+                                dropdownMenu.style.setProperty('left', '0.25rem', 'important');
+                                dropdownMenu.style.setProperty('right', '0.25rem', 'important');
+                                dropdownMenu.style.setProperty('width', 'calc(100vw - 0.5rem)', 'important');
+                                dropdownMenu.style.setProperty('max-width', 'calc(100vw - 0.5rem)', 'important');
+                                dropdownMenu.style.setProperty('margin', '0', 'important');
+                                dropdownMenu.style.setProperty('transform', 'none', 'important');
+                                dropdownMenu.style.setProperty('z-index', '1055', 'important');
+                                dropdownMenu.style.setProperty('inset', '60px 0.25rem auto 0.25rem', 'important');
+                            } else if (window.innerWidth <= 768) {
+                                dropdownMenu.style.setProperty('position', 'fixed', 'important');
+                                dropdownMenu.style.setProperty('top', '60px', 'important');
+                                dropdownMenu.style.setProperty('left', '0.5rem', 'important');
+                                dropdownMenu.style.setProperty('right', '0.5rem', 'important');
+                                dropdownMenu.style.setProperty('width', 'calc(100vw - 1rem)', 'important');
+                                dropdownMenu.style.setProperty('max-width', 'calc(100vw - 1rem)', 'important');
+                                dropdownMenu.style.setProperty('margin', '0', 'important');
+                                dropdownMenu.style.setProperty('transform', 'none', 'important');
+                                dropdownMenu.style.setProperty('z-index', '1055', 'important');
+                                dropdownMenu.style.setProperty('inset', '60px 0.5rem auto 0.5rem', 'important');
+                            } else {
+                                // Reset to default for desktop
+                                dropdownMenu.style.removeProperty('position');
+                                dropdownMenu.style.removeProperty('top');
+                                dropdownMenu.style.removeProperty('left');
+                                dropdownMenu.style.removeProperty('right');
+                                dropdownMenu.style.removeProperty('width');
+                                dropdownMenu.style.removeProperty('max-width');
+                                dropdownMenu.style.removeProperty('margin');
+                                dropdownMenu.style.removeProperty('transform');
+                                dropdownMenu.style.removeProperty('inset');
+                            }
+                        }
+                        
+                        // Apply on load
+                        applyMobilePositioning();
+                        
+                        // Apply on resize
+                        window.addEventListener('resize', applyMobilePositioning);
+                        
+                        // Apply when dropdown is shown
+                        notificationDropdown.addEventListener('shown.bs.dropdown', applyMobilePositioning);
+                    }
+                }
             });
             
             function updateDateTime() {
@@ -2655,12 +3026,12 @@
                             document.body.classList.toggle('sb-sidenav-toggled');
                             
                             const isToggled = layoutSidenav ? layoutSidenav.classList.contains('sb-sidenav-toggled') : document.body.classList.contains('sb-sidenav-toggled');
-                            localStorage.setItem('sb|sidebar-toggle', isToggled ? 'true' : 'false');
+                            localStorage.setItem('sb-sidebar-toggle', isToggled ? 'true' : 'false');
                             
                             return false;
                         }, true);
                         
-                        const savedState = localStorage.getItem('sb|sidebar-toggle');
+                        const savedState = localStorage.getItem('sb-sidebar-toggle');
                         if (savedState === 'true') {
                             if (layoutSidenav) {
                                 layoutSidenav.classList.add('sb-sidenav-toggled');
@@ -2668,6 +3039,47 @@
                             document.body.classList.add('sb-sidenav-toggled');
                         }
                     }
+                }
+                
+                // On mobile, close sidebar when navigation links are clicked
+                // On mobile, sb-sidenav-toggled means OPEN, so we REMOVE it to close
+                function closeSidebarOnMobile() {
+                    if (window.innerWidth <= 768) {
+                        if (layoutSidenav) {
+                            layoutSidenav.classList.remove('sb-sidenav-toggled');
+                        }
+                        document.body.classList.remove('sb-sidenav-toggled');
+                        localStorage.setItem('sb-sidebar-toggle', 'false');
+                    }
+                }
+                
+                // Close sidebar when navigation links are clicked on mobile
+                var sidebarLinks = document.querySelectorAll('#sidenavAccordion .nav-link[href]');
+                for (var i = 0; i < sidebarLinks.length; i++) {
+                    var link = sidebarLinks[i];
+                    var href = link.getAttribute('href');
+                    
+                    // Skip collapse toggles and empty links
+                    if (href === '#' || link.hasAttribute('data-bs-toggle')) {
+                        continue;
+                    }
+                    
+                    (function(currentLink) {
+                        currentLink.addEventListener('click', function(e) {
+                            if (window.innerWidth <= 768) {
+                                // Close sidebar immediately but allow link to work
+                                closeSidebarOnMobile();
+                                
+                                // Close multiple times to ensure it stays closed
+                                setTimeout(closeSidebarOnMobile, 10);
+                                setTimeout(closeSidebarOnMobile, 50);
+                                setTimeout(closeSidebarOnMobile, 100);
+                                setTimeout(closeSidebarOnMobile, 200);
+                                
+                                // Don't prevent default - allow navigation to happen
+                            }
+                        }, false); // Use bubble phase so link navigation works
+                    })(link);
                 }
             });
             

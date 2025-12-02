@@ -13,6 +13,7 @@ use App\Notifications\MissedAttendanceNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Http;
 
 class AttendanceController extends Controller
 {
@@ -764,6 +765,143 @@ class AttendanceController extends Controller
             'success' => true,
             'members' => $membersWithMissedAttendance,
             'count' => count($membersWithMissedAttendance)
+        ]);
+    }
+
+    /**
+     * Sync attendance records from biometric device into ServiceAttendance
+     */
+    public function syncBiometricAttendance(Request $request)
+    {
+        $date = $request->input('date', now()->toDateString());
+        $serviceType = 'sunday_service';
+
+        // Find Sunday service for the given date
+        $service = SundayService::whereDate('service_date', $date)->first();
+        if (!$service) {
+            return response()->json([
+                'success' => false,
+                'message' => "No Sunday service found for date {$date}",
+            ], 422);
+        }
+
+        try {
+            $response = Http::timeout(10)->get('http://192.168.100.100:8000/api/v1/attendances', [
+                // If the biometric API supports date filtering, keep this.
+                // Otherwise the device will return all records and we will filter by date manually.
+                'date' => $date,
+                'per_page' => 500,
+            ]);
+        } catch (\Throwable $e) {
+            \Log::error('Biometric attendance sync failed (HTTP error)', [
+                'date' => $date,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to contact biometric device: ' . $e->getMessage(),
+            ], 500);
+        }
+
+        if (!$response->successful()) {
+            \Log::warning('Biometric attendance sync HTTP non-success', [
+                'date' => $date,
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Biometric device API returned HTTP status ' . $response->status(),
+            ], 500);
+        }
+
+        $payload = $response->json();
+        if (!($payload['success'] ?? false) || !is_array($payload['data'] ?? null)) {
+            \Log::warning('Biometric attendance sync: unexpected payload', [
+                'date' => $date,
+                'payload' => $payload,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Biometric device API returned invalid data format',
+            ], 500);
+        }
+
+        $records = $payload['data'];
+        $insertedCount = 0;
+        $syncedMemberIds = []; // Track which member IDs were synced
+
+        foreach ($records as $row) {
+            // Example row:
+            // {
+            //   "id": 40,
+            //   "user": { "id": 15, "name": "Ally", "enroll_id": "2" },
+            //   "attendance_date": "2025-12-01",
+            //   "check_in_time": "2025-12-01 12:00:24",
+            //   ...
+            // }
+
+            // Filter by date (in case API doesn't support date filter)
+            if (!empty($row['attendance_date']) && $row['attendance_date'] !== $date) {
+                continue;
+            }
+
+            $enrollId = $row['user']['enroll_id'] ?? null;
+            if (empty($enrollId)) {
+                continue;
+            }
+
+            // Find linked member by biometric_enroll_id
+            $member = Member::where('biometric_enroll_id', (string) $enrollId)->first();
+            if (!$member) {
+                \Log::warning('Biometric attendance record has no matching member', [
+                    'date' => $date,
+                    'enroll_id' => $enrollId,
+                    'user' => $row['user'] ?? null,
+                ]);
+                continue;
+            }
+
+            // Avoid duplicate attendance for same member & service
+            $exists = ServiceAttendance::where([
+                'service_type' => $serviceType,
+                'service_id' => $service->id,
+                'member_id' => $member->id,
+            ])->exists();
+
+            if ($exists) {
+                // Member already has attendance, but still include in synced list for checkbox checking
+                $syncedMemberIds[] = $member->id;
+                continue;
+            }
+
+            $attendedAt = $row['check_in_time'] ?? null;
+            if (empty($attendedAt) && !empty($row['attendance_date'])) {
+                $attendedAt = $row['attendance_date'] . ' 00:00:00';
+            }
+
+            ServiceAttendance::create([
+                'service_type' => $serviceType,
+                'service_id' => $service->id,
+                'member_id' => $member->id,
+                'child_id' => null,
+                'attended_at' => $attendedAt ?? now(),
+                'recorded_by' => 'BiometricDevice',
+                'notes' => 'Imported from biometric device ' . ($row['device_ip'] ?? 'unknown'),
+            ]);
+
+            $insertedCount++;
+            $syncedMemberIds[] = $member->id; // Track synced member ID
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Biometric attendance synced successfully for {$date}",
+            'inserted' => $insertedCount,
+            'synced_member_ids' => array_unique($syncedMemberIds), // Return unique member IDs that were synced
         ]);
     }
     

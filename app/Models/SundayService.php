@@ -31,8 +31,8 @@ class SundayService extends Model
 
     protected $casts = [
         'service_date' => 'date',
-        'start_time' => 'datetime:H:i',
-        'end_time' => 'datetime:H:i',
+        'start_time' => 'string', // Store as time string (HH:MM)
+        'end_time' => 'string', // Store as time string (HH:MM)
         'offerings_amount' => 'decimal:2',
         'attendance_count' => 'integer',
         'guests_count' => 'integer',

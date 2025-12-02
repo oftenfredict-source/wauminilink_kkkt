@@ -47,7 +47,7 @@ class SundayServiceController extends Controller
             \Log::info('Sunday Service Store Request:', $request->all());
             
             $validated = $request->validate([
-                'service_date' => 'required|date|unique:sunday_services,service_date',
+                'service_date' => 'required|date',
                 'service_type' => 'required|string|max:255',
                 'theme' => 'nullable|string|max:255',
                 'preacher' => 'nullable|string|max:255',
@@ -64,7 +64,6 @@ class SundayServiceController extends Controller
                 'announcements' => 'nullable|string',
                 'notes' => 'nullable|string',
             ], [
-                'service_date.unique' => 'A service already exists for this date. Please choose a different date.',
                 'service_date.required' => 'Service date is required.',
                 'service_date.date' => 'Please enter a valid date.',
                 'service_type.required' => 'Service type is required.',
@@ -84,10 +83,38 @@ class SundayServiceController extends Controller
 
             \Log::info('Validated data:', $validated);
 
-            $service = SundayService::create($validated);
+            // Check for duplicate service_date + service_type combination
+            $existingService = SundayService::where('service_date', $validated['service_date'])
+                ->where('service_type', $validated['service_type'])
+                ->first();
+            
+            if ($existingService) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'A ' . $validated['service_type'] . ' service already exists for this date. Please choose a different date or service type.',
+                    'errors' => ['service_date' => ['A service of this type already exists for this date.']]
+                ], 422);
+            }
 
-            // Send SMS notifications to coordinator and church elder
-            $this->sendServiceNotifications($service);
+            try {
+                $service = SundayService::create($validated);
+                \Log::info('Service created successfully', ['service_id' => $service->id, 'service_date' => $service->service_date]);
+            } catch (\Exception $e) {
+                \Log::error('Failed to create service', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                    'validated_data' => $validated
+                ]);
+                throw $e;
+            }
+
+            // Send SMS notifications to coordinator and church elder (don't fail if this fails)
+            try {
+                $this->sendServiceNotifications($service);
+            } catch (\Exception $e) {
+                \Log::error('Failed to send service notifications', ['error' => $e->getMessage()]);
+                // Don't fail the entire request if notifications fail
+            }
 
             // If offerings amount is provided, create an Offering record for pastor approval
             if ($request->has('offerings_amount') && $validated['offerings_amount'] > 0) {
@@ -141,7 +168,7 @@ class SundayServiceController extends Controller
     public function update(Request $request, SundayService $sundayService)
     {
         $validated = $request->validate([
-            'service_date' => 'sometimes|required|date|unique:sunday_services,service_date,' . $sundayService->id,
+            'service_date' => 'sometimes|required|date',
             'service_type' => 'sometimes|required|string|max:255',
             'theme' => 'nullable|string|max:255',
             'preacher' => 'nullable|string|max:255',
@@ -163,6 +190,25 @@ class SundayServiceController extends Controller
         $validated['status'] = ($request->has('attendance_count') || $request->has('offerings_amount')) 
             ? 'completed' 
             : 'scheduled';
+
+        // Check for duplicate service_date + service_type combination (excluding current service)
+        if ($request->has('service_date') || $request->has('service_type')) {
+            $serviceDate = $validated['service_date'] ?? $sundayService->service_date;
+            $serviceType = $validated['service_type'] ?? $sundayService->service_type;
+            
+            $existingService = SundayService::where('service_date', $serviceDate)
+                ->where('service_type', $serviceType)
+                ->where('id', '!=', $sundayService->id)
+                ->first();
+            
+            if ($existingService) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'A ' . $serviceType . ' service already exists for this date. Please choose a different date or service type.',
+                    'errors' => ['service_date' => ['A service of this type already exists for this date.']]
+                ], 422);
+            }
+        }
 
         // Check if coordinator is being changed
         $coordinatorChanged = $request->has('coordinator_id') && 
@@ -229,43 +275,209 @@ class SundayServiceController extends Controller
         return response()->json(['success' => true, 'message' => 'Sunday service deleted successfully']);
     }
 
-    public function getChurchElders()
+    /**
+     * Get all coordinators (from all registered members)
+     */
+    public function getCoordinators(Request $request)
     {
-        // Get current date for comparison
-        $today = now()->toDateString();
-        
-        // Query for active church elders with proper date filtering
-        // Use distinct to avoid duplicates if a member has multiple records
-        $churchElders = Member::whereHas('leadershipPositions', function($query) use ($today) {
-            $query->where('position', 'elder')
-                  ->where('is_active', true)
-                  ->where(function($q) use ($today) {
-                      $q->whereNull('end_date')
-                         ->orWhere('end_date', '>=', $today);
-                  })
-                  ->where('appointment_date', '<=', $today); // Must be appointed before or on today
-        })
-        ->distinct()
-        ->orderBy('full_name')
-        ->get(['id', 'full_name', 'member_id']);
+        try {
+            $search = $request->input('search', '');
+            
+            $query = Member::query();
+            
+            // If search term provided, filter by name or member_id
+            if (!empty($search)) {
+                $query->where(function($q) use ($search) {
+                    $q->where('full_name', 'like', "%{$search}%")
+                      ->orWhere('member_id', 'like', "%{$search}%");
+                });
+            }
+            
+            $coordinators = $query->orderBy('full_name')
+                ->limit(100) // Limit results for performance
+                ->get(['id', 'full_name', 'member_id']);
 
-        \Log::info('Church Elders Query Result', [
-            'count' => $churchElders->count(),
-            'elders' => $churchElders->map(function($m) {
-                return ['id' => $m->id, 'name' => $m->full_name, 'member_id' => $m->member_id];
-            })->toArray()
+            $totalCount = Member::count();
+            
+            \Log::info('Coordinators Query Result', [
+                'count' => $coordinators->count(),
+                'total' => $totalCount,
+                'search_term' => $search
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'coordinators' => $coordinators->map(function($member) {
+                    return [
+                        'id' => $member->id,
+                        'full_name' => $member->full_name ?? 'Unknown',
+                        'member_id' => $member->member_id ?? 'N/A',
+                        'display_text' => ($member->full_name ?? 'Unknown') . ' (' . ($member->member_id ?? 'N/A') . ')'
+                    ];
+                }),
+                'total' => $totalCount,
+                'has_more' => $totalCount > 100
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error loading coordinators', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'coordinators' => [],
+                'total' => 0,
+                'has_more' => false
+            ], 500);
+        }
+    }
+
+    /**
+     * Get church elders (from leaders with position 'elder')
+     * Supports search functionality for better filtering when there are many options
+     */
+    public function getChurchElders(Request $request)
+    {
+        try {
+            // Get current date for comparison
+            $today = now()->toDateString();
+            $search = $request->input('search', '');
+            
+            // Query for active church elders from Leaders model
+            $query = \App\Models\Leader::with('member')
+                ->where('position', 'elder')
+                ->where('is_active', true)
+                ->where(function($query) use ($today) {
+                    $query->whereNull('end_date')
+                          ->orWhere('end_date', '>=', $today);
+                })
+                ->where('appointment_date', '<=', $today)
+                ->whereHas('member'); // Only get leaders that have associated members
+            
+            // Apply search filter if provided
+            if (!empty($search)) {
+                $query->whereHas('member', function($q) use ($search) {
+                    $q->where(function($subQ) use ($search) {
+                        $subQ->where('full_name', 'like', "%{$search}%")
+                             ->orWhere('member_id', 'like', "%{$search}%");
+                    });
+                });
+            }
+            
+            $leaders = $query->get();
+            
+            $churchElders = $leaders
+                ->filter(function($leader) {
+                    // Only include leaders that have a valid member
+                    return $leader->member !== null;
+                })
+                ->map(function($leader) {
+                    return [
+                        'id' => $leader->member->id,
+                        'full_name' => $leader->member->full_name,
+                        'member_id' => $leader->member->member_id,
+                        'display_text' => $leader->member->full_name . ' (' . $leader->member->member_id . ')'
+                    ];
+                })
+                ->unique('id')
+                ->values()
+                ->sortBy('full_name')
+                ->values();
+
+            \Log::info('Church Elders Query Result', [
+                'count' => $churchElders->count(),
+                'total_leaders' => $leaders->count(),
+                'search_term' => $search,
+                'elders' => $churchElders->toArray()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'church_elders' => $churchElders,
+                'total' => $churchElders->count()
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error loading church elders', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'church_elders' => [],
+                'total' => 0
+            ], 500);
+        }
+    }
+
+    /**
+     * Get preachers (from users/pastors and leaders with pastor position, or allow "other")
+     */
+    public function getPreachers()
+    {
+        $today = now()->toDateString();
+        $preachers = collect();
+        
+        // Get pastors from Users model
+        $userPastors = \App\Models\User::where(function($query) {
+                $query->where('role', 'pastor')
+                      ->orWhere('can_approve_finances', true);
+            })
+            ->orderBy('name')
+            ->get(['id', 'name', 'email']);
+        
+        // Add user pastors to collection
+        foreach ($userPastors as $user) {
+            $preachers->push([
+                'id' => 'user_' . $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'display_text' => $user->name . ($user->email ? ' (' . $user->email . ')' : ''),
+                'type' => 'user'
+            ]);
+        }
+        
+        // Get pastors from Leaders model (members with pastor position)
+        $leaderPastors = \App\Models\Leader::with('member')
+            ->whereIn('position', ['pastor', 'assistant_pastor'])
+            ->where('is_active', true)
+            ->where(function($query) use ($today) {
+                $query->whereNull('end_date')
+                      ->orWhere('end_date', '>=', $today);
+            })
+            ->where('appointment_date', '<=', $today)
+            ->whereHas('member')
+            ->get()
+            ->map(function($leader) {
+                return [
+                    'id' => 'leader_' . $leader->member->id,
+                    'name' => $leader->member->full_name,
+                    'email' => $leader->member->email,
+                    'member_id' => $leader->member->member_id,
+                    'display_text' => $leader->member->full_name . ' (' . $leader->member->member_id . ')',
+                    'type' => 'leader'
+                ];
+            });
+        
+        // Merge and remove duplicates (by name)
+        $allPreachers = $preachers->merge($leaderPastors)
+            ->unique('name')
+            ->sortBy('name')
+            ->values();
+
+        \Log::info('Preachers Query Result', [
+            'count' => $allPreachers->count(),
+            'user_pastors' => $userPastors->count(),
+            'leader_pastors' => $leaderPastors->count()
         ]);
 
         return response()->json([
             'success' => true,
-            'church_elders' => $churchElders->map(function($member) {
-                return [
-                    'id' => $member->id,
-                    'full_name' => $member->full_name,
-                    'member_id' => $member->member_id,
-                    'display_text' => $member->full_name . ' (' . $member->member_id . ')'
-                ];
-            })
+            'preachers' => $allPreachers,
+            'allow_other' => true // Indicate that "other" option is allowed
         ]);
     }
 
@@ -494,7 +706,8 @@ class SundayServiceController extends Controller
 
             $churchName = \App\Services\SettingsService::get('church_name', 'Waumini Church');
             $serviceDate = $service->service_date->format('d/m/Y');
-            $serviceTime = $service->start_time ? $service->start_time->format('H:i') : 'TBA';
+            // Handle start_time as string (HH:MM format) or DateTime
+            $serviceTime = $service->start_time ? (is_string($service->start_time) ? $service->start_time : $service->start_time->format('H:i')) : 'TBA';
             
             // Notify Coordinator using the dedicated method
             $this->sendCoordinatorSms($service);
@@ -543,8 +756,8 @@ class SundayServiceController extends Controller
             $serviceDate = $service->service_date->format('d/m/Y');
             $dateWithDay = $serviceDate . ' (' . $dayName . ')';
             
-            // Format time
-            $serviceTime = $service->start_time ? $service->start_time->format('H:i') : 'TBA';
+            // Format time - handle as string (HH:MM format) or DateTime
+            $serviceTime = $service->start_time ? (is_string($service->start_time) ? $service->start_time : $service->start_time->format('H:i')) : 'TBA';
             
             // Get all active members with phone numbers
             $members = Member::where('membership_type', 'permanent')

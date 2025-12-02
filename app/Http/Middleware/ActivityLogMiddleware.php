@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
 use App\Models\ActivityLog;
+use App\Models\SystemLog;
+use App\Services\DeviceInfoService;
 use Symfony\Component\HttpFoundation\Response;
 
 class ActivityLogMiddleware
@@ -56,14 +58,40 @@ class ActivityLogMiddleware
         }
 
         try {
+            $deviceInfo = DeviceInfoService::getDeviceInfo($request);
+            
             // Check if table exists before trying to log
             if (\Schema::hasTable('activity_logs')) {
                 ActivityLog::create([
                     'user_id' => $user->id,
                     'action' => $action ?? 'view',
                     'description' => $this->generateDescription($request, $action),
-                    'ip_address' => $request->ip(),
-                    'user_agent' => $request->userAgent(),
+                    'ip_address' => $deviceInfo['ip_address'],
+                    'user_agent' => $deviceInfo['user_agent'],
+                    'route' => $routeName ?? $request->path(),
+                    'method' => $request->method(),
+                ]);
+            }
+
+            // Also log to system logs for important actions
+            if (\Schema::hasTable('system_logs') && in_array($action, ['create', 'update', 'delete', 'approve', 'login', 'logout'])) {
+                SystemLog::create([
+                    'user_id' => $user->id,
+                    'level' => 'info',
+                    'category' => 'application',
+                    'action' => $action ?? 'view',
+                    'message' => $this->generateDescription($request, $action),
+                    'ip_address' => $deviceInfo['ip_address'],
+                    'user_agent' => $deviceInfo['user_agent'],
+                    'device_type' => $deviceInfo['device_type'],
+                    'browser' => $deviceInfo['browser'],
+                    'os' => $deviceInfo['os'],
+                    'device_name' => $deviceInfo['device_name'],
+                    'mac_address' => $deviceInfo['mac_address'],
+                    'screen_resolution' => $deviceInfo['screen_resolution'],
+                    'timezone' => $deviceInfo['timezone'],
+                    'language' => $deviceInfo['language'],
+                    'device_properties' => $deviceInfo['device_properties'],
                     'route' => $routeName ?? $request->path(),
                     'method' => $request->method(),
                 ]);

@@ -15,24 +15,223 @@
     .status-notified { background-color: #17a2b8; color: #fff; }
     .status-attended { background-color: #28a745; color: #fff; }
     .status-cancelled { background-color: #dc3545; color: #fff; }
+    
+    /* Mobile Responsive Styles */
+    @media (max-width: 768px) {
+        .container-fluid {
+            padding-left: 0.5rem !important;
+            padding-right: 0.5rem !important;
+        }
+        
+        /* Actions Card */
+        .actions-card {
+            transition: all 0.3s ease;
+        }
+        .actions-card .card-header {
+            user-select: none;
+            transition: background-color 0.2s ease;
+        }
+        .actions-card .card-header:hover {
+            background-color: #f8f9fa !important;
+        }
+        #actionsBody {
+            transition: all 0.3s ease;
+            display: none;
+        }
+        .actions-header {
+            cursor: pointer !important;
+        }
+        #actionsToggleIcon {
+            display: block !important;
+        }
+        
+        /* Statistics Cards */
+        .stats-card {
+            margin-bottom: 0.75rem;
+        }
+        .stats-card .card-body {
+            padding: 0.75rem !important;
+        }
+        .stats-card h3 {
+            font-size: 1.5rem !important;
+        }
+        .stats-card h6 {
+            font-size: 0.75rem !important;
+        }
+        .stats-card i {
+            font-size: 1.5rem !important;
+        }
+        
+        /* Filter Section */
+        #filtersForm {
+            border-radius: 8px !important;
+            overflow: hidden;
+        }
+        #filtersForm .card-header {
+            transition: all 0.2s ease;
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%) !important;
+            border-bottom: 2px solid #e9ecef !important;
+        }
+        .filter-header:hover {
+            background: linear-gradient(135deg, #f0f0f0 0%, #f8f9fa 100%) !important;
+        }
+        #filterBody {
+            transition: all 0.3s ease;
+            display: none;
+            background: #fafbfc;
+        }
+        .filter-header {
+            cursor: pointer !important;
+        }
+        #filterToggleIcon {
+            display: block !important;
+            transition: transform 0.3s ease;
+        }
+        .filter-header.active #filterToggleIcon {
+            transform: rotate(180deg);
+        }
+        #filtersForm .card-body {
+            padding: 0.75rem 0.5rem !important;
+        }
+        #filtersForm .form-label {
+            font-size: 0.7rem !important;
+            margin-bottom: 0.2rem !important;
+            font-weight: 600 !important;
+            color: #495057 !important;
+        }
+        #filtersForm .form-control,
+        #filtersForm .form-select {
+            font-size: 0.8125rem !important;
+            padding: 0.4rem 0.5rem !important;
+            border-radius: 6px !important;
+            border: 1.5px solid #dee2e6 !important;
+        }
+        #filtersForm .form-control:focus,
+        #filtersForm .form-select:focus {
+            border-color: #667eea !important;
+            box-shadow: 0 0 0 0.15rem rgba(102, 126, 234, 0.15) !important;
+        }
+        #filtersForm .btn-sm {
+            padding: 0.4rem 0.75rem !important;
+            font-size: 0.8125rem !important;
+            border-radius: 6px !important;
+            font-weight: 600 !important;
+        }
+        #filtersForm .row.g-2 > [class*="col-"] {
+            padding-left: 0.375rem !important;
+            padding-right: 0.375rem !important;
+            margin-bottom: 0.5rem !important;
+        }
+        #filtersForm .row.g-2 {
+            margin-left: -0.375rem !important;
+            margin-right: -0.375rem !important;
+        }
+        
+        /* Table Responsive */
+        .table {
+            font-size: 0.75rem;
+        }
+        .table th,
+        .table td {
+            padding: 0.5rem 0.25rem;
+        }
+        .table th:first-child,
+        .table td:first-child {
+            position: sticky;
+            left: 0;
+            background: white;
+            z-index: 1;
+        }
+        
+        /* Buttons - Icon Only on Mobile */
+        .btn-group .btn {
+            padding: 0.375rem 0.5rem !important;
+        }
+        .btn-group .btn i {
+            margin: 0 !important;
+        }
+        
+        /* Modal Full Screen on Mobile */
+        @media (max-width: 576px) {
+            .modal-dialog {
+                margin: 0;
+                max-width: 100%;
+                height: 100vh;
+            }
+            .modal-content {
+                height: 100vh;
+                border-radius: 0 !important;
+            }
+            #filtersForm .card-body {
+                padding: 0.5rem 0.375rem !important;
+            }
+            #filtersForm .form-label {
+                font-size: 0.65rem !important;
+            }
+            #filtersForm .form-control,
+            #filtersForm .form-select {
+                font-size: 0.75rem !important;
+                padding: 0.35rem 0.45rem !important;
+            }
+        }
+    }
+    
+    /* Desktop: Always show actions and filters */
+    @media (min-width: 769px) {
+        .actions-header {
+            cursor: default !important;
+            pointer-events: none !important;
+        }
+        .actions-header .fa-chevron-down {
+            display: none !important;
+        }
+        #actionsBody {
+            display: block !important;
+        }
+        
+        .filter-header {
+            cursor: default !important;
+            pointer-events: none !important;
+        }
+        .filter-header .fa-chevron-down {
+            display: none !important;
+        }
+        #filterBody {
+            display: block !important;
+        }
+    }
 </style>
 
 <div class="container-fluid px-4">
-    <div class="d-flex flex-wrap align-items-center justify-content-between mt-4 mb-3 gap-2">
-        <h2 class="mb-0">Promise Guests</h2>
-        <div class="d-flex gap-2">
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPromiseGuestModal">
-                <i class="fas fa-plus me-2"></i>Add Promise Guest
-            </button>
-            <a href="{{ route('promise-guests.create') }}" class="btn btn-outline-primary">
-                <i class="fas fa-external-link-alt me-2"></i>Full Form
-            </a>
+    <!-- Page Title and Quick Actions - Compact Collapsible -->
+    <div class="card border-0 shadow-sm mb-3 actions-card">
+        <div class="card-header bg-white border-bottom p-2 px-3 d-flex align-items-center justify-content-between actions-header" onclick="toggleActions()">
+            <div class="d-flex align-items-center gap-2">
+                <h2 class="mb-0 mt-2" style="font-size: 1.5rem;">Promise Guests</h2>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <i class="fas fa-chevron-down text-muted d-md-none" id="actionsToggleIcon"></i>
+            </div>
+        </div>
+        <div class="card-body p-3" id="actionsBody">
+            <div class="d-flex flex-wrap gap-2">
+                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addPromiseGuestModal">
+                    <i class="fas fa-plus me-1"></i>
+                    <span class="d-none d-sm-inline">Add Promise Guest</span>
+                    <span class="d-sm-none">Add Guest</span>
+                </button>
+                <a href="{{ route('promise-guests.create') }}" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-external-link-alt me-1"></i>
+                    <span class="d-none d-sm-inline">Full Form</span>
+                    <span class="d-sm-none">Form</span>
+                </a>
+            </div>
         </div>
     </div>
 
     <!-- Statistics Cards -->
     <div class="row mb-4">
-        <div class="col-md-3">
+        <div class="col-md-3 col-6 stats-card">
             <div class="card bg-primary text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
@@ -45,7 +244,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-3 col-6 stats-card">
             <div class="card bg-warning text-dark">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
@@ -58,7 +257,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-3 col-6 stats-card">
             <div class="card bg-info text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
@@ -71,7 +270,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-3 col-6 stats-card">
             <div class="card bg-success text-white">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
@@ -86,17 +285,39 @@
         </div>
     </div>
 
-    <!-- Filters -->
-    <form method="GET" action="{{ route('promise-guests.index') }}" class="card mb-3">
-        <div class="card-body">
-            <div class="row g-3 align-items-end">
-                <div class="col-md-3">
-                    <label class="form-label">Search</label>
-                    <input type="text" name="search" value="{{ request('search') }}" class="form-control" placeholder="Name or phone number">
+    <!-- Filters & Search - Collapsible on Mobile -->
+    <form method="GET" action="{{ route('promise-guests.index') }}" class="card mb-3 border-0 shadow-sm" id="filtersForm">
+        <!-- Filter Header -->
+        <div class="card-header bg-white border-bottom p-2 px-3 filter-header" onclick="toggleFilters()">
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fas fa-filter text-primary"></i>
+                    <span class="fw-semibold">Filters</span>
+                    @if(request('search') || request('status') || request('service_date') || request('from') || request('to'))
+                        <span class="badge bg-primary rounded-pill" id="activeFiltersCount">{{ (request('search') ? 1 : 0) + (request('status') ? 1 : 0) + (request('service_date') ? 1 : 0) + (request('from') ? 1 : 0) + (request('to') ? 1 : 0) }}</span>
+                    @endif
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label">Status</label>
-                    <select name="status" class="form-select">
+                <i class="fas fa-chevron-down text-muted d-md-none" id="filterToggleIcon"></i>
+            </div>
+        </div>
+        
+        <!-- Filter Body - Collapsible on Mobile -->
+        <div class="card-body p-3" id="filterBody">
+            <div class="row g-2 mb-2">
+                <!-- Search Field - Full Width on Mobile -->
+                <div class="col-12 col-md-3">
+                    <label class="form-label small text-muted mb-1">
+                        <i class="fas fa-search me-1 text-primary"></i>Search
+                    </label>
+                    <input type="text" name="search" value="{{ request('search') }}" class="form-control form-control-sm" placeholder="Name or phone number">
+                </div>
+                
+                <!-- Status - Full Width on Mobile -->
+                <div class="col-6 col-md-2">
+                    <label class="form-label small text-muted mb-1">
+                        <i class="fas fa-info-circle me-1 text-info"></i>Status
+                    </label>
+                    <select name="status" class="form-select form-select-sm">
                         <option value="">All Status</option>
                         <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
                         <option value="notified" {{ request('status') == 'notified' ? 'selected' : '' }}>Notified</option>
@@ -104,21 +325,46 @@
                         <option value="cancelled" {{ request('status') == 'cancelled' ? 'selected' : '' }}>Cancelled</option>
                     </select>
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label">Service Date</label>
-                    <input type="date" name="service_date" value="{{ request('service_date') }}" class="form-control">
+                
+                <!-- Service Date - Full Width on Mobile -->
+                <div class="col-6 col-md-2">
+                    <label class="form-label small text-muted mb-1">
+                        <i class="fas fa-calendar-alt me-1 text-success"></i>Service Date
+                    </label>
+                    <input type="date" name="service_date" value="{{ request('service_date') }}" class="form-control form-control-sm">
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label">From</label>
-                    <input type="date" name="from" value="{{ request('from') }}" class="form-control">
+                
+                <!-- Date Range - Side by Side on Mobile -->
+                <div class="col-6 col-md-2">
+                    <label class="form-label small text-muted mb-1">
+                        <i class="fas fa-calendar me-1 text-warning"></i>From
+                    </label>
+                    <input type="date" name="from" value="{{ request('from') }}" class="form-control form-control-sm">
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label">To</label>
-                    <input type="date" name="to" value="{{ request('to') }}" class="form-control">
+                <div class="col-6 col-md-2">
+                    <label class="form-label small text-muted mb-1">
+                        <i class="fas fa-calendar-check me-1 text-warning"></i>To
+                    </label>
+                    <input type="date" name="to" value="{{ request('to') }}" class="form-control form-control-sm">
                 </div>
-                <div class="col-md-1">
-                    <button type="submit" class="btn btn-primary w-100"><i class="fas fa-filter"></i></button>
+                
+                <!-- Apply Button - Full Width on Mobile -->
+                <div class="col-12 col-md-1">
+                    <label class="form-label small text-muted mb-1 d-block">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary btn-sm w-100">
+                        <i class="fas fa-filter me-1"></i>
+                        <span class="d-none d-sm-inline">Apply</span>
+                    </button>
                 </div>
+            </div>
+            
+            <!-- Action Buttons - Compact, Full Width on Mobile -->
+            <div class="d-flex gap-2 flex-wrap">
+                <a href="{{ route('promise-guests.index') }}" class="btn btn-outline-secondary btn-sm flex-fill flex-md-grow-0">
+                    <i class="fas fa-redo me-1"></i>
+                    <span class="d-none d-sm-inline">Reset</span>
+                    <span class="d-sm-none">Clear</span>
+                </a>
             </div>
         </div>
     </form>
@@ -152,13 +398,14 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th>Name</th>
-                            <th>Phone</th>
+                            <th class="d-none d-md-table-cell">Name</th>
+                            <th class="d-table-cell d-md-none">Guest</th>
+                            <th class="d-none d-lg-table-cell">Phone</th>
                             <th>Service Date</th>
                             <th>Status</th>
-                            <th>Notified At</th>
-                            <th>Created By</th>
-                            <th>Actions</th>
+                            <th class="d-none d-xl-table-cell">Notified At</th>
+                            <th class="d-none d-lg-table-cell">Created By</th>
+                            <th class="text-end">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -167,14 +414,24 @@
                                 <td>
                                     <strong>{{ $guest->name }}</strong>
                                     @if($guest->email)
-                                        <br><small class="text-muted">{{ $guest->email }}</small>
+                                        <br><small class="text-muted d-none d-md-inline">{{ $guest->email }}</small>
                                     @endif
+                                    <div class="d-md-none">
+                                        <small class="text-muted d-block">
+                                            <i class="fas fa-phone me-1"></i>{{ $guest->phone_number }}
+                                        </small>
+                                        @if($guest->email)
+                                            <small class="text-muted d-block">
+                                                <i class="fas fa-envelope me-1"></i>{{ $guest->email }}
+                                            </small>
+                                        @endif
+                                    </div>
                                 </td>
-                                <td>{{ $guest->phone_number }}</td>
+                                <td class="d-none d-lg-table-cell">{{ $guest->phone_number }}</td>
                                 <td>
                                     {{ $guest->promised_service_date->format('d/m/Y') }}
                                     @if($guest->service)
-                                        <br><small class="text-muted">
+                                        <br><small class="text-muted d-none d-md-inline">
                                             @if($guest->service->theme)
                                                 {{ $guest->service->theme }}
                                             @endif
@@ -186,46 +443,50 @@
                                         {{ ucfirst($guest->status) }}
                                     </span>
                                 </td>
-                                <td>
+                                <td class="d-none d-xl-table-cell">
                                     @if($guest->notified_at)
                                         {{ $guest->notified_at->format('d/m/Y H:i') }}
                                     @else
                                         <span class="text-muted">—</span>
                                     @endif
                                 </td>
-                                <td>
+                                <td class="d-none d-lg-table-cell">
                                     @if($guest->creator)
                                         {{ $guest->creator->name }}
                                     @else
                                         <span class="text-muted">—</span>
                                     @endif
                                 </td>
-                                <td>
+                                <td class="text-end">
                                     <div class="btn-group btn-group-sm" role="group">
                                         @if($guest->status == 'pending')
                                             <form action="{{ route('promise-guests.send-notification', $guest) }}" method="POST" class="d-inline">
                                                 @csrf
-                                                <button type="submit" class="btn btn-info btn-sm" title="Send Notification">
+                                                <button type="submit" class="btn btn-info btn-sm text-white" title="Send Notification">
                                                     <i class="fas fa-bell"></i>
+                                                    <span class="d-none d-sm-inline ms-1">Notify</span>
                                                 </button>
                                             </form>
                                         @endif
                                         @if($guest->status != 'attended')
                                             <form action="{{ route('promise-guests.mark-attended', $guest) }}" method="POST" class="d-inline">
                                                 @csrf
-                                                <button type="submit" class="btn btn-success btn-sm" title="Mark as Attended">
+                                                <button type="submit" class="btn btn-success btn-sm text-white" title="Mark as Attended">
                                                     <i class="fas fa-check"></i>
+                                                    <span class="d-none d-sm-inline ms-1">Attend</span>
                                                 </button>
                                             </form>
                                         @endif
-                                        <a href="{{ route('promise-guests.edit', $guest) }}" class="btn btn-primary btn-sm" title="Edit">
+                                        <a href="{{ route('promise-guests.edit', $guest) }}" class="btn btn-primary btn-sm text-white" title="Edit">
                                             <i class="fas fa-edit"></i>
+                                            <span class="d-none d-sm-inline ms-1">Edit</span>
                                         </a>
                                         <form action="{{ route('promise-guests.destroy', $guest) }}" method="POST" class="d-inline delete-promise-guest-form" data-guest-name="{{ $guest->name }}">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="btn btn-danger btn-sm" title="Delete">
+                                            <button type="submit" class="btn btn-danger btn-sm text-white" title="Delete">
                                                 <i class="fas fa-trash"></i>
+                                                <span class="d-none d-sm-inline ms-1">Delete</span>
                                             </button>
                                         </form>
                                     </div>
@@ -365,8 +626,127 @@
 </div>
 
 <script>
+    // Toggle Actions Function
+    function toggleActions() {
+        // Only toggle on mobile devices
+        if (window.innerWidth > 768) {
+            return; // Don't toggle on desktop
+        }
+        
+        const actionsBody = document.getElementById('actionsBody');
+        const actionsIcon = document.getElementById('actionsToggleIcon');
+        
+        if (!actionsBody || !actionsIcon) return;
+        
+        // Check computed style to see if it's visible
+        const computedStyle = window.getComputedStyle(actionsBody);
+        const isVisible = computedStyle.display !== 'none';
+        
+        if (isVisible) {
+            actionsBody.style.display = 'none';
+            actionsIcon.classList.remove('fa-chevron-up');
+            actionsIcon.classList.add('fa-chevron-down');
+        } else {
+            actionsBody.style.display = 'block';
+            actionsIcon.classList.remove('fa-chevron-down');
+            actionsIcon.classList.add('fa-chevron-up');
+        }
+    }
+
+    // Toggle Filters Function
+    function toggleFilters() {
+        // Only toggle on mobile devices
+        if (window.innerWidth > 768) {
+            return; // Don't toggle on desktop
+        }
+        
+        const filterBody = document.getElementById('filterBody');
+        const filterIcon = document.getElementById('filterToggleIcon');
+        const filterHeader = document.querySelector('.filter-header');
+        
+        if (!filterBody || !filterIcon) return;
+        
+        // Check computed style to see if it's visible
+        const computedStyle = window.getComputedStyle(filterBody);
+        const isVisible = computedStyle.display !== 'none';
+        
+        if (isVisible) {
+            filterBody.style.display = 'none';
+            filterIcon.classList.remove('fa-chevron-up');
+            filterIcon.classList.add('fa-chevron-down');
+            if (filterHeader) filterHeader.classList.remove('active');
+        } else {
+            filterBody.style.display = 'block';
+            filterIcon.classList.remove('fa-chevron-down');
+            filterIcon.classList.add('fa-chevron-up');
+            if (filterHeader) filterHeader.classList.add('active');
+        }
+    }
+
+    // Handle window resize
+    window.addEventListener('resize', function() {
+        const actionsBody = document.getElementById('actionsBody');
+        const actionsIcon = document.getElementById('actionsToggleIcon');
+        const filterBody = document.getElementById('filterBody');
+        const filterIcon = document.getElementById('filterToggleIcon');
+        
+        if (window.innerWidth > 768) {
+            // Always show on desktop
+            if (actionsBody && actionsIcon) {
+                actionsBody.style.display = 'block';
+                actionsIcon.style.display = 'none';
+            }
+            if (filterBody && filterIcon) {
+                filterBody.style.display = 'block';
+                filterIcon.style.display = 'none';
+            }
+        } else {
+            // On mobile, show chevrons
+            if (actionsIcon) actionsIcon.style.display = 'block';
+            if (filterIcon) filterIcon.style.display = 'block';
+        }
+    });
+
     // Auto-format phone number with +255 prefix
     document.addEventListener('DOMContentLoaded', function() {
+        // Initialize actions and filters
+        const actionsBody = document.getElementById('actionsBody');
+        const actionsIcon = document.getElementById('actionsToggleIcon');
+        const filterBody = document.getElementById('filterBody');
+        const filterIcon = document.getElementById('filterToggleIcon');
+        
+        if (window.innerWidth <= 768) {
+            // Mobile: start collapsed
+            if (actionsBody && actionsIcon) {
+                actionsBody.style.display = 'none';
+                actionsIcon.classList.remove('fa-chevron-up');
+                actionsIcon.classList.add('fa-chevron-down');
+            }
+            if (filterBody && filterIcon) {
+                filterBody.style.display = 'none';
+                filterIcon.classList.remove('fa-chevron-up');
+                filterIcon.classList.add('fa-chevron-down');
+            }
+        } else {
+            // Desktop: always show
+            if (actionsBody && actionsIcon) {
+                actionsBody.style.display = 'block';
+                actionsIcon.style.display = 'none';
+            }
+            if (filterBody && filterIcon) {
+                filterBody.style.display = 'block';
+                filterIcon.style.display = 'none';
+            }
+        }
+        
+        // Show filters if any are active
+        @if(request('search') || request('status') || request('service_date') || request('from') || request('to'))
+            if (window.innerWidth <= 768 && filterBody && filterIcon) {
+                toggleFilters(); // Expand if filters are active
+                const filterHeader = document.querySelector('.filter-header');
+                if (filterHeader) filterHeader.classList.add('active');
+            }
+        @endif
         const phoneInput = document.getElementById('modal_phone_number');
         const phoneForm = document.getElementById('addPromiseGuestForm');
         

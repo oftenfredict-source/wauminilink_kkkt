@@ -513,6 +513,7 @@
         .container-fluid {
             padding-left: 0.75rem !important;
             padding-right: 0.75rem !important;
+            padding-top: 0.25rem !important;
         }
         
         /* Header adjustments */
@@ -595,12 +596,51 @@
             padding: 0.75rem !important;
         }
         
+        /* Card header adjustments */
+        .card-header {
+            padding: 0.75rem !important;
+        }
+        
+        .card-header h5,
+        .card-header h6 {
+            font-size: 0.95rem;
+        }
+        
+        .card-header .small {
+            font-size: 0.75rem;
+        }
+        
+        /* Financial overview section */
+        .row.g-3 > .col-lg-2 {
+            margin-bottom: 0.75rem;
+        }
+        
+        /* Pending breakdown section */
+        .row.g-3 > .col-lg-2.col-md-4 {
+            margin-bottom: 0.75rem;
+        }
+        
+        /* Better spacing */
+        .mb-4 {
+            margin-bottom: 1rem !important;
+        }
+        
+        .mb-3 {
+            margin-bottom: 0.75rem !important;
+        }
+        
         /* Table responsive */
         .table-responsive {
             font-size: 0.875rem;
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
             border-radius: 0.375rem;
+            margin: 0 -0.75rem;
+            padding: 0 0.75rem;
+        }
+        
+        .table {
+            min-width: 600px;
         }
         
         .table th,
@@ -608,6 +648,12 @@
             padding: 0.5rem 0.5rem;
             white-space: nowrap;
             vertical-align: middle;
+            font-size: 0.8rem;
+        }
+        
+        .table th {
+            font-size: 0.75rem;
+            font-weight: 600;
         }
         
         /* Hide some table columns on mobile */
@@ -616,6 +662,24 @@
         .table th:nth-child(6),
         .table td:nth-child(6) {
             display: none; /* Hide Approved By and Approved At on mobile */
+        }
+        
+        /* Better badge display on mobile */
+        .table .badge {
+            font-size: 0.7rem;
+            padding: 0.25rem 0.5rem;
+            white-space: nowrap;
+        }
+        
+        /* Better user icon display */
+        .table .bg-light.rounded-circle {
+            width: 32px !important;
+            height: 32px !important;
+        }
+        
+        .table .bg-primary.bg-opacity-10.rounded-circle {
+            width: 28px !important;
+            height: 28px !important;
         }
         
         /* Better touch targets for mobile */
@@ -660,6 +724,7 @@
         .container-fluid {
             padding-left: 0.5rem !important;
             padding-right: 0.5rem !important;
+            padding-top: 0.15rem !important;
         }
         
         /* Header adjustments */
@@ -745,16 +810,22 @@
         .table-responsive {
             font-size: 0.75rem;
             margin: 0 -0.5rem;
+            padding: 0 0.5rem;
+        }
+        
+        .table {
+            min-width: 550px;
         }
         
         .table th,
         .table td {
-            padding: 0.5rem 0.375rem;
-            font-size: 0.75rem;
+            padding: 0.4rem 0.3rem;
+            font-size: 0.7rem;
         }
         
         .table th {
             font-weight: 600;
+            font-size: 0.7rem;
         }
         
         /* Hide more columns on very small screens */
@@ -767,12 +838,27 @@
         .table .badge {
             display: inline-block;
             white-space: nowrap;
+            font-size: 0.65rem;
+            padding: 0.2rem 0.4rem;
         }
         
         /* Better user icon display */
         .table .bg-light.rounded-circle {
-            width: 32px !important;
-            height: 32px !important;
+            width: 28px !important;
+            height: 28px !important;
+        }
+        
+        .table .bg-primary.bg-opacity-10.rounded-circle {
+            width: 24px !important;
+            height: 24px !important;
+        }
+        
+        .table .bg-light.rounded-circle i {
+            font-size: 0.7rem;
+        }
+        
+        .table .bg-primary.bg-opacity-10.rounded-circle i {
+            font-size: 0.6rem;
         }
         
         /* Card header adjustments */

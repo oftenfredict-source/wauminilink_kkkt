@@ -68,20 +68,42 @@ class AuthApiController extends Controller
             ], 401);
         }
 
-        // Check if user is blocked from logging in
-        if ($user->login_blocked_until && $user->login_blocked_until->isFuture()) {
-            $remainingMinutes = now()->diffInMinutes($user->login_blocked_until);
+        // Clear the block if it has expired (do this FIRST before checking if blocked)
+        // Compare in UTC since that's how timestamps are stored in the database
+        if ($user->login_blocked_until) {
+            // Get the stored time (it's in UTC from database)
+            $blockedUntil = \Carbon\Carbon::parse($user->login_blocked_until)->utc();
+            $now = now()->utc();
             
-            return response()->json([
-                'success' => false,
-                'message' => "Your account is temporarily blocked. Please try again in {$remainingMinutes} minute(s).",
-                'blocked_until' => $user->login_blocked_until->toISOString()
-            ], 403);
+            // If blocked time is in the past or equal to now, clear it
+            if ($blockedUntil->lte($now)) {
+                // Block has expired, clear it
+                $user->update(['login_blocked_until' => null]);
+                $user->refresh(); // Refresh to get updated value
+            }
         }
 
-        // Clear the block if it has expired
-        if ($user->login_blocked_until && $user->login_blocked_until->isPast()) {
-            $user->update(['login_blocked_until' => null]);
+        // Check if user is still blocked from logging in (after clearing expired blocks)
+        if ($user->login_blocked_until) {
+            // Use Tanzania timezone for display
+            $tanzaniaTimezone = 'Africa/Dar_es_Salaam';
+            
+            // Compare in UTC (how it's stored in database)
+            $blockedUntilUtc = \Carbon\Carbon::parse($user->login_blocked_until)->utc();
+            $now = now()->utc();
+            
+            // If blocked time is still in the future, show error
+            if ($blockedUntilUtc->gt($now)) {
+                // Convert to Tanzania timezone for display
+                $blockedUntilDisplay = $blockedUntilUtc->copy()->setTimezone($tanzaniaTimezone);
+                $unblockTime = $blockedUntilDisplay->format('F j, Y \a\t g:i A');
+                
+                return response()->json([
+                    'success' => false,
+                    'message' => "Your account is temporarily blocked. Please try again on {$unblockTime}.",
+                    'blocked_until' => $blockedUntilUtc->toISOString()
+                ], 403);
+            }
         }
 
         // Verify password

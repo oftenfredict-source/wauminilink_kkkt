@@ -436,6 +436,12 @@
         color: #fff;
         padding: 20px;
     }
+    footer .footer-text,
+    footer .footer-text *,
+    footer .emca-powered,
+    footer .emca-powered * {
+        color: #940000 !important;
+    }
     .footer-bar {
         height: 5px;
         background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
@@ -454,6 +460,18 @@
     }
     .footer-text {
         font-size: 0.9rem;
+        color: #940000 !important;
+    }
+    footer .footer-text {
+        color: #940000 !important;
+    }
+    footer .footer-text,
+    footer .footer-text *,
+    footer .emca-powered,
+    footer .emca-powered *,
+    .footer-text.emca-powered,
+    .footer-text.emca-powered * {
+        color: #940000 !important;
     }
     .footer-logo img {
         display: block;
@@ -551,8 +569,7 @@
 
     @media (max-width: 768px) {
         .login-form .logo {
-            height: 50px;
-            margin-bottom: 15px;
+            display: none; /* Hide logo in form on mobile */
         }
         .login-form h2 {
             font-size: 1.8rem;
@@ -627,7 +644,7 @@
         <form class="login-form" id="loginForm" method="POST" action="{{ route('login.post') }}">
             @csrf
             <img src="{{ asset('assets/images/waumini_link_logo.png') }}" alt="Waumini Link Logo" class="logo">
-            <h2>Waumini Link Login</h2>
+            <h2>Login</h2>
 
             <!-- Display success message -->
             @if(session('success'))
@@ -705,7 +722,7 @@
             </button>
 
             <div class="register-link">
-               <span>Forgot Password?</span> <a href="#" class="forgot-password">Click here</a>
+               <span>Forgot Password?</span> <a href="{{ route('password.request') }}" class="forgot-password">Click here</a>
             </div>
         </form>
     </div>
@@ -717,10 +734,7 @@
     <div class="footer-content">
         <div class="d-flex justify-content-between align-items-center flex-wrap">
             <div class="footer-text">
-                Powered by EmCa Technologies &copy; 2025
-            </div>
-            <div class="footer-logo">
-                <img src="{{ asset('assets/images/emca_logo.png') }}" alt="EmCa Technologies Logo">
+                <span style="color: #ffffff !important;">Powered by</span> <a href="https://emca.tech/#" class="text-decoration-none fw-bold" style="color: #940000 !important;">EmCa Technologies</a> &copy; 2025
             </div>
         </div>
     </div>

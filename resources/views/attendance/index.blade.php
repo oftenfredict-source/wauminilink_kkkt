@@ -108,6 +108,12 @@
                     @php
                         $selectedDate = $selectedService->service_date ?? $selectedService->event_date;
                         $formattedSelectedDate = $selectedDate ? (is_string($selectedDate) ? \Carbon\Carbon::parse($selectedDate)->format('d/m/Y') : $selectedDate->format('d/m/Y')) : '';
+                        // Normalized date (Y-m-d) for biometric sync
+                        $selectedDateForSync = $selectedDate
+                            ? (is_string($selectedDate)
+                                ? \Carbon\Carbon::parse($selectedDate)->format('Y-m-d')
+                                : $selectedDate->format('Y-m-d'))
+                            : '';
                         $startTime = $selectedService->start_time ?? null;
                         $endTime = $selectedService->end_time ?? null;
                         
@@ -147,7 +153,32 @@
                     
                     <!-- Service Information -->
                     <div class="alert alert-info">
-                        <h6><strong>Service Details:</strong></h6>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="mb-0"><strong>Service Details:</strong></h6>
+                            @if($serviceType === 'sunday_service')
+                                <div class="btn-group" role="group">
+                                    <button type="button"
+                                            id="autoSyncToggle"
+                                            class="btn btn-sm btn-outline-success"
+                                            onclick="toggleAutoSync()"
+                                            title="Enable/Disable automatic sync from device">
+                                        <i class="fas fa-sync-alt"></i> <span id="autoSyncText">Enable Auto-Sync</span>
+                                    </button>
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-primary"
+                                            onclick="syncFromDevice()"
+                                            title="Manually sync from device now">
+                                        <i class="fas fa-fingerprint"></i> Sync Now
+                                    </button>
+                                </div>
+                                <div id="autoSyncStatus" class="ms-2" style="display: none;">
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-circle-notch fa-spin"></i> Auto-syncing...
+                                    </span>
+                                </div>
+                            @endif
+                        </div>
+                        <input type="hidden" id="selected_service_date" value="{{ $selectedDateForSync }}">
                         <div class="row">
                             <div class="col-md-3">
                                 <strong>Date:</strong> {{ $formattedSelectedDate }}
@@ -318,6 +349,16 @@
                                                            {{ $attendanceRecords->has($member->id) ? 'checked' : '' }}>
                                                     <label class="form-check-label" for="member_{{ $member->id }}">
                                                         <strong>{{ $member->full_name }}</strong>
+                                                        @php
+                                                            // Check if this member's attendance was recorded from biometric device
+                                                            $biometricAttendance = $attendanceRecords->get($member->id);
+                                                            $isFromDevice = $biometricAttendance && $biometricAttendance->recorded_by === 'BiometricDevice';
+                                                        @endphp
+                                                        @if($isFromDevice)
+                                                            <span class="badge bg-success ms-2" title="Synced from biometric device">
+                                                                <i class="fas fa-fingerprint"></i> Device
+                                                            </span>
+                                                        @endif
                                                         <br>
                                                         <small class="text-muted">
                                                             {{ $member->member_id }} | 
@@ -528,7 +569,12 @@
 
 @section('scripts')
 <script>
+const biometricSyncUrl = "{{ route('attendance.biometric.sync') }}";
+
 function loadServices() {
+    // Clear auto-sync when service type changes
+    clearAutoSync();
+    
     const serviceType = document.getElementById('service_type').value;
     const serviceSelect = document.getElementById('service_id');
     
@@ -543,6 +589,9 @@ function loadServices() {
 }
 
 function loadAttendanceForm() {
+    // Clear auto-sync when service changes
+    clearAutoSync();
+    
     const serviceType = document.getElementById('service_type').value;
     const serviceId = document.getElementById('service_id').value;
     
@@ -770,6 +819,98 @@ if (attendanceForm) {
 });
 }
 
+// Auto-sync state
+let autoSyncInterval = null;
+let isAutoSyncEnabled = false;
+const AUTO_SYNC_INTERVAL = 5000; // 5 seconds
+
+// Toggle auto-sync on/off
+function toggleAutoSync() {
+    const serviceType = document.getElementById('service_type')?.value;
+    const serviceId = document.getElementById('service_id')?.value;
+    const selectedDate = document.getElementById('selected_service_date')?.value;
+    
+    if (!serviceId || !selectedDate) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Service Not Selected',
+            text: 'Please select a service before enabling auto-sync.',
+            confirmButtonText: 'OK'
+        });
+        return;
+    }
+    
+    if (serviceType !== 'sunday_service') {
+        Swal.fire({
+            icon: 'info',
+            title: 'Auto-Sync Limited to Main Service',
+            text: 'Auto-sync is currently available for Main Service attendance only.',
+            confirmButtonText: 'OK'
+        });
+        return;
+    }
+    
+    isAutoSyncEnabled = !isAutoSyncEnabled;
+    const toggleBtn = document.getElementById('autoSyncToggle');
+    const statusBadge = document.getElementById('autoSyncStatus');
+    const syncText = document.getElementById('autoSyncText');
+    
+    if (isAutoSyncEnabled) {
+        // Enable auto-sync
+        toggleBtn.classList.remove('btn-outline-success');
+        toggleBtn.classList.add('btn-success');
+        syncText.textContent = 'Disable Auto-Sync';
+        statusBadge.style.display = 'inline-block';
+        
+        // Start interval
+        autoSyncInterval = setInterval(() => {
+            syncFromDevice(true); // Silent mode - no confirmation dialog
+        }, AUTO_SYNC_INTERVAL);
+        
+        // Do initial sync immediately
+        syncFromDevice(true);
+        
+        console.log('Auto-sync enabled - syncing every 5 seconds');
+    } else {
+        // Disable auto-sync
+        toggleBtn.classList.remove('btn-success');
+        toggleBtn.classList.add('btn-outline-success');
+        syncText.textContent = 'Enable Auto-Sync';
+        statusBadge.style.display = 'none';
+        
+        // Clear interval
+        if (autoSyncInterval) {
+            clearInterval(autoSyncInterval);
+            autoSyncInterval = null;
+        }
+        
+        console.log('Auto-sync disabled');
+    }
+}
+
+// Clear auto-sync when page unloads or service changes
+function clearAutoSync() {
+    if (autoSyncInterval) {
+        clearInterval(autoSyncInterval);
+        autoSyncInterval = null;
+    }
+    isAutoSyncEnabled = false;
+    const toggleBtn = document.getElementById('autoSyncToggle');
+    const statusBadge = document.getElementById('autoSyncStatus');
+    const syncText = document.getElementById('autoSyncText');
+    
+    if (toggleBtn) {
+        toggleBtn.classList.remove('btn-success');
+        toggleBtn.classList.add('btn-outline-success');
+    }
+    if (syncText) {
+        syncText.textContent = 'Enable Auto-Sync';
+    }
+    if (statusBadge) {
+        statusBadge.style.display = 'none';
+    }
+}
+
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
     updateSelectedCount();
@@ -779,14 +920,166 @@ document.addEventListener('DOMContentLoaded', function() {
         checkbox.addEventListener('change', updateSelectedCount);
     });
     
+    // Clear auto-sync on page unload
+    window.addEventListener('beforeunload', clearAutoSync);
+    
     // Make sure toggle functions are accessible globally
     window.selectAll = selectAll;
     window.selectNone = selectNone;
     window.toggleSelection = toggleSelection;
     window.filterMembers = filterMembers;
     window.filterChildren = filterChildren;
+    window.syncFromDevice = syncFromDevice;
+    window.toggleAutoSync = toggleAutoSync;
+    window.clearAutoSync = clearAutoSync;
     
     console.log('Attendance page initialized. Toggle functions ready.');
 });
+
+function syncFromDevice(silent = false) {
+    const serviceType = document.getElementById('service_type')?.value;
+    const serviceId = document.getElementById('service_id')?.value;
+    const selectedDate = document.getElementById('selected_service_date')?.value;
+
+    if (!serviceId || !selectedDate) {
+        if (!silent) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Service Not Selected',
+                text: 'Please select a service before syncing from the device.',
+                confirmButtonText: 'OK'
+            });
+        }
+        return;
+    }
+
+    if (serviceType !== 'sunday_service') {
+        if (!silent) {
+            Swal.fire({
+                icon: 'info',
+                title: 'Sync Limited to Main Service',
+                text: 'Biometric sync is currently available for Main Service attendance only.',
+                confirmButtonText: 'OK'
+            });
+        }
+        return;
+    }
+
+    // Show confirmation dialog only if not in silent mode
+    if (!silent) {
+        Swal.fire({
+            icon: 'question',
+            title: 'Sync From Device',
+            text: `Do you want to fetch attendance from the biometric device for ${selectedDate}?`,
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Sync Now',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (!result.isConfirmed) {
+                return;
+            }
+            performSync(selectedDate, silent);
+        });
+    } else {
+        // Silent mode - perform sync directly
+        performSync(selectedDate, silent);
+    }
+}
+
+function performSync(selectedDate, silent = false) {
+    const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+    const loadingText = document.querySelector('#loadingModal .modal-body p');
+    if (loadingText) {
+        loadingText.textContent = silent ? 'Auto-syncing from device...' : 'Syncing attendance from device...';
+    }
+    if (!silent) {
+        loadingModal.show();
+    }
+
+    fetch(biometricSyncUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: new URLSearchParams({
+            date: selectedDate
+        })
+    })
+    .then(async (response) => {
+        const data = await response.json().catch(() => ({}));
+        if (!silent) {
+            loadingModal.hide();
+        }
+
+        if (!response.ok || !data.success) {
+            if (!silent) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Sync Failed',
+                    text: data.message || 'Failed to sync attendance from device.',
+                    confirmButtonText: 'OK'
+                });
+            } else {
+                console.warn('Auto-sync failed:', data.message);
+            }
+            return;
+        }
+
+        // Automatically check checkboxes for synced members
+        const syncedMemberIds = data.synced_member_ids || [];
+        let checkedCount = 0;
+        
+        syncedMemberIds.forEach(memberId => {
+            const checkbox = document.getElementById(`member_${memberId}`);
+            if (checkbox && !checkbox.checked) {
+                checkbox.checked = true;
+                checkedCount++;
+                
+                // Add visual indicator (badge) to show member was synced from device
+                const label = checkbox.closest('.form-check-label');
+                if (label && !label.querySelector('.biometric-badge')) {
+                    const badge = document.createElement('span');
+                    badge.className = 'badge bg-success biometric-badge ms-2';
+                    badge.innerHTML = '<i class="fas fa-fingerprint"></i> Device';
+                    badge.title = 'Synced from biometric device';
+                    label.appendChild(badge);
+                }
+            }
+        });
+        
+        // Update selected count
+        updateSelectedCount();
+        
+        // Show success message only if not in silent mode
+        if (!silent) {
+            const message = checkedCount > 0 
+                ? `${data.message}\n\n${checkedCount} member(s) automatically checked from device.`
+                : data.message || 'Attendance synced successfully from device.';
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Sync Complete',
+                text: message,
+                confirmButtonText: 'OK'
+            });
+        } else if (checkedCount > 0) {
+            // Silent mode - just log to console
+            console.log(`Auto-sync: ${checkedCount} member(s) checked from device`);
+        }
+    })
+    .catch((error) => {
+        if (!silent) {
+            loadingModal.hide();
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: error.message || 'An unexpected error occurred during sync.',
+                confirmButtonText: 'OK'
+            });
+        }
+        console.error('Biometric sync error:', error);
+    });
+}
 </script>
 @endsection

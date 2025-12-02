@@ -35,6 +35,324 @@
         border-radius: 8px;
         margin-top: 10px;
     }
+
+    /* Mobile Responsive Styles */
+    @media (max-width: 768px) {
+        .container-fluid {
+            padding-left: 0.75rem !important;
+            padding-right: 0.75rem !important;
+            padding-top: 0.25rem !important;
+        }
+
+        .dashboard-header {
+            margin-bottom: 15px !important;
+        }
+
+        .dashboard-header .card-body {
+            padding: 12px 15px !important;
+        }
+
+        .dashboard-header .rounded-circle {
+            width: 40px !important;
+            height: 40px !important;
+            min-width: 40px !important;
+        }
+
+        .dashboard-header .rounded-circle i {
+            font-size: 1rem !important;
+        }
+
+        .dashboard-header .d-flex.align-items-center.gap-3 {
+            gap: 12px !important;
+        }
+
+        .dashboard-header h5 {
+            font-size: 1.1rem !important;
+            line-height: 1.3 !important;
+            margin-bottom: 2px !important;
+        }
+
+        .dashboard-header small {
+            font-size: 0.8rem !important;
+            line-height: 1.2 !important;
+            display: block !important;
+        }
+
+        .dashboard-header .btn {
+            margin-top: 12px !important;
+            padding: 8px 16px !important;
+            font-size: 0.875rem !important;
+            border-radius: 6px !important;
+            white-space: nowrap !important;
+        }
+
+        .dashboard-header .d-flex.justify-content-between {
+            align-items: flex-start !important;
+        }
+
+        .dashboard-header .d-flex {
+            flex-direction: column;
+            align-items: flex-start !important;
+        }
+
+        .card-body {
+            padding: 15px !important;
+        }
+
+        .card-header {
+            padding: 0.75rem 1rem !important;
+        }
+
+        .card-header h6 {
+            font-size: 0.95rem !important;
+        }
+
+        .card-body {
+            padding: 1rem !important;
+        }
+
+        /* Form fields stack on mobile */
+        .row .col-md-6,
+        .row .col-md-4,
+        .row .col-md-12 {
+            width: 100% !important;
+            margin-bottom: 1rem !important;
+        }
+
+        /* Account type cards */
+        .account-type-card {
+            margin-bottom: 1rem !important;
+        }
+
+        .account-type-card .card-body {
+            padding: 1rem !important;
+        }
+
+        .account-type-card i {
+            font-size: 2rem !important;
+        }
+
+        .account-type-card h5 {
+            font-size: 1rem !important;
+        }
+
+        .account-type-card p {
+            font-size: 0.85rem !important;
+        }
+
+        /* Form labels */
+        .form-label {
+            font-size: 0.9rem !important;
+            margin-bottom: 0.5rem !important;
+        }
+
+        /* Form controls */
+        .form-control,
+        .form-select {
+            font-size: 0.9rem !important;
+            padding: 0.5rem 0.75rem !important;
+        }
+
+        /* Leader info section */
+        .leader-info {
+            padding: 1rem !important;
+            margin-top: 0.75rem !important;
+        }
+
+        .leader-info h6 {
+            font-size: 0.95rem !important;
+        }
+
+        .leader-info .row .col-md-4,
+        .leader-info .row .col-md-6 {
+            margin-bottom: 0.75rem !important;
+        }
+
+        /* Buttons */
+        .btn {
+            width: 100% !important;
+            margin-bottom: 0.75rem !important;
+            padding: 0.5rem 1rem !important;
+            font-size: 0.9rem !important;
+        }
+
+        /* Button groups */
+        .btn-group,
+        .d-flex.gap-2 {
+            flex-direction: column !important;
+            width: 100% !important;
+        }
+
+        .btn-group .btn,
+        .d-flex.gap-2 .btn {
+            width: 100% !important;
+            margin-bottom: 0.5rem !important;
+        }
+
+        /* Input groups */
+        .input-group {
+            flex-wrap: wrap !important;
+        }
+
+        .input-group-text {
+            font-size: 0.85rem !important;
+            padding: 0.5rem 0.75rem !important;
+        }
+
+        /* Alert improvements */
+        .alert {
+            font-size: 0.85rem !important;
+            padding: 0.75rem 1rem !important;
+        }
+
+        .alert ul,
+        .alert ol {
+            padding-left: 1.25rem !important;
+        }
+
+        .alert li {
+            margin-bottom: 0.25rem !important;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .container-fluid {
+            padding-left: 0.5rem !important;
+            padding-right: 0.5rem !important;
+            padding-top: 0.15rem !important;
+        }
+
+        .dashboard-header {
+            margin-bottom: 10px !important;
+            border-radius: 10px !important;
+        }
+
+        .dashboard-header .card-body {
+            padding: 10px 12px !important;
+        }
+
+        .dashboard-header .rounded-circle {
+            width: 36px !important;
+            height: 36px !important;
+            min-width: 36px !important;
+        }
+
+        .dashboard-header .rounded-circle i {
+            font-size: 0.9rem !important;
+        }
+
+        .dashboard-header .d-flex.align-items-center.gap-3 {
+            gap: 10px !important;
+        }
+
+        .dashboard-header h5 {
+            font-size: 0.95rem !important;
+            line-height: 1.25 !important;
+            margin-bottom: 1px !important;
+        }
+
+        .dashboard-header small {
+            font-size: 0.72rem !important;
+            line-height: 1.15 !important;
+        }
+
+        .dashboard-header .d-flex.justify-content-between {
+            flex-wrap: wrap !important;
+            gap: 8px !important;
+        }
+
+        .dashboard-header .btn {
+            margin-top: 0 !important;
+            width: auto !important;
+            min-width: fit-content !important;
+            padding: 7px 12px !important;
+            font-size: 0.8rem !important;
+            flex: 0 0 auto !important;
+        }
+
+        /* Stack on very small screens */
+        @media (max-width: 400px) {
+            .dashboard-header .d-flex.justify-content-between {
+                flex-direction: column !important;
+                align-items: stretch !important;
+            }
+
+            .dashboard-header .btn {
+                width: 100% !important;
+                margin-top: 8px !important;
+            }
+        }
+
+        /* Card improvements */
+        .card-header {
+            padding: 0.625rem 0.75rem !important;
+        }
+
+        .card-header h6 {
+            font-size: 0.9rem !important;
+        }
+
+        .card-body {
+            padding: 0.75rem !important;
+        }
+
+        /* Account type cards */
+        .account-type-card .card-body {
+            padding: 0.75rem !important;
+        }
+
+        .account-type-card i {
+            font-size: 1.75rem !important;
+            margin-bottom: 0.5rem !important;
+        }
+
+        .account-type-card h5 {
+            font-size: 0.95rem !important;
+        }
+
+        .account-type-card p {
+            font-size: 0.8rem !important;
+        }
+
+        /* Form labels */
+        .form-label {
+            font-size: 0.85rem !important;
+        }
+
+        /* Form controls */
+        .form-control,
+        .form-select {
+            font-size: 0.85rem !important;
+            padding: 0.45rem 0.625rem !important;
+        }
+
+        /* Leader info */
+        .leader-info {
+            padding: 0.75rem !important;
+        }
+
+        .leader-info h6 {
+            font-size: 0.9rem !important;
+        }
+
+        /* Buttons */
+        .btn {
+            font-size: 0.85rem !important;
+            padding: 0.45rem 0.75rem !important;
+        }
+
+        /* Input groups */
+        .input-group-text {
+            font-size: 0.8rem !important;
+            padding: 0.45rem 0.625rem !important;
+        }
+
+        /* Alerts */
+        .alert {
+            font-size: 0.8rem !important;
+            padding: 0.625rem 0.75rem !important;
+        }
+    }
 </style>
 
 <div class="container-fluid px-4">
@@ -53,7 +371,7 @@
                             </div>
                         </div>
                         <a href="{{ route('admin.users') }}" class="btn btn-light btn-sm">
-                            <i class="fas fa-arrow-left"></i> Back to Users
+                            <i class="fas fa-arrow-left"></i> <span class="d-none d-sm-inline">Back to Users</span><span class="d-sm-none">Back</span>
                         </a>
                     </div>
                 </div>
@@ -107,7 +425,7 @@
                             <i class="fas fa-user-tag me-1"></i>Account Type <span class="text-danger">*</span>
                         </label>
                         <div class="row">
-                            <div class="col-md-6 mb-3">
+                            <div class="col-12 col-md-6 mb-3">
                                 <div class="card account-type-card" onclick="selectAccountType('leader')" id="leaderCard">
                                     <div class="card-body text-center">
                                         <input type="radio" name="account_type" value="leader" id="account_type_leader" checked onchange="toggleAccountType()">
@@ -118,7 +436,7 @@
                                 </div>
                             </div>
                             @if($allowAdminCreation)
-                            <div class="col-md-6 mb-3">
+                            <div class="col-12 col-md-6 mb-3">
                                 <div class="card account-type-card" onclick="selectAccountType('admin')" id="adminCard">
                                     <div class="card-body text-center">
                                         <input type="radio" name="account_type" value="admin" id="account_type_admin" onchange="toggleAccountType()">
@@ -136,7 +454,7 @@
                 <!-- Leader Selection Section -->
                 <div id="leaderSection">
                     <div class="row">
-                        <div class="col-md-12 mb-3">
+                        <div class="col-12 mb-3">
                             <label for="leader_id" class="form-label">
                                 <i class="fas fa-users me-1"></i>Select Leader <span class="text-danger">*</span>
                             </label>
@@ -198,25 +516,25 @@
                     <div id="leaderInfo" class="leader-info" style="display: none;">
                         <h6 class="mb-3"><i class="fas fa-info-circle me-2"></i>Leader Information</h6>
                         <div class="row">
-                            <div class="col-md-4">
+                            <div class="col-12 col-md-4 mb-2 mb-md-0">
                                 <strong>Name:</strong>
                                 <p id="leaderName" class="mb-0">-</p>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-12 col-md-4 mb-2 mb-md-0">
                                 <strong>Position:</strong>
                                 <p id="leaderPosition" class="mb-0">-</p>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-12 col-md-4 mb-2 mb-md-0">
                                 <strong>Role:</strong>
                                 <p id="leaderRole" class="mb-0">-</p>
                             </div>
                         </div>
                         <div class="row mt-2">
-                            <div class="col-md-6">
+                            <div class="col-12 col-md-6 mb-2 mb-md-0">
                                 <strong>Email:</strong>
                                 <p id="leaderEmail" class="mb-0">-</p>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-12 col-md-6">
                                 <strong>Phone:</strong>
                                 <p id="leaderPhone" class="mb-0">-</p>
                             </div>
@@ -225,7 +543,7 @@
 
                     <!-- Email field (always visible and required) -->
                     <div class="row mt-3">
-                        <div class="col-md-12 mb-3">
+                        <div class="col-12 mb-3">
                             <label for="email" class="form-label">
                                 <i class="fas fa-envelope me-1"></i>Email Address <span class="text-danger">*</span>
                             </label>
@@ -251,7 +569,7 @@
                 <!-- Admin Creation Section -->
                 <div id="adminSection" style="display: none;">
                     <div class="row">
-                        <div class="col-md-6 mb-3">
+                        <div class="col-12 col-md-6 mb-3">
                             <label for="admin_name" class="form-label">
                                 <i class="fas fa-user me-1"></i>Full Name <span class="text-danger">*</span>
                             </label>
@@ -265,7 +583,7 @@
                             @enderror
                         </div>
 
-                        <div class="col-md-6 mb-3">
+                        <div class="col-12 col-md-6 mb-3">
                             <label for="admin_email" class="form-label">
                                 <i class="fas fa-envelope me-1"></i>Email (Username) <span class="text-danger">*</span>
                             </label>
@@ -282,7 +600,7 @@
                     </div>
 
                     <div class="row">
-                        <div class="col-md-6 mb-3">
+                        <div class="col-12 col-md-6 mb-3">
                             <label for="admin_phone_number" class="form-label">
                                 <i class="fas fa-phone me-1"></i>Phone Number
                             </label>
@@ -312,7 +630,7 @@
 
                 <!-- Password Info -->
                 <div class="row mt-4">
-                    <div class="col-md-12 mb-3">
+                    <div class="col-12 mb-3">
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle me-2"></i>
                             <strong>Automatic Password Generation</strong>
@@ -325,9 +643,9 @@
                 </div>
 
                 <div class="row mt-4">
-                    <div class="col-12">
+                    <div class="col-12 d-flex flex-column flex-sm-row gap-2">
                         <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save me-1"></i> Create User Account
+                            <i class="fas fa-save me-1"></i> <span class="d-none d-sm-inline">Create User Account</span><span class="d-sm-none">Create User</span>
                         </button>
                         <a href="{{ route('admin.users') }}" class="btn btn-secondary">
                             <i class="fas fa-times me-1"></i> Cancel

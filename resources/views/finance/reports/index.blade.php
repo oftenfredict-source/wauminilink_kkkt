@@ -1,47 +1,149 @@
 @extends('layouts.index')
 
 @section('content')
+<style>
+    /* Mobile Responsive Styles */
+    @media (max-width: 768px) {
+        .container-fluid {
+            padding-left: 0.5rem !important;
+            padding-right: 0.5rem !important;
+        }
+        
+        /* Filter Section */
+        #dateFilterForm .card-header {
+            transition: all 0.2s ease;
+        }
+        .filter-header:hover {
+            opacity: 0.9;
+        }
+        #filterBody {
+            transition: all 0.3s ease;
+            display: none;
+            background: #fafbfc;
+        }
+        .filter-header {
+            cursor: pointer !important;
+        }
+        #filterToggleIcon {
+            display: block !important;
+            transition: transform 0.3s ease;
+        }
+        .filter-header.active #filterToggleIcon {
+            transform: rotate(180deg);
+        }
+        #dateFilterForm .card-body {
+            padding: 0.75rem 0.5rem !important;
+        }
+        #dateFilterForm .form-label {
+            font-size: 0.7rem !important;
+            margin-bottom: 0.2rem !important;
+            font-weight: 600 !important;
+        }
+        #dateFilterForm .form-control {
+            font-size: 0.8125rem !important;
+            padding: 0.4rem 0.5rem !important;
+            border-radius: 6px !important;
+        }
+        #dateFilterForm .btn-sm {
+            padding: 0.4rem 0.75rem !important;
+            font-size: 0.8125rem !important;
+            border-radius: 6px !important;
+            font-weight: 600 !important;
+        }
+        
+        /* Cards - Stack on Mobile */
+        .col-xl-3, .col-md-6, .col-md-3 {
+            margin-bottom: 1rem;
+        }
+        
+        /* Summary Cards - Smaller on Mobile */
+        .card-body .h4 {
+            font-size: 1.25rem !important;
+        }
+        
+        /* Table Responsive */
+        .table {
+            font-size: 0.75rem;
+        }
+        .table th,
+        .table td {
+            padding: 0.5rem 0.25rem;
+        }
+        
+        /* Header adjustments */
+        h1 {
+            font-size: 1.25rem !important;
+        }
+        
+        /* Quick Access Cards - Full Width on Mobile */
+        .col-md-3 {
+            margin-bottom: 1rem;
+        }
+    }
+    
+    /* Desktop: Always show filters */
+    @media (min-width: 769px) {
+        .filter-header {
+            cursor: default !important;
+            pointer-events: none !important;
+        }
+        .filter-header .fa-chevron-down {
+            display: none !important;
+        }
+        #filterBody {
+            display: block !important;
+        }
+    }
+</style>
 <div class="container-fluid px-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="mt-4"><i class="fas fa-chart-pie me-2"></i>Financial Reports</h1>
     </div>
 
-    <!-- Date Range Filter -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header bg-primary text-white">
+    <!-- Date Range Filter - Collapsible on Mobile -->
+    <form method="GET" class="card mb-4 border-0 shadow-sm" id="dateFilterForm">
+        <!-- Filter Header -->
+        <div class="card-header bg-primary text-white p-2 px-3 filter-header" onclick="toggleFilters()">
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
                     <i class="fas fa-calendar-alt me-1"></i>
-                    <strong>Financial Summary Period</strong>
+                    <span class="fw-semibold">Financial Summary Period</span>
                 </div>
-                <div class="card-body">
-                    <form method="GET" class="row g-3">
-                        <div class="col-md-4">
-                            <label for="start_date" class="form-label">Start Date</label>
-                            <input type="date" class="form-control" id="start_date" name="start_date" 
-                                   value="{{ $startDate }}" required>
-                        </div>
-                        <div class="col-md-4">
-                            <label for="end_date" class="form-label">End Date</label>
-                            <input type="date" class="form-control" id="end_date" name="end_date" 
-                                   value="{{ $endDate }}" required>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">&nbsp;</label>
-                            <div>
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-search me-1"></i>Update Summary
-                                </button>
-                                <a href="{{ route('reports.index') }}" class="btn btn-outline-secondary">
-                                    <i class="fas fa-refresh me-1"></i>Reset
-                                </a>
-                            </div>
-                        </div>
-                    </form>
+                <i class="fas fa-chevron-down text-white d-md-none" id="filterToggleIcon"></i>
+            </div>
+        </div>
+        
+        <!-- Filter Body - Collapsible on Mobile -->
+        <div class="card-body p-3" id="filterBody">
+            <div class="row g-2 mb-2">
+                <div class="col-12 col-md-4">
+                    <label for="start_date" class="form-label small text-muted mb-1">
+                        <i class="fas fa-calendar me-1 text-primary"></i>Start Date
+                    </label>
+                    <input type="date" class="form-control form-control-sm" id="start_date" name="start_date" 
+                           value="{{ $startDate }}" required>
+                </div>
+                <div class="col-12 col-md-4">
+                    <label for="end_date" class="form-label small text-muted mb-1">
+                        <i class="fas fa-calendar me-1 text-info"></i>End Date
+                    </label>
+                    <input type="date" class="form-control form-control-sm" id="end_date" name="end_date" 
+                           value="{{ $endDate }}" required>
+                </div>
+                <div class="col-12 col-md-4 d-flex gap-2 align-items-end">
+                    <button type="submit" class="btn btn-primary btn-sm flex-fill">
+                        <i class="fas fa-search me-1"></i>
+                        <span class="d-none d-sm-inline">Update</span>
+                        <span class="d-sm-none">Apply</span>
+                    </button>
+                    <a href="{{ route('reports.index') }}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-times me-1"></i>
+                        <span class="d-none d-sm-inline">Reset</span>
+                    </a>
                 </div>
             </div>
         </div>
-    </div>
+    </form>
 
     <!-- Financial Summary Overview -->
     <div class="row mb-4">
@@ -53,8 +155,8 @@
                 </div>
                 <div class="card-body">
                     <!-- Summary Cards -->
-                    <div class="row mb-4">
-                        <div class="col-xl-3 col-md-6">
+                    <div class="row mb-4 g-3">
+                        <div class="col-xl-3 col-md-6 col-12">
                             <div class="card bg-primary text-white mb-3">
                                 <div class="card-body">
                                     <div class="d-flex justify-content-between">
@@ -69,7 +171,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-xl-3 col-md-6">
+                        <div class="col-xl-3 col-md-6 col-12">
                             <div class="card bg-danger text-white mb-3">
                                 <div class="card-body">
                                     <div class="d-flex justify-content-between">
@@ -84,7 +186,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-xl-3 col-md-6">
+                        <div class="col-xl-3 col-md-6 col-12">
                             <div class="card bg-{{ $financialSummary['summary']['net_income'] >= 0 ? 'success' : 'warning' }} text-white mb-3">
                                 <div class="card-body">
                                     <div class="d-flex justify-content-between">
@@ -99,7 +201,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-xl-3 col-md-6">
+                        <div class="col-xl-3 col-md-6 col-12">
                             <div class="card bg-info text-white mb-3">
                                 <div class="card-body">
                                     <div class="d-flex justify-content-between">
@@ -117,9 +219,9 @@
                     </div>
 
                     <!-- Detailed Breakdown -->
-                    <div class="row">
+                    <div class="row g-3">
                         <!-- Tithes -->
-                        <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="col-xl-3 col-md-6 col-12">
                             <div class="card h-100">
                                 <div class="card-header bg-primary text-white">
                                     <i class="fas fa-coins me-1"></i>
@@ -141,7 +243,7 @@
                         </div>
 
                         <!-- Offerings -->
-                        <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="col-xl-3 col-md-6 col-12">
                             <div class="card h-100">
                                 <div class="card-header bg-success text-white">
                                     <i class="fas fa-gift me-1"></i>
@@ -163,7 +265,7 @@
                         </div>
 
                         <!-- Donations -->
-                        <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="col-xl-3 col-md-6 col-12">
                             <div class="card h-100">
                                 <div class="card-header bg-info text-white">
                                     <i class="fas fa-heart me-1"></i>
@@ -185,7 +287,7 @@
                         </div>
 
                         <!-- Pledges -->
-                        <div class="col-xl-3 col-md-6 mb-4">
+                        <div class="col-xl-3 col-md-6 col-12">
                             <div class="card h-100">
                                 <div class="card-header bg-warning text-white">
                                     <i class="fas fa-handshake me-1"></i>
@@ -337,8 +439,8 @@
     @endif
 
     <!-- Report Cards -->
-    <div class="row mb-4">
-        <div class="col-xl-3 col-md-6">
+    <div class="row mb-4 g-3">
+        <div class="col-xl-3 col-md-6 col-12">
             <div class="card bg-primary text-white mb-4">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
@@ -386,7 +488,7 @@
             </div>
         </div>
         
-        <div class="col-xl-3 col-md-6">
+        <div class="col-xl-3 col-md-6 col-12">
             <div class="card bg-warning text-white mb-4">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
@@ -410,7 +512,7 @@
             </div>
         </div>
         
-        <div class="col-xl-3 col-md-6">
+        <div class="col-xl-3 col-md-6 col-12">
             <div class="card bg-info text-white mb-4">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
@@ -524,8 +626,8 @@
             <strong>Quick Access</strong>
         </div>
         <div class="card-body">
-            <div class="row">
-                <div class="col-md-3">
+            <div class="row g-3">
+                <div class="col-md-3 col-12">
                     <div class="card h-100">
                         <div class="card-body text-center">
                             <i class="fas fa-user-chart fa-3x text-primary mb-3"></i>
@@ -535,7 +637,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-3 col-12">
                     <div class="card h-100">
                         <div class="card-body text-center">
                             <i class="fas fa-building fa-3x text-success mb-3"></i>
@@ -545,7 +647,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-3 col-12">
                     <div class="card h-100">
                         <div class="card-body text-center">
                             <i class="fas fa-chart-line fa-3x text-warning mb-3"></i>
@@ -555,7 +657,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-3 col-12">
                     <div class="card h-100">
                         <div class="card-body text-center">
                             <i class="fas fa-wallet fa-3x text-info mb-3"></i>
@@ -565,7 +667,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-3 col-12">
                     <div class="card h-100">
                         <div class="card-body text-center">
                             <i class="fas fa-chart-pie fa-3x text-success mb-3"></i>
@@ -575,7 +677,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-3 col-12">
                     <div class="card h-100">
                         <div class="card-body text-center">
                             <i class="fas fa-calendar-alt fa-3x text-primary mb-3"></i>
@@ -585,7 +687,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-3 col-12">
                     <div class="card h-100">
                         <div class="card-body text-center">
                             <i class="fas fa-calendar-week fa-3x text-info mb-3"></i>
@@ -599,6 +701,76 @@
         </div>
     </div>
 </div>
+
+<script>
+// Toggle Filters Function
+function toggleFilters() {
+    // Only toggle on mobile devices
+    if (window.innerWidth > 768) {
+        return; // Don't toggle on desktop
+    }
+    
+    const filterBody = document.getElementById('filterBody');
+    const filterIcon = document.getElementById('filterToggleIcon');
+    const filterHeader = document.querySelector('.filter-header');
+    
+    if (!filterBody || !filterIcon) return;
+    
+    // Check computed style to see if it's visible
+    const computedStyle = window.getComputedStyle(filterBody);
+    const isVisible = computedStyle.display !== 'none';
+    
+    if (isVisible) {
+        filterBody.style.display = 'none';
+        filterIcon.classList.remove('fa-chevron-up');
+        filterIcon.classList.add('fa-chevron-down');
+        if (filterHeader) filterHeader.classList.remove('active');
+    } else {
+        filterBody.style.display = 'block';
+        filterIcon.classList.remove('fa-chevron-down');
+        filterIcon.classList.add('fa-chevron-up');
+        if (filterHeader) filterHeader.classList.add('active');
+    }
+}
+
+// Handle window resize
+window.addEventListener('resize', function() {
+    const filterBody = document.getElementById('filterBody');
+    const filterIcon = document.getElementById('filterToggleIcon');
+    
+    if (window.innerWidth > 768) {
+        // Always show on desktop
+        if (filterBody && filterIcon) {
+            filterBody.style.display = 'block';
+            filterIcon.style.display = 'none';
+        }
+    } else {
+        // On mobile, show chevron
+        if (filterIcon) filterIcon.style.display = 'block';
+    }
+});
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const filterBody = document.getElementById('filterBody');
+    const filterIcon = document.getElementById('filterToggleIcon');
+    
+    if (window.innerWidth <= 768) {
+        // Mobile: start collapsed
+        if (filterBody && filterIcon) {
+            filterBody.style.display = 'none';
+            filterIcon.classList.remove('fa-chevron-up');
+            filterIcon.classList.add('fa-chevron-down');
+        }
+    } else {
+        // Desktop: always show
+        if (filterBody && filterIcon) {
+            filterBody.style.display = 'block';
+            filterIcon.style.display = 'none';
+        }
+    }
+});
+</script>
 
 @endsection
 

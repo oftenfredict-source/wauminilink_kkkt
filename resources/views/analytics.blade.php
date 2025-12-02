@@ -28,8 +28,8 @@
                 </div>
                 <div class="card-body section-body">
                     <!-- Financial Summary Cards -->
-                    <div class="row mb-4">
-                        <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="row mb-4 g-3">
+                        <div class="col-12 col-md-6 col-lg-3">
                             <div class="card border-0 shadow-sm h-100 analytics-kpi">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
@@ -48,7 +48,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="col-12 col-md-6 col-lg-3">
                             <div class="card border-0 shadow-sm h-100 analytics-kpi">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
@@ -67,7 +67,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="col-12 col-md-6 col-lg-3">
                             <div class="card border-0 shadow-sm h-100 analytics-kpi">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
@@ -86,7 +86,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="col-12 col-md-6 col-lg-3">
                             <div class="card border-0 shadow-sm h-100 analytics-kpi">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
@@ -126,8 +126,8 @@
                     </div>
 
                     <!-- Financial Breakdown Charts -->
-                    <div class="row">
-                        <div class="col-lg-6 mb-4">
+                    <div class="row g-3">
+                        <div class="col-12 col-lg-6">
                             <div class="card shadow-sm rounded-3">
                                 <div class="card-header bg-light header-overlay">
                                     <h6 class="mb-0 font-weight-bold">
@@ -141,7 +141,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-lg-6 mb-4">
+                        <div class="col-12 col-lg-6">
                             <div class="card shadow-sm rounded-3">
                                 <div class="card-header bg-light header-overlay">
                                     <h6 class="mb-0 font-weight-bold">
@@ -172,8 +172,8 @@
                 </div>
                 <div class="card-body section-body">
                     <!-- Member Summary Cards -->
-                    <div class="row mb-4">
-                        <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="row mb-4 g-3">
+                        <div class="col-12 col-md-6 col-lg-3">
                             <div class="card border-left-primary shadow-sm h-100">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
@@ -192,7 +192,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="col-12 col-md-6 col-lg-3">
                             <div class="card border-left-info shadow-sm h-100">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
@@ -214,7 +214,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="col-12 col-md-6 col-lg-3">
                             <div class="card border-left-warning shadow-sm h-100">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
@@ -236,7 +236,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="col-12 col-md-6 col-lg-3">
                             <div class="card border-left-success shadow-sm h-100">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
@@ -258,8 +258,8 @@
                     </div>
 
                     <!-- Member Charts -->
-                    <div class="row mb-4">
-                        <div class="col-lg-6 mb-4">
+                    <div class="row mb-4 g-3">
+                        <div class="col-12 col-lg-6">
                             <div class="card shadow-sm rounded-3">
                                 <div class="card-header bg-light header-overlay">
                                     <h6 class="mb-0 font-weight-bold">
@@ -273,7 +273,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-lg-6 mb-4">
+                        <div class="col-12 col-lg-6">
                             <div class="card shadow-sm rounded-3">
                                 <div class="card-header bg-light header-overlay">
                                     <h6 class="mb-0 font-weight-bold">
@@ -289,8 +289,8 @@
                         </div>
                     </div>
 
-                    <div class="row">
-                        <div class="col-lg-6 mb-4">
+                    <div class="row g-3">
+                        <div class="col-12 col-lg-6">
                             <div class="card shadow-sm rounded-3">
                                 <div class="card-header bg-light header-overlay">
                                     <h6 class="mb-0 font-weight-bold">
@@ -304,7 +304,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-lg-6 mb-4">
+                        <div class="col-12 col-lg-6">
                             <div class="card shadow-sm rounded-3">
                                 <div class="card-header bg-light header-overlay">
                                     <h6 class="mb-0 font-weight-bold">
@@ -335,8 +335,8 @@
                 </div>
                 <div class="card-body section-body">
                     <!-- Attendance Summary -->
-                    <div class="row mb-4">
-                        <div class="col-lg-4 col-md-6 mb-3">
+                    <div class="row mb-4 g-3">
+                        <div class="col-12 col-md-6 col-lg-4">
                             <div class="card border-left-primary shadow-sm h-100">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
@@ -355,7 +355,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-lg-4 col-md-6 mb-3">
+                        <div class="col-12 col-md-6 col-lg-4">
                             <div class="card border-left-success shadow-sm h-100">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
@@ -374,7 +374,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-lg-4 col-md-6 mb-3">
+                        <div class="col-12 col-md-6 col-lg-4">
                             <div class="card border-left-info shadow-sm h-100">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
@@ -396,8 +396,8 @@
                     </div>
 
                     <!-- Attendance Charts -->
-                    <div class="row mb-4">
-                        <div class="col-lg-6 mb-4">
+                    <div class="row mb-4 g-3">
+                        <div class="col-12 col-lg-6">
                             <div class="card shadow-sm rounded-3">
                                 <div class="card-header bg-light header-overlay">
                                     <h6 class="mb-0 font-weight-bold">
@@ -411,7 +411,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-lg-6 mb-4">
+                        <div class="col-12 col-lg-6">
                             <div class="card shadow-sm rounded-3">
                                 <div class="card-header bg-light header-overlay">
                                     <h6 class="mb-0 font-weight-bold">
@@ -438,7 +438,7 @@
                                     </h6>
                                 </div>
                                 <div class="card-body">
-                                    <div class="table-responsive">
+                                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
                                         <table class="table table-sm table-hover">
                                             <thead>
                                                 <tr>
@@ -496,8 +496,8 @@
                 </div>
                 <div class="card-body section-body">
                     <!-- Event Summary Cards -->
-                    <div class="row mb-4">
-                        <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="row mb-4 g-3">
+                        <div class="col-12 col-md-6 col-lg-3">
                             <div class="card border-left-primary shadow-sm h-100">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
@@ -516,7 +516,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="col-12 col-md-6 col-lg-3">
                             <div class="card border-left-success shadow-sm h-100">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
@@ -535,7 +535,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="col-12 col-md-6 col-lg-3">
                             <div class="card border-left-info shadow-sm h-100">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
@@ -554,7 +554,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="col-12 col-md-6 col-lg-3">
                             <div class="card border-left-warning shadow-sm h-100">
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
@@ -1154,58 +1154,124 @@ document.addEventListener('DOMContentLoaded', function() {
         padding-right: 0.75rem !important;
     }
     
-    .chart-container{ 
-        height: 260px; 
-    }
-    
-    .analytics-hero .h4{ 
-        font-size: 1.05rem; 
-    }
-    
-    .analytics-hero .h5 {
-        font-size: 1rem;
-    }
-    
-    /* Make KPI cards stack better */
-    .col-lg-3.col-md-6 {
-        margin-bottom: 1rem;
-    }
-    
-    /* Adjust card padding */
-    .card-body {
+    /* Hero section mobile */
+    .analytics-hero .card-body {
         padding: 1rem !important;
     }
     
-    /* Make icons smaller on mobile */
-    .fa-2x {
-        font-size: 1.5em !important;
+    .analytics-hero .h5 {
+        font-size: 1rem !important;
     }
     
-    /* Adjust table for mobile */
-    .table-responsive {
-        font-size: 0.875rem;
+    .analytics-hero .small {
+        font-size: 0.8rem !important;
     }
     
-    .table th,
-    .table td {
-        padding: 0.5rem 0.25rem;
-    }
-    
-    /* Stack chart columns */
-    .col-lg-6 {
-        margin-bottom: 1.5rem;
-    }
-    
-    /* Adjust header text */
-    h6 {
-        font-size: 0.9rem;
-    }
-    
-    /* Make hero icon smaller */
     .hero-icon {
         width: 40px !important;
         height: 40px !important;
         font-size: 18px !important;
+    }
+    
+    /* Section headers mobile */
+    .section-header-primary,
+    .section-header-success,
+    .section-header-info,
+    .section-header-warning {
+        padding: 0.75rem !important;
+    }
+    
+    .section-header-primary h6,
+    .section-header-success h6,
+    .section-header-info h6,
+    .section-header-warning h6 {
+        font-size: 0.9rem !important;
+        margin-bottom: 0 !important;
+    }
+    
+    /* Card body padding */
+    .card-body {
+        padding: 1rem !important;
+    }
+    
+    .section-body {
+        padding: 1rem !important;
+    }
+    
+    /* KPI Cards - ensure full width on mobile */
+    .col-lg-3.col-md-6,
+    .col-lg-4.col-md-6 {
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+        margin-bottom: 1rem;
+    }
+    
+    /* KPI card content */
+    .analytics-kpi .card-body {
+        padding: 1rem !important;
+    }
+    
+    .analytics-kpi .h5 {
+        font-size: 1.25rem !important;
+    }
+    
+    .analytics-kpi .text-xs {
+        font-size: 0.7rem !important;
+    }
+    
+    /* Icons */
+    .fa-2x {
+        font-size: 1.5em !important;
+    }
+    
+    /* Charts */
+    .chart-container{ 
+        height: 280px !important;
+    }
+    
+    /* Chart columns - stack on mobile */
+    .col-lg-6 {
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+        margin-bottom: 1.5rem;
+    }
+    
+    /* Tables */
+    .table-responsive {
+        font-size: 0.875rem;
+        -webkit-overflow-scrolling: touch;
+        overflow-x: auto;
+        overflow-y: auto;
+    }
+    
+    .table th,
+    .table td {
+        padding: 0.5rem 0.5rem;
+        white-space: normal;
+        min-width: 80px;
+    }
+    
+    .table th {
+        font-size: 0.8rem;
+        font-weight: 600;
+        position: sticky;
+        top: 0;
+        background-color: #f8f9fa;
+        z-index: 10;
+    }
+    
+    /* Header overlays */
+    .header-overlay h6 {
+        font-size: 0.9rem !important;
+    }
+    
+    /* General text adjustments */
+    h6 {
+        font-size: 0.9rem;
+    }
+    
+    .h5 {
+        font-size: 1.15rem !important;
     }
 }
 
@@ -1215,8 +1281,54 @@ document.addEventListener('DOMContentLoaded', function() {
         padding-right: 0.5rem !important;
     }
     
-    .chart-container{ 
-        height: 220px; 
+    /* Hero section extra small */
+    .analytics-hero .card-body {
+        padding: 0.75rem !important;
+    }
+    
+    .analytics-hero .h5 {
+        font-size: 0.95rem !important;
+    }
+    
+    .analytics-hero .small {
+        font-size: 0.75rem !important;
+    }
+    
+    .hero-icon {
+        width: 36px !important;
+        height: 36px !important;
+        font-size: 16px !important;
+    }
+    
+    /* Section headers */
+    .section-header-primary,
+    .section-header-success,
+    .section-header-info,
+    .section-header-warning {
+        padding: 0.625rem !important;
+    }
+    
+    .section-header-primary h6,
+    .section-header-success h6,
+    .section-header-info h6,
+    .section-header-warning h6 {
+        font-size: 0.85rem !important;
+    }
+    
+    .section-header-primary i,
+    .section-header-success i,
+    .section-header-info i,
+    .section-header-warning i {
+        font-size: 0.9rem !important;
+    }
+    
+    /* Card body padding */
+    .card-body {
+        padding: 0.75rem !important;
+    }
+    
+    .section-body {
+        padding: 0.75rem !important;
     }
     
     /* Full width cards on mobile */
@@ -1224,65 +1336,127 @@ document.addEventListener('DOMContentLoaded', function() {
     .col-lg-4,
     .col-lg-6,
     .col-md-6 {
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
         margin-bottom: 1rem;
     }
     
-    /* Smaller text on mobile */
-    .h5 {
-        font-size: 1.1rem;
+    /* KPI Cards - better mobile layout */
+    .analytics-kpi .card-body {
+        padding: 0.875rem !important;
     }
     
-    .h6 {
-        font-size: 0.85rem;
+    .analytics-kpi .d-flex {
+        flex-wrap: wrap;
     }
     
-    .text-xs {
-        font-size: 0.65rem;
+    .analytics-kpi .flex-grow-1 {
+        flex: 1 1 70% !important;
+        min-width: 0;
     }
     
-    /* Smaller icons */
+    .analytics-kpi .ms-3 {
+        margin-left: 0.5rem !important;
+        flex: 0 0 auto;
+    }
+    
+    .analytics-kpi .h5 {
+        font-size: 1.1rem !important;
+        line-height: 1.3;
+    }
+    
+    .analytics-kpi .text-xs {
+        font-size: 0.65rem !important;
+        line-height: 1.4;
+    }
+    
+    .analytics-kpi small.text-muted {
+        font-size: 0.7rem !important;
+        display: block;
+        margin-top: 0.25rem;
+    }
+    
+    /* Icons smaller */
     .fa-2x {
         font-size: 1.25em !important;
     }
     
-    /* Adjust KPI card layout */
-    .analytics-kpi .d-flex {
-        flex-direction: column;
-        text-align: center;
+    /* Charts */
+    .chart-container{ 
+        height: 240px !important;
     }
     
-    .analytics-kpi .ms-3 {
-        margin-left: 0 !important;
-        margin-top: 0.5rem;
-    }
-    
-    /* Table improvements */
+    /* Tables */
     .table {
         font-size: 0.75rem;
     }
     
+    .table-responsive {
+        max-height: 350px;
+        overflow-x: auto;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
     .table th,
     .table td {
-        padding: 0.375rem 0.25rem;
-        white-space: nowrap;
-    }
-    
-    /* Hero adjustments */
-    .analytics-hero .card-body {
-        padding: 1rem !important;
-    }
-    
-    .analytics-hero .h5 {
-        font-size: 0.95rem;
-    }
-    
-    .analytics-hero .small {
+        padding: 0.5rem 0.375rem;
         font-size: 0.75rem;
+        min-width: 70px;
     }
     
-    /* Chart container smaller */
-    .chart-container {
-        height: 200px;
+    .table th {
+        font-size: 0.7rem;
+        white-space: nowrap;
+        position: sticky;
+        top: 0;
+        background-color: #f8f9fa;
+        z-index: 10;
+    }
+    
+    .table td {
+        word-break: break-word;
+    }
+    
+    /* Badges in tables */
+    .table .badge {
+        font-size: 0.65rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    /* Header overlays */
+    .header-overlay {
+        padding: 0.625rem !important;
+    }
+    
+    .header-overlay h6 {
+        font-size: 0.85rem !important;
+    }
+    
+    .header-overlay i {
+        font-size: 0.8rem !important;
+    }
+    
+    /* General text */
+    .h5 {
+        font-size: 1.05rem !important;
+    }
+    
+    .h6 {
+        font-size: 0.85rem !important;
+    }
+    
+    .text-xs {
+        font-size: 0.65rem !important;
+    }
+    
+    /* Border left cards */
+    .border-left-primary,
+    .border-left-success,
+    .border-left-info,
+    .border-left-warning,
+    .border-left-danger {
+        border-left-width: 0.2rem !important;
     }
 }
 

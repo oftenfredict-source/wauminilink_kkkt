@@ -25,7 +25,43 @@
         <script src="{{ asset('assets/js/fontawesome.min.js') }}" crossorigin="anonymous"></script>
         <!-- SweetAlert2 CDN -->
         <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+        <!-- SweetAlert Helpers -->
+        <script src="{{ asset('js/sweetalert-helpers.js') }}"></script>
         <style>
+            /* Prevent horizontal scrolling - minimal approach */
+            @media (max-width: 768px) {
+                html {
+                    overflow-x: hidden !important;
+                }
+                
+                body {
+                    overflow-x: hidden !important;
+                    position: relative !important;
+                }
+                
+                /* Only fix elements that actually cause overflow */
+                #layoutSidenav_content {
+                    overflow-x: hidden !important;
+                }
+                
+                /* Navbar should not overflow */
+                .sb-topnav {
+                    overflow-x: hidden !important;
+                }
+                
+                /* Tables should scroll internally, not cause page scroll */
+                .table-responsive {
+                    overflow-x: auto !important;
+                    -webkit-overflow-scrolling: touch;
+                }
+                
+                /* Media elements */
+                img, video, iframe {
+                    max-width: 100% !important;
+                    height: auto !important;
+                }
+            }
+            
             /* Dynamic theme color application */
             @php
                 $themeColors = [
@@ -735,6 +771,33 @@
                 }
             }
             
+            /* Mobile - override Bootstrap's dropdown-menu-end positioning */
+            @media (max-width: 768px) {
+                #notificationDropdown .dropdown-menu-end.notification-dropdown,
+                #notificationDropdown.show .dropdown-menu-end.notification-dropdown {
+                    left: 0.5rem !important;
+                    right: 0.5rem !important;
+                    transform: none !important;
+                    position: fixed !important;
+                    inset: 60px 0.5rem auto 0.5rem !important;
+                    width: calc(100vw - 1rem) !important;
+                    max-width: calc(100vw - 1rem) !important;
+                }
+            }
+            
+            @media (max-width: 576px) {
+                #notificationDropdown .dropdown-menu-end.notification-dropdown,
+                #notificationDropdown.show .dropdown-menu-end.notification-dropdown {
+                    left: 0.25rem !important;
+                    right: 0.25rem !important;
+                    transform: none !important;
+                    position: fixed !important;
+                    inset: 60px 0.25rem auto 0.25rem !important;
+                    width: calc(100vw - 0.5rem) !important;
+                    max-width: calc(100vw - 0.5rem) !important;
+                }
+            }
+            
             .notification-content {
                 scrollbar-width: thin;
                 scrollbar-color: #667eea #f1f1f1;
@@ -929,30 +992,72 @@
                 font-weight: 500;
             }
             
+            /* Hide date and time on mobile */
+            @media (max-width: 768px) {
+                #dateTimeDisplay,
+                #currentDate,
+                #currentTime {
+                    display: none !important;
+                }
+            }
+            
+            @media (max-width: 576px) {
+                #dateTimeDisplay,
+                #currentDate,
+                #currentTime {
+                    display: none !important;
+                }
+            }
+            
             /* Mobile Responsive Styles for Notifications */
             @media (max-width: 768px) {
+                /* On mobile, allow sidebar to open temporarily but close it after link click */
+                /* Ensure sidebar links are clickable when sidebar is open */
+                #sidenavAccordion .nav-link {
+                    pointer-events: auto !important;
+                    z-index: 1040 !important;
+                }
+                /* Remove overlay that might block clicks */
+                body.sb-sidenav-toggled #layoutSidenav #layoutSidenav_content:before,
+                #layoutSidenav.sb-sidenav-toggled #layoutSidenav_content:before {
+                    pointer-events: none !important;
+                    z-index: 1034 !important;
+                }
+                /* Ensure main content is always clickable */
+                #layoutSidenav_content {
+                    pointer-events: auto !important;
+                }
+                /* Allow sidebar to scroll without closing */
+                #layoutSidenav_nav,
+                .sb-sidenav {
+                    overflow-y: auto !important;
+                    -webkit-overflow-scrolling: touch !important;
+                    touch-action: pan-y !important;
+                }
+                /* Prevent scroll events in sidebar from propagating */
+                #layoutSidenav_nav *,
+                .sb-sidenav * {
+                    touch-action: auto !important;
+                }
                 /* Fix dropdown positioning on mobile - only apply on mobile */
-                .notification-dropdown {
+                #notificationDropdown .notification-dropdown,
+                #notificationDropdown .dropdown-menu-end.notification-dropdown,
+                #notificationDropdown.show .notification-dropdown,
+                #notificationDropdown.show .dropdown-menu-end.notification-dropdown,
+                .notification-dropdown.dropdown-menu-end,
+                .dropdown-menu-end.notification-dropdown {
                     width: calc(100vw - 1rem) !important;
                     max-width: calc(100vw - 1rem) !important;
-                    margin: 0.5rem !important;
+                    margin: 0 !important;
                     left: 0.5rem !important;
-                    right: auto !important;
+                    right: 0.5rem !important;
                     transform: none !important;
                     position: fixed !important;
                     top: 60px !important;
                     max-height: calc(100vh - 120px) !important;
                     border-radius: 12px !important;
                     z-index: 1055 !important;
-                }
-                
-                /* Override Bootstrap dropdown positioning on mobile */
-                #notificationDropdown.show .notification-dropdown {
-                    position: fixed !important;
-                    left: 0.5rem !important;
-                    right: auto !important;
-                    top: 60px !important;
-                    transform: none !important;
+                    inset: 60px 0.5rem auto 0.5rem !important;
                 }
                 
                 .notification-dropdown .dropdown-header {
@@ -1099,25 +1204,235 @@
                     transform: translate(25%, -25%) !important;
                 }
                 
-                /* Ensure dropdown doesn't overflow */
-                .notification-dropdown.show {
+                /* Let Bootstrap handle notification dropdown show/hide */
+                /* Bootstrap will add/remove 'show' class automatically */
+                
+                /* Consistent Toggle Button Sizes on Mobile */
+                /* Target all toggle icons by ID pattern */
+                [id*="ToggleIcon"],
+                [id*="toggleIcon"],
+                /* Target chevron icons in mobile-only display */
+                .fa-chevron-down.d-md-none,
+                .fa-chevron-up.d-md-none,
+                /* Target specific known toggle icons */
+                #actionsToggleIcon,
+                #filterToggleIcon,
+                #fundBreakdownToggleIcon {
+                    font-size: 1.1rem !important;
+                    width: 24px !important;
+                    height: 24px !important;
+                    display: inline-flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    cursor: pointer !important;
+                    transition: transform 0.3s ease !important;
+                    flex-shrink: 0 !important;
+                }
+                
+                /* Ensure toggle icons are visible and properly sized in headers */
+                .actions-header [id*="ToggleIcon"],
+                .filter-header [id*="ToggleIcon"],
+                .fund-breakdown-header [id*="ToggleIcon"],
+                .actions-header #actionsToggleIcon,
+                .filter-header #filterToggleIcon,
+                .fund-breakdown-header #fundBreakdownToggleIcon {
+                    font-size: 1.1rem !important;
+                    min-width: 24px !important;
+                    min-height: 24px !important;
+                }
+                
+                /* Ensure navbar has proper padding on mobile to prevent cutoff */
+                .sb-topnav {
+                    padding-left: 0.75rem !important;
+                    padding-right: 0.5rem !important;
+                    overflow-x: hidden !important;
+                    position: fixed !important;
+                    top: 0 !important;
+                    left: 0 !important;
+                    right: 0 !important;
+                    z-index: 1040 !important;
+                    max-width: 100vw !important;
+                    width: 100% !important;
+                }
+                
+                /* Add margin-top to content to account for fixed navbar */
+                #layoutSidenav_content {
+                    margin-top: 10px !important;
+                }
+                
+                /* Ensure sidebar doesn't override navbar */
+                #layoutSidenav_nav,
+                .sb-sidenav {
+                    z-index: 1035 !important;
+                }
+                
+                /* Ensure navbar container doesn't cut off content */
+                body.sb-nav-fixed .sb-topnav {
+                    margin-left: 0 !important;
+                    width: 100% !important;
+                    max-width: 100vw !important;
+                }
+                
+                /* Ensure navbar content doesn't overflow */
+                .sb-topnav .navbar-nav,
+                .sb-topnav .d-flex {
+                    max-width: 100% !important;
+                    overflow-x: hidden !important;
+                }
+                
+                /* Welcome message on mobile */
+                .sb-topnav .navbar-text {
+                    font-size: 0.85rem !important;
+                    margin-left: 0.5rem !important;
+                    margin-right: auto !important;
+                    flex: 1 !important;
+                    min-width: 0 !important;
+                    white-space: nowrap !important;
+                }
+                
+                /* Ensure profile dropdown menu is hidden by default, visible when active */
+                .sb-topnav .dropdown-menu {
+                    position: absolute !important;
+                    z-index: 1050 !important;
+                    right: 0 !important;
+                    left: auto !important;
+                    margin-top: 0.5rem !important;
+                    min-width: 180px !important;
+                    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+                    background-color: #fff !important;
+                    border: 1px solid rgba(0, 0, 0, 0.15) !important;
+                    border-radius: 0.375rem !important;
+                    display: none !important;
+                    opacity: 0 !important;
+                    visibility: hidden !important;
+                }
+                
+                .sb-topnav .dropdown-menu.show {
                     display: block !important;
+                    opacity: 1 !important;
+                    visibility: visible !important;
+                }
+                
+                /* Notification dropdown - use Bootstrap's default behavior */
+                /* Don't force hide, let Bootstrap handle it */
+                
+                /* Ensure dropdown items are visible */
+                .sb-topnav .dropdown-menu .dropdown-item {
+                    padding: 0.5rem 1rem !important;
+                    font-size: 0.9rem !important;
+                    white-space: nowrap !important;
+                    color: #212529 !important;
+                    display: block !important;
+                }
+                
+                .sb-topnav .dropdown-menu .dropdown-item:hover {
+                    background-color: #f8f9fa !important;
+                }
+                
+                /* Ensure navbar doesn't clip dropdown */
+                .sb-topnav {
+                    overflow: visible !important;
+                }
+                
+                .sb-topnav .navbar-nav {
+                    overflow: visible !important;
+                }
+                
+                /* Ensure navbar nav items are visible and don't shrink */
+                .sb-topnav .navbar-nav {
+                    flex-shrink: 0 !important;
+                    display: flex !important;
+                    align-items: center !important;
+                    margin-left: auto !important;
+                }
+                
+                .sb-topnav .navbar-nav .nav-item {
+                    flex-shrink: 0 !important;
+                    display: flex !important;
+                    align-items: center !important;
+                }
+                
+                /* Profile dropdown icon - ensure it's always visible */
+                #navbarDropdown {
+                    display: flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    padding: 0.5rem !important;
+                    min-width: 40px !important;
+                    min-height: 40px !important;
+                }
+                
+                #navbarDropdown i {
+                    font-size: 1.1rem !important;
+                    display: block !important;
+                }
+                
+                /* Notification icon spacing on mobile */
+                #notificationDropdown {
+                    margin-right: 0.5rem !important;
+                }
+                
+                /* Sidebar Toggle Button - Match size with other toggle buttons */
+                #sidebarToggle {
+                    font-size: 1.1rem !important;
+                    padding: 0.5rem !important;
+                    min-width: 40px !important;
+                    min-height: 40px !important;
+                    display: flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    margin-right: 0.75rem !important;
+                    margin-left: 0 !important;
+                    order: -1 !important;
+                }
+                
+                #sidebarToggle i {
+                    font-size: 1.1rem !important;
+                }
+                
+                /* Hide logo completely on mobile */
+                .sb-topnav .navbar-brand {
+                    display: none !important;
+                }
+                
+                .sb-topnav .logo-white-section {
+                    display: none !important;
+                }
+                
+                /* Ensure toggle button is always visible and not cut off */
+                .sb-topnav .navbar-nav,
+                .sb-topnav .d-flex {
+                    flex-wrap: nowrap !important;
+                    overflow-x: hidden !important;
+                    max-width: 100% !important;
+                }
+                
+                #sidebarToggle {
+                    flex-shrink: 0 !important;
+                    position: relative !important;
+                    z-index: 10 !important;
                 }
             }
             
             @media (max-width: 576px) {
-                .notification-dropdown {
+                #notificationDropdown .notification-dropdown,
+                #notificationDropdown .dropdown-menu-end.notification-dropdown,
+                #notificationDropdown.show .notification-dropdown,
+                #notificationDropdown.show .dropdown-menu-end.notification-dropdown,
+                .notification-dropdown.dropdown-menu-end,
+                .dropdown-menu-end.notification-dropdown {
                     width: calc(100vw - 0.5rem) !important;
                     max-width: calc(100vw - 0.5rem) !important;
-                    margin: 0.25rem !important;
+                    margin: 0 !important;
                     left: 0.25rem !important;
-                    right: auto !important;
+                    right: 0.25rem !important;
                     transform: none !important;
                     position: fixed !important;
                     top: 60px !important;
                     max-height: calc(100vh - 100px) !important;
                     border-radius: 10px !important;
                     z-index: 1055 !important;
+                    inset: 60px 0.25rem auto 0.25rem !important;
                 }
                 
                 .notification-dropdown .dropdown-header {
@@ -1152,6 +1467,209 @@
                 .notification-theme {
                     font-size: 0.7rem !important;
                 }
+                
+                /* Consistent Toggle Button Sizes on Extra Small Mobile */
+                [id*="ToggleIcon"],
+                [id*="toggleIcon"],
+                .fa-chevron-down.d-md-none,
+                .fa-chevron-up.d-md-none,
+                #actionsToggleIcon,
+                #filterToggleIcon,
+                #fundBreakdownToggleIcon {
+                    font-size: 1rem !important;
+                    width: 22px !important;
+                    height: 22px !important;
+                }
+                
+                .actions-header [id*="ToggleIcon"],
+                .filter-header [id*="ToggleIcon"],
+                .fund-breakdown-header [id*="ToggleIcon"],
+                .actions-header #actionsToggleIcon,
+                .filter-header #filterToggleIcon,
+                .fund-breakdown-header #fundBreakdownToggleIcon {
+                    font-size: 1rem !important;
+                    min-width: 22px !important;
+                    min-height: 22px !important;
+                }
+                
+                /* Ensure navbar has proper padding on extra small mobile */
+                .sb-topnav {
+                    padding-left: 0.5rem !important;
+                    padding-right: 0.25rem !important;
+                    overflow-x: hidden !important;
+                    position: fixed !important;
+                    top: 0 !important;
+                    left: 0 !important;
+                    right: 0 !important;
+                    z-index: 1040 !important;
+                    max-width: 100vw !important;
+                    width: 100% !important;
+                }
+                
+                /* Add margin-top to content to account for fixed navbar */
+                #layoutSidenav_content {
+                    margin-top: 10px !important;
+                }
+                
+                /* Ensure sidebar doesn't override navbar on extra small mobile */
+                #layoutSidenav_nav,
+                .sb-sidenav {
+                    z-index: 1035 !important;
+                }
+                
+                /* Ensure sidebar overlay doesn't cover navbar */
+                #layoutSidenav_content:before,
+                body.sb-sidenav-toggled #layoutSidenav_content:before {
+                    z-index: 1034 !important;
+                }
+                
+                /* Ensure navbar container doesn't cut off content on extra small */
+                body.sb-nav-fixed .sb-topnav {
+                    margin-left: 0 !important;
+                    width: 100% !important;
+                    max-width: 100vw !important;
+                }
+                
+                /* Ensure navbar content doesn't overflow on extra small */
+                .sb-topnav .navbar-nav,
+                .sb-topnav .d-flex {
+                    max-width: 100% !important;
+                    overflow-x: hidden !important;
+                }
+                
+                /* Welcome message on extra small mobile */
+                .sb-topnav .navbar-text {
+                    font-size: 0.8rem !important;
+                    margin-left: 0.25rem !important;
+                }
+                
+                /* Ensure profile dropdown menu is hidden by default on extra small mobile */
+                .sb-topnav .dropdown-menu {
+                    position: absolute !important;
+                    z-index: 1050 !important;
+                    right: 0 !important;
+                    left: auto !important;
+                    margin-top: 0.5rem !important;
+                    min-width: 160px !important;
+                    max-width: calc(100vw - 1rem) !important;
+                    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+                    background-color: #fff !important;
+                    border: 1px solid rgba(0, 0, 0, 0.15) !important;
+                    border-radius: 0.375rem !important;
+                    display: none !important;
+                    opacity: 0 !important;
+                    visibility: hidden !important;
+                }
+                
+                .sb-topnav .dropdown-menu.show {
+                    display: block !important;
+                    opacity: 1 !important;
+                    visibility: visible !important;
+                }
+                
+                /* Notification dropdown - use Bootstrap's default behavior on extra small */
+                /* Don't force hide, let Bootstrap handle it */
+                
+                /* Ensure dropdown items are visible on extra small */
+                .sb-topnav .dropdown-menu .dropdown-item {
+                    padding: 0.5rem 0.75rem !important;
+                    font-size: 0.85rem !important;
+                    white-space: nowrap !important;
+                    color: #212529 !important;
+                    display: block !important;
+                }
+                
+                .sb-topnav .dropdown-menu .dropdown-item:hover {
+                    background-color: #f8f9fa !important;
+                }
+                
+                /* Ensure navbar doesn't clip dropdown on extra small */
+                .sb-topnav {
+                    overflow: visible !important;
+                }
+                
+                .sb-topnav .navbar-nav {
+                    overflow: visible !important;
+                }
+                
+                /* Ensure navbar nav items are visible on extra small mobile */
+                .sb-topnav .navbar-nav {
+                    flex-shrink: 0 !important;
+                    display: flex !important;
+                    align-items: center !important;
+                    margin-left: auto !important;
+                }
+                
+                .sb-topnav .navbar-nav .nav-item {
+                    flex-shrink: 0 !important;
+                    display: flex !important;
+                    align-items: center !important;
+                }
+                
+                /* Profile dropdown icon - ensure it's visible on extra small */
+                #navbarDropdown {
+                    display: flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    padding: 0.45rem !important;
+                    min-width: 38px !important;
+                    min-height: 38px !important;
+                }
+                
+                #navbarDropdown i {
+                    font-size: 1rem !important;
+                    display: block !important;
+                }
+                
+                /* Notification icon spacing on extra small mobile */
+                #notificationDropdown {
+                    margin-right: 0.25rem !important;
+                }
+                
+                /* Sidebar Toggle Button - Extra Small Mobile */
+                #sidebarToggle {
+                    font-size: 1rem !important;
+                    padding: 0.45rem !important;
+                    min-width: 38px !important;
+                    min-height: 38px !important;
+                    margin-right: 0.5rem !important;
+                    margin-left: 0 !important;
+                    order: -1 !important;
+                }
+                
+                #sidebarToggle i {
+                    font-size: 1rem !important;
+                }
+                
+                /* Hide logo completely on extra small mobile */
+                .sb-topnav .navbar-brand {
+                    display: none !important;
+                }
+                
+                .sb-topnav .logo-white-section {
+                    display: none !important;
+                }
+                
+                /* Ensure toggle button is always visible on extra small mobile */
+                #sidebarToggle {
+                    flex-shrink: 0 !important;
+                    position: relative !important;
+                    z-index: 10 !important;
+                }
+            }
+            
+            /* Desktop Sidebar Toggle Button - Ensure proper size */
+            @media (min-width: 769px) {
+                #sidebarToggle {
+                    font-size: 1.5rem !important;
+                    padding: 0.5rem !important;
+                    min-width: 44px !important;
+                    min-height: 44px !important;
+                }
+                
+                #sidebarToggle i {
+                    font-size: 1.5rem !important;
+                }
             }
             
             /* Animations */
@@ -1176,6 +1694,14 @@
                 25% { transform: rotate(-10deg); }
                 75% { transform: rotate(10deg); }
             }
+            /* Footer EmCa Technologies styling */
+            footer.bg-dark.text-light .text-md-end small a {
+                color: #940000 !important;
+                font-weight: bold !important;
+            }
+            footer.bg-dark.text-light .text-md-end small span {
+                color: #ffffff !important;
+            }
         </style>
     </head>
     <body class="sb-nav-fixed">
@@ -1196,28 +1722,28 @@
             }
         @endphp
         <nav class="{{ $navClasses }}" @if($navStyle)style="{{ $navStyle }}"@endif>
-            <!-- Navbar Brand-->
-            <a class="navbar-brand ps-3 d-flex align-items-center logo-white-section" href="{{ route('dashboard') }}">
+            <!-- Navbar Brand - Hidden on Mobile -->
+            <a class="navbar-brand ps-3 d-none d-lg-flex align-items-center logo-white-section" href="{{ route('dashboard') }}">
                 <img src="{{ asset('assets/images/waumini_link_logo.png') }}" alt="Waumini Link Logo" class="logo" style="height: 45px; max-width: 200px; object-fit: contain;">
             </a>
-            <!-- Sidebar Toggle-->
-            <button class="btn btn-link btn-sm order-1 order-lg-0 me-4 me-lg-0" id="sidebarToggle" href="#!" style="font-size: 1.5rem;"><i class="fas fa-bars" style="color: #ffffff !important;"></i></button>
+            <!-- Sidebar Toggle - First on Mobile -->
+            <button class="btn btn-link btn-sm order-first order-lg-0 me-3 me-lg-0" id="sidebarToggle" href="#!"><i class="fas fa-bars" style="color: #ffffff !important;"></i></button>
             <!-- Welcome Message -->
-            <div class="navbar-text me-auto ms-3" style="font-size: 1.1rem; font-weight: 600; color: #ffffff !important; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);">
+            <div class="navbar-text me-auto ms-2 ms-md-3" style="font-size: 1.1rem; font-weight: 600; color: #ffffff !important; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);">
                 <strong>AIC Moshi Kilimanjaro</strong>
-            </div>
-            <!-- Date and Time Display -->
-            <div class="d-none d-md-flex align-items-center ms-auto me-0 me-md-3">
-                <div class="text-end" style="color: #ffffff !important;">
-                    <div id="currentDate" style="font-size: 0.9rem; font-weight: 500; color: #ffffff !important;"></div>
-                    <div id="currentTime" style="font-size: 1.1rem; font-weight: 600; color: #ffffff !important;"></div>
-                </div>
             </div>
 
             <!-- Navbar-->
-            <ul class="navbar-nav ms-auto ms-md-0 me-3 me-lg-4">
+            <ul class="navbar-nav ms-auto me-2 me-md-3 me-lg-4">
+                <!-- Date and Time Display - Hidden on Mobile -->
+                <li class="nav-item d-none d-md-flex align-items-center me-2 me-md-3" id="dateTimeDisplay">
+                    <div class="text-end" style="color: #ffffff !important;">
+                        <div id="currentDate" class="d-none d-md-block" style="font-size: 0.9rem; font-weight: 500; color: #ffffff !important;"></div>
+                        <div id="currentTime" class="d-none d-md-block" style="font-size: 1.1rem; font-weight: 600; color: #ffffff !important;"></div>
+                    </div>
+                </li>
                 <!-- Notification Icon -->
-                <li class="nav-item dropdown me-3" id="notificationDropdown">
+                <li class="nav-item dropdown me-2 me-md-3" id="notificationDropdown">
                     <a class="nav-link position-relative" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notifications" style="color: #ffffff !important;">
                         <!-- Inline SVG bell to avoid external icon dependency -->
                         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="#ffffff" viewBox="0 0 16 16" class="align-text-top" style="color: #ffffff !important;">
@@ -1314,8 +1840,12 @@
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" id="navbarDropdown" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="color: #ffffff !important;"><i class="fas fa-user fa-fw" style="color: #ffffff !important;"></i></a>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                        <li><a class="dropdown-item" href="#!">Settings</a></li>
-                        <li><a class="dropdown-item" href="#!">Activity Log</a></li>
+                        @if(auth()->user()->isMember())
+                            <li><a class="dropdown-item" href="{{ route('member.settings') }}"><i class="fas fa-cog me-2"></i>Settings</a></li>
+                        @else
+                            <li><a class="dropdown-item" href="#!">Settings</a></li>
+                            <li><a class="dropdown-item" href="#!">Activity Log</a></li>
+                        @endif
                         <li><hr class="dropdown-divider" /></li>
                         <li>
                             <a class="dropdown-item" href="{{ route('logout') }}" 
@@ -1349,8 +1879,8 @@
                             </a>
                             <div class="collapse" id="collapseAdmin" aria-labelledby="headingAdmin" data-bs-parent="#sidenavAccordion">
                                 <nav class="sb-sidenav-menu-nested nav">
-                                    <a class="nav-link" href="{{ route('admin.activity-logs') }}">
-                                        <i class="fas fa-list me-2"></i>Activity Logs
+                                    <a class="nav-link" href="{{ route('admin.logs') }}">
+                                        <i class="fas fa-list-alt me-2"></i>Logs
                                     </a>
                                     <a class="nav-link" href="{{ route('admin.sessions') }}">
                                         <i class="fas fa-user-check me-2"></i>User Sessions
@@ -1360,6 +1890,9 @@
                                     </a>
                                     <a class="nav-link" href="{{ route('admin.roles-permissions') }}">
                                         <i class="fas fa-shield-alt me-2"></i>Roles & Permissions
+                                    </a>
+                                    <a class="nav-link" href="{{ route('admin.system-monitor') }}">
+                                        <i class="fas fa-server me-2"></i>System Monitor
                                     </a>
                                 </nav>
                             </div>
@@ -1607,7 +2140,7 @@
 
       <!-- Right Side -->
       <div class="col-md-6 text-center text-md-end">
-        <small>Powered by EmCa Technologies</small>
+        <small><span style="color: #ffffff !important;">Powered by</span> <a href="https://emca.tech/#" class="text-decoration-none fw-bold" style="color: #940000 !important;">EmCa Technologies</a></small>
       </div>
     </div>
   </div>
@@ -2424,32 +2957,66 @@
                 if (notificationDropdown) {
                     const dropdownMenu = notificationDropdown.querySelector('.notification-dropdown');
                     if (dropdownMenu) {
+                        // Function to apply mobile positioning
+                        function applyMobilePositioning() {
+                            if (window.innerWidth <= 576) {
+                                dropdownMenu.style.setProperty('position', 'fixed', 'important');
+                                dropdownMenu.style.setProperty('top', '60px', 'important');
+                                dropdownMenu.style.setProperty('left', '0.25rem', 'important');
+                                dropdownMenu.style.setProperty('right', '0.25rem', 'important');
+                                dropdownMenu.style.setProperty('width', 'calc(100vw - 0.5rem)', 'important');
+                                dropdownMenu.style.setProperty('max-width', 'calc(100vw - 0.5rem)', 'important');
+                                dropdownMenu.style.setProperty('margin', '0', 'important');
+                                dropdownMenu.style.setProperty('transform', 'none', 'important');
+                                dropdownMenu.style.setProperty('z-index', '1055', 'important');
+                                dropdownMenu.style.setProperty('inset', '60px 0.25rem auto 0.25rem', 'important');
+                            } else if (window.innerWidth <= 768) {
+                                dropdownMenu.style.setProperty('position', 'fixed', 'important');
+                                dropdownMenu.style.setProperty('top', '60px', 'important');
+                                dropdownMenu.style.setProperty('left', '0.5rem', 'important');
+                                dropdownMenu.style.setProperty('right', '0.5rem', 'important');
+                                dropdownMenu.style.setProperty('width', 'calc(100vw - 1rem)', 'important');
+                                dropdownMenu.style.setProperty('max-width', 'calc(100vw - 1rem)', 'important');
+                                dropdownMenu.style.setProperty('margin', '0', 'important');
+                                dropdownMenu.style.setProperty('transform', 'none', 'important');
+                                dropdownMenu.style.setProperty('z-index', '1055', 'important');
+                                dropdownMenu.style.setProperty('inset', '60px 0.5rem auto 0.5rem', 'important');
+                            } else {
+                                // Desktop - reset styles
+                                dropdownMenu.style.removeProperty('position');
+                                dropdownMenu.style.removeProperty('top');
+                                dropdownMenu.style.removeProperty('left');
+                                dropdownMenu.style.removeProperty('right');
+                                dropdownMenu.style.removeProperty('width');
+                                dropdownMenu.style.removeProperty('max-width');
+                                dropdownMenu.style.removeProperty('margin');
+                                dropdownMenu.style.removeProperty('transform');
+                                dropdownMenu.style.removeProperty('z-index');
+                                dropdownMenu.style.removeProperty('inset');
+                            }
+                        }
+                        
                         // Handle dropdown show event for mobile positioning
                         notificationDropdown.addEventListener('show.bs.dropdown', function() {
-                            if (window.innerWidth <= 768) {
-                                // On mobile, position dropdown fixed
-                                setTimeout(() => {
-                                    const rect = notificationDropdown.getBoundingClientRect();
-                                    dropdownMenu.style.position = 'fixed';
-                                    dropdownMenu.style.top = (rect.bottom + 5) + 'px';
-                                    dropdownMenu.style.left = '0.5rem';
-                                    dropdownMenu.style.right = 'auto';
-                                    dropdownMenu.style.width = 'calc(100vw - 1rem)';
-                                    dropdownMenu.style.maxWidth = 'calc(100vw - 1rem)';
-                                    dropdownMenu.style.transform = 'none';
-                                    dropdownMenu.style.zIndex = '1055';
-                                }, 10);
-                            } else {
-                                // On desktop, ensure normal Bootstrap positioning
-                                dropdownMenu.style.position = '';
-                                dropdownMenu.style.top = '';
-                                dropdownMenu.style.left = '';
-                                dropdownMenu.style.right = '';
-                                dropdownMenu.style.width = '';
-                                dropdownMenu.style.maxWidth = '';
-                                dropdownMenu.style.transform = '';
-                                dropdownMenu.style.zIndex = '';
-                            }
+                            setTimeout(applyMobilePositioning, 10);
+                        });
+                        
+                        // Also handle after shown to ensure positioning
+                        notificationDropdown.addEventListener('shown.bs.dropdown', function() {
+                            applyMobilePositioning();
+                            // Use MutationObserver to watch for Bootstrap's style changes
+                            const observer = new MutationObserver(function(mutations) {
+                                mutations.forEach(function(mutation) {
+                                    if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+                                        applyMobilePositioning();
+                                    }
+                                });
+                            });
+                            observer.observe(dropdownMenu, { attributes: true, attributeFilter: ['style'] });
+                            // Disconnect observer after dropdown is hidden
+                            notificationDropdown.addEventListener('hide.bs.dropdown', function() {
+                                observer.disconnect();
+                            }, { once: true });
                         });
                         
                         // Handle window resize
@@ -2482,6 +3049,34 @@
                         });
                     }
                 }
+                
+                // Ensure dropdowns close properly - close one when the other opens
+                const profileDropdown = document.getElementById('navbarDropdown');
+                const notificationDropdownEl = document.getElementById('notificationDropdown');
+                
+                if (notificationDropdownEl && profileDropdown) {
+                    // Close profile dropdown when notification opens
+                    notificationDropdownEl.addEventListener('show.bs.dropdown', function() {
+                        // Use Bootstrap API to close profile dropdown
+                        if (typeof bootstrap !== 'undefined') {
+                            const profileDropdownInstance = bootstrap.Dropdown.getInstance(profileDropdown);
+                            if (profileDropdownInstance) {
+                                profileDropdownInstance.hide();
+                            }
+                        }
+                    });
+                    
+                    // Close notification dropdown when profile opens
+                    profileDropdown.addEventListener('show.bs.dropdown', function() {
+                        // Use Bootstrap API to close notification dropdown
+                        if (typeof bootstrap !== 'undefined') {
+                            const notificationDropdownInstance = bootstrap.Dropdown.getInstance(notificationDropdownEl);
+                            if (notificationDropdownInstance) {
+                                notificationDropdownInstance.hide();
+                            }
+                        }
+                    });
+                }
             });
             
             // Update date and time display
@@ -2511,16 +3106,13 @@
             
             // Toggle sidebar functionality
             document.addEventListener('DOMContentLoaded', function() {
-                const sidebarToggle = document.getElementById('sidebarToggle');
-                const layoutSidenav = document.getElementById('layoutSidenav');
-                const layoutSidenavNav = document.getElementById('layoutSidenav_nav');
+                var sidebarToggle = document.getElementById('sidebarToggle');
+                var layoutSidenav = document.getElementById('layoutSidenav');
                 
                 if (sidebarToggle) {
-                    // Remove any existing onclick handlers
                     sidebarToggle.onclick = null;
                     sidebarToggle.removeAttribute('onclick');
                     
-                    // Check if handler is already attached (to avoid duplicate handlers from scripts.js)
                     if (!sidebarToggle.hasAttribute('data-layout-toggle-handler')) {
                         sidebarToggle.setAttribute('data-layout-toggle-handler', 'true');
                         
@@ -2528,35 +3120,116 @@
                             e.preventDefault();
                             e.stopPropagation();
                             
-                            // Toggle on the main container
                             if (layoutSidenav) {
                                 layoutSidenav.classList.toggle('sb-sidenav-toggled');
                             }
                             
-                            // Also toggle on body as fallback
                             document.body.classList.toggle('sb-sidenav-toggled');
                             
-                            // Save state to localStorage (as string to match scripts.js)
-                            const isToggled = layoutSidenav ? layoutSidenav.classList.contains('sb-sidenav-toggled') : document.body.classList.contains('sb-sidenav-toggled');
-                            localStorage.setItem('sb|sidebar-toggle', isToggled ? 'true' : 'false');
-                            
-                            console.log('Sidebar toggled (layout handler):', isToggled);
+                            var isToggled = layoutSidenav ? layoutSidenav.classList.contains('sb-sidenav-toggled') : document.body.classList.contains('sb-sidenav-toggled');
+                            localStorage.setItem('sb-sidebar-toggle', isToggled ? 'true' : 'false');
                             
                             return false;
-                        }, true); // Use capture phase to ensure it runs first
+                        }, true);
                         
-                        // Restore sidebar state from localStorage
-                        const savedState = localStorage.getItem('sb|sidebar-toggle');
-                        if (savedState === 'true') {
-                            if (layoutSidenav) {
-                                layoutSidenav.classList.add('sb-sidenav-toggled');
+                        // On mobile, always start with sidebar closed
+                        // On mobile, sb-sidenav-toggled means OPEN, so we REMOVE it to close
+                        function ensureSidebarClosed() {
+                            if (window.innerWidth <= 768) {
+                                if (layoutSidenav) {
+                                    layoutSidenav.classList.remove('sb-sidenav-toggled');
+                                }
+                                document.body.classList.remove('sb-sidenav-toggled');
+                                localStorage.setItem('sb-sidebar-toggle', 'false');
                             }
-                            document.body.classList.add('sb-sidenav-toggled');
+                        }
+                        
+                        // Ensure sidebar starts closed on initial load for mobile
+                        ensureSidebarClosed();
+                        
+                        // On desktop, restore saved state
+                        if (window.innerWidth > 768) {
+                            var savedState = localStorage.getItem('sb-sidebar-toggle');
+                            if (savedState === 'true') {
+                                if (layoutSidenav) {
+                                    layoutSidenav.classList.add('sb-sidenav-toggled');
+                                }
+                                document.body.classList.add('sb-sidenav-toggled');
+                            }
                         }
                     }
-                } else {
-                    console.warn('Sidebar toggle button not found');
                 }
+                
+                // Mobile sidebar behavior: Close sidebar when navigation links are clicked
+                function closeSidebarOnMobile() {
+                    if (window.innerWidth <= 768) {
+                        if (layoutSidenav) {
+                            layoutSidenav.classList.remove('sb-sidenav-toggled');
+                        }
+                        document.body.classList.remove('sb-sidenav-toggled');
+                        localStorage.setItem('sb-sidebar-toggle', 'false');
+                    }
+                }
+                
+                // Close sidebar when navigation links are clicked on mobile
+                var sidebarLinks = document.querySelectorAll('#sidenavAccordion .nav-link[href]');
+                for (var i = 0; i < sidebarLinks.length; i++) {
+                    var link = sidebarLinks[i];
+                    var href = link.getAttribute('href');
+                    
+                    // Skip collapse toggles and empty links
+                    if (href === '#' || link.hasAttribute('data-bs-toggle')) {
+                        continue;
+                    }
+                    
+                    (function(currentLink) {
+                        currentLink.addEventListener('click', function(e) {
+                            if (window.innerWidth <= 768) {
+                                // Close sidebar immediately
+                                closeSidebarOnMobile();
+                                
+                                // Close multiple times to ensure it stays closed
+                                setTimeout(closeSidebarOnMobile, 10);
+                                setTimeout(closeSidebarOnMobile, 50);
+                                setTimeout(closeSidebarOnMobile, 100);
+                                setTimeout(closeSidebarOnMobile, 200);
+                                
+                                // Don't prevent default - allow navigation to happen
+                            }
+                        }, false); // Use bubble phase so link navigation works
+                    })(link);
+                }
+                
+                // Also close sidebar when page loads on mobile (in case it was open)
+                if (window.innerWidth <= 768) {
+                    closeSidebarOnMobile();
+                    // Close again after a short delay to ensure it stays closed
+                    setTimeout(closeSidebarOnMobile, 100);
+                    setTimeout(closeSidebarOnMobile, 300);
+                }
+                
+                // Close sidebar when page becomes visible (after navigation)
+                document.addEventListener('visibilitychange', function() {
+                    if (!document.hidden && window.innerWidth <= 768) {
+                        closeSidebarOnMobile();
+                    }
+                });
+                
+                // Close sidebar on page show (handles back/forward navigation)
+                window.addEventListener('pageshow', function(event) {
+                    if (window.innerWidth <= 768) {
+                        closeSidebarOnMobile();
+                        setTimeout(closeSidebarOnMobile, 50);
+                    }
+                });
+                
+                // Prevent sidebar from reopening after navigation
+                window.addEventListener('load', function() {
+                    if (window.innerWidth <= 768) {
+                        closeSidebarOnMobile();
+                        setTimeout(closeSidebarOnMobile, 100);
+                    }
+                });
             });
         </script>
         
@@ -2587,6 +3260,305 @@
                                 // Push current page forward again to prevent going back
                                 window.history.pushState({ page: 'dashboard', preventBack: true }, '', window.location.href);
                             }
+                        }
+                    });
+                }
+            })();
+        </script>
+        
+        {{-- Auto-logout on inactivity (3 minutes) with 1-minute warning --}}
+        <script>
+            (function() {
+                // Configuration
+                const INACTIVITY_TIMEOUT = 3 * 60 * 1000; // 3 minutes in milliseconds
+                const WARNING_TIME = 1 * 60 * 1000; // 1 minute before logout (warning time)
+                const LOGOUT_URL = '{{ route("logout") }}';
+                
+                let inactivityTimer;
+                let warningTimer;
+                let warningShown = false;
+                let countdownInterval;
+                let remainingSeconds = 60;
+                
+                // Function to reset timers
+                function resetTimers() {
+                    // Clear existing timers
+                    clearTimeout(inactivityTimer);
+                    clearTimeout(warningTimer);
+                    clearInterval(countdownInterval);
+                    
+                    // Reset warning flag
+                    warningShown = false;
+                    remainingSeconds = 60;
+                    
+                    // Set new inactivity timer
+                    inactivityTimer = setTimeout(function() {
+                        // Show warning when 1 minute remains
+                        showWarning();
+                        
+                        // Set logout timer
+                        warningTimer = setTimeout(function() {
+                            logout();
+                        }, WARNING_TIME);
+                    }, INACTIVITY_TIMEOUT - WARNING_TIME);
+                }
+                
+                // Function to show warning with countdown
+                function showWarning() {
+                    if (warningShown) return;
+                    warningShown = true;
+                    remainingSeconds = 60;
+                    
+                    // Show SweetAlert with countdown
+                    Swal.fire({
+                        title: 'Session Timeout Warning',
+                        html: 'You have been inactive for 2 minutes.<br>You will be logged out in <strong id="inactivityCountdown" style="font-size: 1.5em; color: #d33;">60</strong> seconds.<br><br>Click "Stay Logged In" to continue your session.',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Stay Logged In',
+                        cancelButtonText: 'Logout Now',
+                        confirmButtonColor: '#3085d6',
+                        cancelButtonColor: '#d33',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        timer: WARNING_TIME,
+                        timerProgressBar: true,
+                        didOpen: () => {
+                            // Update countdown every second
+                            const countdownElement = document.getElementById('inactivityCountdown');
+                            if (countdownElement) {
+                                countdownInterval = setInterval(function() {
+                                    remainingSeconds--;
+                                    if (remainingSeconds > 0) {
+                                        countdownElement.textContent = remainingSeconds;
+                                    } else {
+                                        clearInterval(countdownInterval);
+                                    }
+                                }, 1000);
+                            }
+                        },
+                        willClose: () => {
+                            clearInterval(countdownInterval);
+                        }
+                    }).then((result) => {
+                        clearInterval(countdownInterval);
+                        
+                        if (result.dismiss === Swal.DismissReason.timer) {
+                            // Timeout - logout
+                            logout();
+                        } else if (result.isConfirmed) {
+                            // User clicked "Stay Logged In" - reset timers
+                            resetTimers();
+                        } else if (result.isDismissed) {
+                            // User clicked "Logout Now"
+                            logout();
+                        }
+                    });
+                }
+                
+                // Function to logout
+                function logout() {
+                    clearTimeout(inactivityTimer);
+                    clearTimeout(warningTimer);
+                    clearInterval(countdownInterval);
+                    
+                    // Create a form and submit to logout
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = LOGOUT_URL;
+                    
+                    // Add CSRF token
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]');
+                    if (csrfToken) {
+                        const csrfInput = document.createElement('input');
+                        csrfInput.type = 'hidden';
+                        csrfInput.name = '_token';
+                        csrfInput.value = csrfToken.getAttribute('content');
+                        form.appendChild(csrfInput);
+                    }
+                    
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+                
+                // Events that indicate user activity
+                const activityEvents = [
+                    'mousedown',
+                    'mousemove',
+                    'keypress',
+                    'scroll',
+                    'touchstart',
+                    'click',
+                    'keydown'
+                ];
+                
+                // Add event listeners for user activity
+                activityEvents.forEach(function(eventName) {
+                    document.addEventListener(eventName, function() {
+                        resetTimers();
+                    }, true);
+                });
+                
+                // Initialize timer on page load
+                resetTimers();
+                
+                // Also reset on visibility change (when user switches tabs back)
+                document.addEventListener('visibilitychange', function() {
+                    if (!document.hidden) {
+                        resetTimers();
+                    }
+                });
+            })();
+        </script>
+        
+        {{-- Global AJAX error handler for session expiration and CSRF token --}}
+        <script>
+            (function() {
+                // Function to refresh CSRF token
+                async function refreshCsrfToken() {
+                    try {
+                        // Try to get new token from meta tag (if page was refreshed)
+                        const metaToken = document.querySelector('meta[name="csrf-token"]');
+                        if (metaToken) {
+                            return metaToken.getAttribute('content');
+                        }
+                        // If meta tag doesn't exist, reload page to get new token
+                        return null;
+                    } catch (e) {
+                        return null;
+                    }
+                }
+                
+                // Function to handle session expiration
+                function handleSessionExpired(message) {
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Session Expired',
+                            text: message || 'Your session has expired. Please log in again.',
+                            confirmButtonText: 'Go to Login',
+                            confirmButtonColor: '#3085d6',
+                            allowOutsideClick: false,
+                            allowEscapeKey: false
+                        }).then(() => {
+                            window.location.href = '{{ route("login") }}';
+                        });
+                    } else {
+                        alert(message || 'Your session has expired. Please log in again.');
+                        window.location.href = '{{ route("login") }}';
+                    }
+                }
+                
+                // Function to handle CSRF token expired (419)
+                function handleCsrfExpired() {
+                    // Silently refresh the page to get a new CSRF token
+                    // This is better than showing an error since the token just needs to be refreshed
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'info',
+                            title: 'Refreshing...',
+                            text: 'Please wait while we refresh your session.',
+                            allowOutsideClick: false,
+                            allowEscapeKey: false,
+                            showConfirmButton: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+                        
+                        // Reload page after a short delay to get new CSRF token
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 500);
+                    } else {
+                        // Fallback: just reload
+                        window.location.reload();
+                    }
+                }
+                
+                // Intercept fetch requests to handle 401 and 419 responses
+                const originalFetch = window.fetch;
+                window.fetch = function(...args) {
+                    return originalFetch.apply(this, args)
+                        .then(async response => {
+                            const url = args[0] || '';
+                            const isLoginPage = typeof url === 'string' && url.includes('/login');
+                            
+                            // Check for 419 CSRF Token Mismatch
+                            if (response.status === 419) {
+                                // Try to parse response to see if it has redirect info
+                                try {
+                                    const clonedResponse = response.clone();
+                                    const data = await clonedResponse.json();
+                                    
+                                    // If response has redirect property, go to login
+                                    if (data.redirect) {
+                                        window.location.href = data.redirect;
+                                        return response;
+                                    }
+                                } catch (e) {
+                                    // If JSON parsing fails, continue with redirect
+                                }
+                                
+                                // For 419 errors, always redirect to login page
+                                window.location.href = '{{ route("login") }}';
+                                return response;
+                            }
+                            
+                            // Check for 401 Unauthorized (session expired)
+                            if (response.status === 401 && !isLoginPage) {
+                                // Clone response to read it without consuming
+                                const clonedResponse = response.clone();
+                                
+                                // Try to parse JSON response for custom message
+                                clonedResponse.json().then(data => {
+                                    handleSessionExpired(data.message);
+                                }).catch(() => {
+                                    // If JSON parsing fails, use default message
+                                    handleSessionExpired();
+                                });
+                            }
+                            
+                            return response;
+                        });
+                };
+                
+                // Also handle jQuery AJAX if it's being used
+                if (typeof jQuery !== 'undefined') {
+                    $(document).ajaxError(function(event, xhr, settings) {
+                        const isLoginPage = settings.url && settings.url.includes('/login');
+                        
+                        // Handle 419 CSRF Token Mismatch - always redirect to login
+                        if (xhr.status === 419) {
+                            try {
+                                const data = JSON.parse(xhr.responseText);
+                                if (data.redirect) {
+                                    window.location.href = data.redirect;
+                                    return;
+                                }
+                            } catch (e) {
+                                // If JSON parsing fails, continue with redirect
+                            }
+                            
+                            // Always redirect to login for 419 errors
+                            window.location.href = '{{ route("login") }}';
+                            return;
+                        }
+                        
+                        // Handle 401 Unauthorized (session expired)
+                        if (xhr.status === 401 && !isLoginPage) {
+                            let message = 'Your session has expired. Please log in again.';
+                            
+                            try {
+                                const data = JSON.parse(xhr.responseText);
+                                if (data.message) {
+                                    message = data.message;
+                                }
+                            } catch (e) {
+                                // Use default message
+                            }
+                            
+                            handleSessionExpired(message);
                         }
                     });
                 }

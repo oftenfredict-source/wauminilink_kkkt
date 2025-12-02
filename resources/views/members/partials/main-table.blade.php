@@ -1,56 +1,153 @@
 <!-- resources/views/members/partials/main-table.blade.php -->
 <!-- This partial contains the filters and members table, as in the original view -->
 
-<!-- Filters & Search -->
-<form method="GET" action="{{ route('members.index') }}" class="card mb-3" id="filtersForm">
-    <div class="card-body">
-        <div class="row g-3 align-items-end">
-            <div class="col-12 col-md-4">
-                <label class="form-label">Search</label>
+<!-- Filters & Search - Collapsible on Mobile -->
+<form method="GET" action="{{ route('members.index') }}" class="card mb-3 border-0 shadow-sm" id="filtersForm">
+    <!-- Filter Header -->
+    <div class="card-header bg-white border-bottom p-2 px-3 filter-header" onclick="toggleFilters()">
+        <div class="d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fas fa-filter text-primary"></i>
+                <span class="fw-semibold">Filters</span>
+                @if(request('search') || request('gender') || request('region') || request('district') || request('ward'))
+                    <span class="badge bg-primary rounded-pill" id="activeFiltersCount">{{ (request('search') ? 1 : 0) + (request('gender') ? 1 : 0) + (request('region') ? 1 : 0) + (request('district') ? 1 : 0) + (request('ward') ? 1 : 0) }}</span>
+                @endif
+            </div>
+            <i class="fas fa-chevron-down text-muted d-md-none" id="filterToggleIcon"></i>
+        </div>
+    </div>
+    
+    <!-- Filter Body - Collapsible on Mobile -->
+    <div class="card-body p-3" id="filterBody">
+        <!-- Search - Always visible and compact -->
+        <div class="mb-3">
+            <div class="input-group input-group-sm">
+                <span class="input-group-text bg-light"><i class="fas fa-search text-muted"></i></span>
                 <input type="text" name="search" id="searchInput" value="{{ request('search') }}" class="form-control" placeholder="Search name, phone, email, member ID">
             </div>
-            <div class="col-6 col-md-2">
-                <label class="form-label">Gender</label>
-                <select name="gender" id="genderFilter" class="form-select">
+        </div>
+        
+        <!-- Advanced Filters - Compact Grid -->
+        <div class="row g-2 mb-3" id="advancedFilters">
+            <div class="col-6 col-md-3">
+                <label class="form-label small text-muted mb-1">Gender</label>
+                <select name="gender" id="genderFilter" class="form-select form-select-sm">
                     <option value="">All</option>
                     <option value="male" {{ request('gender')==='male' ? 'selected' : '' }}>Male</option>
                     <option value="female" {{ request('gender')==='female' ? 'selected' : '' }}>Female</option>
                 </select>
             </div>
-            <div class="col-6 col-md-2">
-                <label class="form-label">Region</label>
-                <select name="region" id="regionFilter" class="form-select">
+            <div class="col-6 col-md-3">
+                <label class="form-label small text-muted mb-1">Region</label>
+                <select name="region" id="regionFilter" class="form-select form-select-sm">
                     <option value="">All</option>
                     @foreach(($regions ?? []) as $region)
                         <option value="{{ $region }}" {{ request('region')===$region ? 'selected' : '' }}>{{ $region }}</option>
                     @endforeach
                 </select>
             </div>
-            <div class="col-6 col-md-2">
-                <label class="form-label">District</label>
-                <select name="district" id="districtFilter" class="form-select">
+            <div class="col-6 col-md-3">
+                <label class="form-label small text-muted mb-1">District</label>
+                <select name="district" id="districtFilter" class="form-select form-select-sm">
                     <option value="">All</option>
                     @foreach(($districts ?? []) as $district)
                         <option value="{{ $district }}" {{ request('district')===$district ? 'selected' : '' }}>{{ $district }}</option>
                     @endforeach
                 </select>
             </div>
-            <div class="col-6 col-md-2">
-                <label class="form-label">Ward</label>
-                <select name="ward" id="wardFilter" class="form-select">
+            <div class="col-6 col-md-3">
+                <label class="form-label small text-muted mb-1">Ward</label>
+                <select name="ward" id="wardFilter" class="form-select form-select-sm">
                     <option value="">All</option>
                     @foreach(($wards ?? []) as $ward)
                         <option value="{{ $ward }}" {{ request('ward')===$ward ? 'selected' : '' }}>{{ $ward }}</option>
                     @endforeach
                 </select>
             </div>
-            <div class="col-12 d-flex flex-column flex-sm-row gap-2 mt-2">
-                <button type="submit" class="btn btn-primary"><i class="fas fa-filter me-2"></i><span class="d-none d-sm-inline">Apply</span><span class="d-sm-none">Filter</span></button>
-                <a href="{{ route('members.index') }}" class="btn btn-outline-secondary"><i class="fas fa-redo me-2"></i><span class="d-none d-sm-inline">Reset</span><span class="d-sm-none">Clear</span></a>
-            </div>
+        </div>
+        
+        <!-- Action Buttons - Compact -->
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary btn-sm flex-fill">
+                <i class="fas fa-filter me-1"></i>Apply
+            </button>
+            <a href="{{ route('members.index') }}" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-redo me-1"></i>Reset
+            </a>
         </div>
     </div>
 </form>
+
+<script>
+function toggleFilters() {
+    // Only toggle on mobile devices
+    if (window.innerWidth > 768) {
+        return; // Don't toggle on desktop
+    }
+    
+    const filterBody = document.getElementById('filterBody');
+    const filterIcon = document.getElementById('filterToggleIcon');
+    
+    if (!filterBody || !filterIcon) return;
+    
+    // Check computed style to see if it's visible
+    const computedStyle = window.getComputedStyle(filterBody);
+    const isVisible = computedStyle.display !== 'none';
+    
+    if (isVisible) {
+        filterBody.style.display = 'none';
+        filterIcon.classList.remove('fa-chevron-up');
+        filterIcon.classList.add('fa-chevron-down');
+    } else {
+        filterBody.style.display = 'block';
+        filterIcon.classList.remove('fa-chevron-down');
+        filterIcon.classList.add('fa-chevron-up');
+    }
+}
+
+// Handle window resize
+window.addEventListener('resize', function() {
+    const filterBody = document.getElementById('filterBody');
+    const filterIcon = document.getElementById('filterToggleIcon');
+    
+    if (!filterBody || !filterIcon) return;
+    
+    if (window.innerWidth > 768) {
+        // Always show on desktop
+        filterBody.style.display = 'block';
+        filterIcon.style.display = 'none';
+    } else {
+        // On mobile, show chevron
+        filterIcon.style.display = 'block';
+    }
+});
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const filterBody = document.getElementById('filterBody');
+    const filterIcon = document.getElementById('filterToggleIcon');
+    
+    if (!filterBody || !filterIcon) return;
+    
+    if (window.innerWidth <= 768) {
+        // Mobile: start collapsed
+        filterBody.style.display = 'none';
+        filterIcon.classList.remove('fa-chevron-up');
+        filterIcon.classList.add('fa-chevron-down');
+    } else {
+        // Desktop: always show
+        filterBody.style.display = 'block';
+        filterIcon.style.display = 'none';
+    }
+    
+    // Show filters if any are active
+    @if(request('search') || request('gender') || request('region') || request('district') || request('ward'))
+        if (window.innerWidth <= 768) {
+            toggleFilters(); // Expand if filters are active
+        }
+    @endif
+});
+</script>
 
 <!-- Members Table -->
 <div class="card">

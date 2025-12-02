@@ -18,29 +18,61 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    <!-- Filters -->
-                    <div class="row mb-4">
-                        <div class="col-md-12">
-                            <form method="GET" class="row g-3" id="filterForm">
-                                <div class="col-md-3">
-                                    <label for="from" class="form-label">From Date</label>
-                                    <input type="date" class="form-control" id="from" name="from" value="{{ request('from') }}">
+                    <!-- Filters - Mobile-friendly, like other pages -->
+                    <form method="GET" action="{{ route('attendance.statistics') }}" class="card mb-4 border-0 shadow-sm" id="filtersForm">
+                        <!-- Filter Header -->
+                        <div class="card-header bg-white border-bottom p-2 px-3 filter-header" onclick="toggleFilters()">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="fas fa-filter text-primary"></i>
+                                    <span class="fw-semibold">Filters</span>
+                                    @if(request('from') || request('to') || request('service_type') || request('service_id'))
+                                        <span class="badge bg-primary rounded-pill" id="activeFiltersCount">
+                                            {{ (request('from') ? 1 : 0) + (request('to') ? 1 : 0) + (request('service_type') ? 1 : 0) + (request('service_id') ? 1 : 0) }}
+                                        </span>
+                                    @endif
                                 </div>
-                                <div class="col-md-3">
-                                    <label for="to" class="form-label">To Date</label>
-                                    <input type="date" class="form-control" id="to" name="to" value="{{ request('to') }}">
+                                <i class="fas fa-chevron-down text-muted d-md-none" id="filterToggleIcon"></i>
+                            </div>
+                        </div>
+                        
+                        <!-- Filter Body - Collapsible on Mobile -->
+                        <div class="card-body p-3" id="filterBody">
+                            <div class="row g-2 mb-2">
+                                <!-- From Date -->
+                                <div class="col-6 col-md-3">
+                                    <label for="from" class="form-label small text-muted mb-1">
+                                        <i class="fas fa-calendar-alt me-1 text-info"></i>From Date
+                                    </label>
+                                    <input type="date" class="form-control form-control-sm" id="from" name="from" value="{{ request('from') }}">
                                 </div>
-                                <div class="col-md-3">
-                                    <label for="service_type" class="form-label">Service Type</label>
-                                    <select class="form-select" id="service_type" name="service_type" onchange="updateServiceSelect()">
+                                
+                                <!-- To Date -->
+                                <div class="col-6 col-md-3">
+                                    <label for="to" class="form-label small text-muted mb-1">
+                                        <i class="fas fa-calendar-check me-1 text-info"></i>To Date
+                                    </label>
+                                    <input type="date" class="form-control form-control-sm" id="to" name="to" value="{{ request('to') }}">
+                                </div>
+                                
+                                <!-- Service Type -->
+                                <div class="col-12 col-md-3">
+                                    <label for="service_type" class="form-label small text-muted mb-1">
+                                        <i class="fas fa-church me-1 text-primary"></i>Service Type
+                                    </label>
+                                    <select class="form-select form-select-sm" id="service_type" name="service_type" onchange="updateServiceSelect()">
                                         <option value="">All Services</option>
                                         <option value="sunday_service" {{ request('service_type') == 'sunday_service' ? 'selected' : '' }}>Sunday Service</option>
                                         <option value="special_event" {{ request('service_type') == 'special_event' ? 'selected' : '' }}>Special Event</option>
                                     </select>
                                 </div>
-                                <div class="col-md-3">
-                                    <label for="service_id" class="form-label">Specific Service/Event</label>
-                                    <select class="form-select" id="service_id" name="service_id">
+                                
+                                <!-- Specific Service/Event -->
+                                <div class="col-12 col-md-3">
+                                    <label for="service_id" class="form-label small text-muted mb-1">
+                                        <i class="fas fa-list me-1 text-secondary"></i>Specific Service/Event
+                                    </label>
+                                    <select class="form-select form-select-sm" id="service_id" name="service_id">
                                         <option value="">All</option>
                                         @if(request('service_type') == 'sunday_service')
                                             @foreach($sundayServices as $service)
@@ -57,25 +89,27 @@
                                         @endif
                                     </select>
                                 </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">&nbsp;</label>
-                                    <div class="d-grid">
-                                        <button type="submit" class="btn btn-primary">
-                                            <i class="fas fa-filter"></i> Apply Filters
-                                        </button>
-                                    </div>
+                            </div>
+                            
+                            <!-- Action Buttons -->
+                            <div class="row g-2">
+                                <div class="col-12 col-md-6 d-grid">
+                                    <button type="submit" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-filter me-1"></i>
+                                        <span class="d-none d-sm-inline">Apply Filters</span>
+                                        <span class="d-sm-none">Apply</span>
+                                    </button>
                                 </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">&nbsp;</label>
-                                    <div class="d-grid">
-                                        <a href="{{ route('attendance.statistics') }}" class="btn btn-outline-secondary">
-                                            <i class="fas fa-times"></i> Clear Filters
-                                        </a>
-                                    </div>
+                                <div class="col-12 col-md-6 d-grid">
+                                    <a href="{{ route('attendance.statistics') }}" class="btn btn-outline-secondary btn-sm">
+                                        <i class="fas fa-times me-1"></i>
+                                        <span class="d-none d-sm-inline">Clear Filters</span>
+                                        <span class="d-sm-none">Clear</span>
+                                    </a>
                                 </div>
-                            </form>
+                            </div>
                         </div>
-                    </div>
+                    </form>
 
                     <!-- Overall Statistics -->
                     <div class="row mb-4">
@@ -416,6 +450,36 @@
 
 @section('scripts')
 <script>
+// Toggle Filters - mobile-friendly behavior (same pattern as other pages)
+function toggleFilters() {
+    // Only toggle on mobile devices
+    if (window.innerWidth > 768) {
+        return; // Don't toggle on desktop
+    }
+    
+    const filterBody = document.getElementById('filterBody');
+    const filterIcon = document.getElementById('filterToggleIcon');
+    const filterHeader = document.querySelector('.filter-header');
+    
+    if (!filterBody || !filterIcon) return;
+    
+    // Check computed style to see if it's visible
+    const computedStyle = window.getComputedStyle(filterBody);
+    const isVisible = computedStyle.display !== 'none';
+    
+    if (isVisible) {
+        filterBody.style.display = 'none';
+        filterIcon.classList.remove('fa-chevron-up');
+        filterIcon.classList.add('fa-chevron-down');
+        if (filterHeader) filterHeader.classList.remove('active');
+    } else {
+        filterBody.style.display = 'block';
+        filterIcon.classList.remove('fa-chevron-down');
+        filterIcon.classList.add('fa-chevron-up');
+        if (filterHeader) filterHeader.classList.add('active');
+    }
+}
+
 // Load members with missed attendance
 function loadMissedMembers() {
     const container = document.getElementById('missedMembersContainer');
@@ -648,12 +712,51 @@ function viewMemberHistory(memberId) {
     window.open(`{{ url('/attendance/member') }}/${memberId}/history`, '_blank');
 }
 
-// Load missed members on page load
+// Load missed members on page load and initialize filters behavior
 document.addEventListener('DOMContentLoaded', function() {
     // Add a small delay to ensure the page is fully rendered
     setTimeout(function() {
         loadMissedMembers();
     }, 100);
+    
+    // Auto-expand filters on mobile if filters are active
+    if (window.innerWidth <= 768) {
+        const hasActiveFilters = {{ (request('from') || request('to') || request('service_type') || request('service_id')) ? 'true' : 'false' }};
+        const filterBody = document.getElementById('filterBody');
+        const filterIcon = document.getElementById('filterToggleIcon');
+        
+        if (hasActiveFilters && filterBody && filterIcon) {
+            // Show filters and set icon state
+            filterBody.style.display = 'block';
+            filterIcon.classList.remove('fa-chevron-down');
+            filterIcon.classList.add('fa-chevron-up');
+            const filterHeader = document.querySelector('.filter-header');
+            if (filterHeader) filterHeader.classList.add('active');
+        }
+    }
+    
+    // Handle window resize
+    window.addEventListener('resize', function() {
+        const filterBody = document.getElementById('filterBody');
+        const filterIcon = document.getElementById('filterToggleIcon');
+        
+        if (!filterBody || !filterIcon) return;
+        
+        if (window.innerWidth > 768) {
+            // Always show on desktop
+            filterBody.style.display = 'block';
+            filterIcon.style.display = 'none';
+        } else {
+            // On mobile, show chevron and hide body by default (unless active)
+            filterIcon.style.display = 'block';
+            const hasActiveFilters = {{ (request('from') || request('to') || request('service_type') || request('service_id')) ? 'true' : 'false' }};
+            if (!hasActiveFilters) {
+                filterBody.style.display = 'none';
+                filterIcon.classList.remove('fa-chevron-up');
+                filterIcon.classList.add('fa-chevron-down');
+            }
+        }
+    });
 });
 
 // Service and event data for dynamic filtering

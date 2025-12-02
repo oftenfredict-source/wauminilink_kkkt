@@ -334,13 +334,11 @@ function exportReport(format) {
     if (weekStart) {
         const startDate = weekStart;
         const endDate = '{{ $endDate->format('Y-m-d') }}';
-        const url = `/reports/export/${format}?report_type=weekly-financial&start_date=${startDate}&end_date=${endDate}`;
+        const baseUrl = '{{ url("/") }}';
+        const url = `${baseUrl}/reports/export/${format}?report_type=weekly-financial&start_date=${startDate}&end_date=${endDate}`;
         
-        if (format === 'pdf') {
-            window.open(url, '_blank');
-        } else {
-            window.location.href = url;
-        }
+        // Force download - server will send Content-Disposition header
+        window.location.href = url;
     }
 }
 </script>

@@ -12,8 +12,15 @@ use Illuminate\Validation\Rules\Password;
 use App\Models\User;
 use App\Models\ActivityLog;
 use App\Models\Permission;
+use App\Models\FailedLoginAttempt;
+use App\Models\SystemLog;
+use App\Models\BlockedIp;
 use App\Services\SmsService;
 use App\Services\SettingsService;
+use App\Services\DeviceInfoService;
+use App\Services\SystemMonitorService;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Carbon\Carbon;
 
 class AdminController extends Controller
@@ -127,16 +134,56 @@ class AdminController extends Controller
         $users = User::orderBy('name')->get();
         $actions = ActivityLog::distinct()->pluck('action');
 
+        // Check if called from unified logs view
+        if ($request->has('type') || $request->get('unified', false)) {
+            return view('admin.logs', [
+                'logs' => $logs,
+                'users' => $users,
+                'actions' => $actions,
+                'logType' => 'activity',
+            ]);
+        }
+
         return view('admin.activity-logs', compact('logs', 'users', 'actions'));
     }
 
     /**
      * Display user sessions
+     * Shows all logged-in users regardless of role (admin, pastor, secretary, treasurer, member)
      */
     public function sessions(Request $request)
     {
+        // First, try to sync any sessions that might not have user_id set
+        // This helps catch sessions that were created before the middleware was added
+        try {
+            // Get all authenticated sessions from file system and sync to database
+            // This is a fallback in case middleware didn't catch all sessions
+            $allSessions = DB::table('sessions')->whereNull('user_id')->get();
+            foreach ($allSessions as $session) {
+                // Try to decode session payload to get user_id if stored in session data
+                try {
+                    $payload = unserialize(base64_decode($session->payload));
+                    if (isset($payload['login_web_' . sha1('Illuminate\Auth\SessionGuard')])) {
+                        $userId = $payload['login_web_' . sha1('Illuminate\Auth\SessionGuard')];
+                        if ($userId) {
+                            DB::table('sessions')
+                                ->where('id', $session->id)
+                                ->update(['user_id' => $userId]);
+                        }
+                    }
+                } catch (\Exception $e) {
+                    // Skip if can't decode
+                }
+            }
+        } catch (\Exception $e) {
+            // Silently continue
+        }
+
+        // Get all sessions with logged-in users - no role filtering
+        // Using INNER JOIN to ensure we only get sessions with valid users
         $query = DB::table('sessions')
             ->join('users', 'sessions.user_id', '=', 'users.id')
+            ->whereNotNull('sessions.user_id') // Only show sessions with logged-in users
             ->select('sessions.*', 'users.name', 'users.email', 'users.role');
 
         if ($request->filled('user_id')) {
@@ -161,15 +208,18 @@ class AdminController extends Controller
                     $session->is_login_blocked = $user->isLoginBlocked();
                     $session->login_blocked_until = $user->login_blocked_until;
                     $session->remaining_block_time = $user->getRemainingBlockTime();
+                    $session->remaining_block_time_formatted = $user->getRemainingBlockTimeFormatted();
                 } else {
                     $session->is_login_blocked = false;
                     $session->login_blocked_until = null;
                     $session->remaining_block_time = null;
+                    $session->remaining_block_time_formatted = null;
                 }
                 
                 return $session;
             });
 
+        // Get all users for the filter dropdown (all roles)
         $users = User::orderBy('name')->get();
 
         return view('admin.sessions', compact('sessions', 'users'));
@@ -182,33 +232,73 @@ class AdminController extends Controller
     {
         // Prevent revoking own session
         if ($sessionId === session()->getId()) {
-            return back()->with('error', 'You cannot revoke your own active session.');
+            return response()->json([
+                'success' => false,
+                'message' => 'You cannot revoke your own active session.'
+            ], 403);
         }
 
         // Get the user ID from the session before deleting it
         $session = DB::table('sessions')->where('id', $sessionId)->first();
         
         if (!$session || !$session->user_id) {
-            return back()->with('error', 'Session not found or has no associated user.');
+            return response()->json([
+                'success' => false,
+                'message' => 'Session not found or has no associated user.'
+            ], 404);
         }
 
         $userId = $session->user_id;
 
+        // Validate the request
+        $request->validate([
+            'blocked_until' => 'required|date|after:now',
+        ], [
+            'blocked_until.required' => 'Please specify when the user can login again.',
+            'blocked_until.date' => 'Please provide a valid date and time.',
+            'blocked_until.after' => 'The unblock time must be in the future.',
+        ]);
+
+        // Parse the datetime from datetime-local input
+        // datetime-local sends time in the user's browser timezone (Tanzania)
+        // We need to interpret it as Tanzania timezone (Africa/Dar_es_Salaam)
+        $tanzaniaTimezone = 'Africa/Dar_es_Salaam';
+        
+        // Parse the datetime string assuming it's in Tanzania timezone
+        // The datetime-local format is: YYYY-MM-DDTHH:mm (no timezone info)
+        // We interpret this as Tanzania local time
+        $blockedUntil = Carbon::createFromFormat('Y-m-d\TH:i', $request->blocked_until, $tanzaniaTimezone);
+        
+        // Laravel stores timestamps in UTC, so convert Tanzania time to UTC for storage
+        // Use setTimezone('UTC') instead of utc() to avoid double conversion
+        $blockedUntilForStorage = $blockedUntil->copy()->setTimezone('UTC');
+
         // Delete the session
         DB::table('sessions')->where('id', $sessionId)->delete();
 
-        // Block user from logging in for 3 minutes
-        $blockedUntil = now()->addMinutes(3);
-        User::where('id', $userId)->update([
-            'login_blocked_until' => $blockedUntil
+        // Block user from logging in until specified time (stored in UTC)
+        // Use update() with fresh() to ensure the change is saved immediately
+        $affected = User::where('id', $userId)->update([
+            'login_blocked_until' => $blockedUntilForStorage
         ]);
+        
+        // Verify the block was saved (for debugging)
+        $verifyUser = User::find($userId);
+        if (!$verifyUser || !$verifyUser->login_blocked_until) {
+            \Log::error('Failed to save login_blocked_until', [
+                'user_id' => $userId,
+                'blocked_until' => $blockedUntilForStorage->format('Y-m-d H:i:s'),
+                'affected_rows' => $affected
+            ]);
+        }
 
         // Log this activity
         try {
+            $user = User::find($userId);
             ActivityLog::create([
                 'user_id' => Auth::id(),
                 'action' => 'revoke',
-                'description' => "Revoked session for user ID {$userId} and blocked login for 3 minutes",
+                'description' => "Revoked session for {$user->name} (ID: {$userId}) and blocked login until {$blockedUntil->format('Y-m-d H:i:s')}",
                 'ip_address' => $request->ip(),
                 'user_agent' => $request->userAgent(),
                 'route' => $request->route()->getName(),
@@ -219,7 +309,64 @@ class AdminController extends Controller
         }
 
         $user = User::find($userId);
-        return back()->with('success', "Session revoked successfully. {$user->name} cannot login for 3 minutes.");
+        // Use Tanzania timezone explicitly
+        $tanzaniaTimezone = 'Africa/Dar_es_Salaam';
+        $appTimezone = $tanzaniaTimezone; // For backward compatibility
+        
+        // Get the raw timestamp from database to avoid timezone conversion issues
+        $rawBlockedUntil = DB::table('users')
+            ->where('id', $userId)
+            ->value('login_blocked_until');
+        
+        if ($rawBlockedUntil) {
+            // Parse as UTC directly (how it's stored in database)
+            $blockedUntilUtc = Carbon::createFromFormat('Y-m-d H:i:s', $rawBlockedUntil, 'UTC');
+            $now = Carbon::now('UTC');
+            
+            // Convert to Tanzania timezone for display
+            $blockedUntilDisplay = $blockedUntilUtc->copy()->setTimezone($appTimezone);
+            $blockedUntilFormatted = $blockedUntilDisplay->format('Y-m-d H:i:s');
+            
+            // Calculate the actual time remaining from now (both in UTC)
+            // diffInMinutes returns: $this - $other
+            // So blockedUntilUtc->diffInMinutes($now, false) = blockedUntil - now
+            // Positive if blockedUntil is in the future, negative if in the past
+            $remainingMinutes = (int)$blockedUntilUtc->diffInMinutes($now, false);
+            
+            // Only show positive remaining time
+            if ($remainingMinutes <= 0) {
+                $blockedUntilHuman = "now (block has expired)";
+            } elseif ($remainingMinutes < 60) {
+                $blockedUntilHuman = "{$remainingMinutes} minute(s) from now";
+            } elseif ($remainingMinutes < 1440) {
+                $hours = floor($remainingMinutes / 60);
+                $minutes = $remainingMinutes % 60;
+                if ($minutes > 0) {
+                    $blockedUntilHuman = "{$hours} hour(s) and {$minutes} minute(s) from now";
+                } else {
+                    $blockedUntilHuman = "{$hours} hour(s) from now";
+                }
+            } else {
+                $days = floor($remainingMinutes / 1440);
+                $hours = floor(($remainingMinutes % 1440) / 60);
+                if ($hours > 0) {
+                    $blockedUntilHuman = "{$days} day(s) and {$hours} hour(s) from now";
+                } else {
+                    $blockedUntilHuman = "{$days} day(s) from now";
+                }
+            }
+        } else {
+            $blockedUntilFormatted = 'N/A';
+            $blockedUntilHuman = 'N/A';
+            $remainingMinutes = 0;
+        }
+        
+        return response()->json([
+            'success' => true,
+            'message' => "Session revoked successfully. {$user->name} cannot login until {$blockedUntilFormatted} ({$blockedUntilHuman}).",
+            'blocked_until' => $blockedUntilFormatted,
+            'blocked_until_human' => $blockedUntilHuman,
+        ]);
     }
 
     /**
@@ -717,6 +864,15 @@ class AdminController extends Controller
             // Silently continue if logging fails
         }
 
+        // Return JSON response for AJAX requests (from sessions page)
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => "User {$user->name} has been unblocked and can now login."
+            ]);
+        }
+
+        // Return redirect for regular form submissions (from users page)
         return back()->with('success', "User {$user->name} has been unblocked and can now login.");
     }
 
@@ -1080,6 +1236,444 @@ class AdminController extends Controller
             'success' => true,
             'message' => "User account for {$userName} has been deleted successfully."
         ]);
+    }
+
+    /**
+     * Display unified logs page with dropdown
+     */
+    public function logs(Request $request)
+    {
+        $logType = $request->get('type', 'activity'); // activity, system, failed-login
+        
+        // Merge type parameter into request so child methods know they're called from unified view
+        $request->merge(['type' => $logType, 'unified' => true]);
+        
+        if ($logType === 'system') {
+            return $this->systemLogs($request);
+        } elseif ($logType === 'failed-login') {
+            return $this->failedLoginLogs($request);
+        } else {
+            return $this->activityLogs($request);
+        }
+    }
+
+    /**
+     * Display system logs with device properties
+     */
+    public function systemLogs(Request $request)
+    {
+        $query = SystemLog::with('user');
+
+        // Filters
+        if ($request->filled('user_id')) {
+            $query->where('user_id', $request->user_id);
+        }
+
+        if ($request->filled('level')) {
+            $query->where('level', $request->level);
+        }
+
+        if ($request->filled('category')) {
+            $query->where('category', $request->category);
+        }
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('created_at', '<=', $request->date_to);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('message', 'like', "%{$search}%")
+                  ->orWhere('action', 'like', "%{$search}%")
+                  ->orWhere('ip_address', 'like', "%{$search}%");
+            });
+        }
+
+        $logs = $query->orderBy('created_at', 'desc')->paginate(25);
+        
+        $users = User::orderBy('name')->get();
+        $levels = SystemLog::distinct()->pluck('level');
+        $categories = SystemLog::distinct()->pluck('category')->filter();
+
+        return view('admin.logs', [
+            'logs' => $logs,
+            'users' => $users,
+            'levels' => $levels,
+            'categories' => $categories,
+            'logType' => 'system',
+        ]);
+    }
+
+    /**
+     * Display failed login logs
+     */
+    public function failedLoginLogs(Request $request)
+    {
+        $query = FailedLoginAttempt::query();
+
+        // Filters
+        if ($request->filled('email')) {
+            $query->where('email', 'like', "%{$request->email}%");
+        }
+
+        if ($request->filled('ip_address')) {
+            $query->where('ip_address', 'like', "%{$request->ip_address}%");
+        }
+
+        if ($request->filled('blocked_only')) {
+            $query->where('ip_blocked', true);
+        }
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('created_at', '<=', $request->date_to);
+        }
+
+        $logs = $query->orderBy('created_at', 'desc')->paginate(25);
+        
+        $blockedIps = BlockedIp::active()->pluck('ip_address')->toArray();
+
+        return view('admin.logs', [
+            'logs' => $logs,
+            'blockedIps' => $blockedIps ?? [],
+            'logType' => 'failed-login',
+        ]);
+    }
+
+    /**
+     * Block an IP address
+     */
+    public function blockIp(Request $request)
+    {
+        $request->validate([
+            'ip_address' => 'required|ip',
+            'reason' => 'nullable|string|max:500',
+        ]);
+
+        $ipAddress = $request->ip_address;
+        $reason = $request->reason ?? 'Blocked due to failed login attempts';
+
+        // Check if already blocked
+        $existingBlock = BlockedIp::where('ip_address', $ipAddress)
+            ->where('is_active', true)
+            ->first();
+
+        if ($existingBlock) {
+            return response()->json([
+                'success' => false,
+                'message' => 'IP address is already blocked.',
+            ], 400);
+        }
+
+        // Create block record
+        BlockedIp::create([
+            'ip_address' => $ipAddress,
+            'reason' => $reason,
+            'blocked_by' => Auth::id(),
+            'blocked_at' => now(),
+            'is_active' => true,
+        ]);
+
+        // Update failed login attempts for this IP
+        FailedLoginAttempt::where('ip_address', $ipAddress)
+            ->where('ip_blocked', false)
+            ->update([
+                'ip_blocked' => true,
+                'ip_blocked_at' => now(),
+            ]);
+
+        // Log this activity
+        try {
+            ActivityLog::create([
+                'user_id' => Auth::id(),
+                'action' => 'block_ip',
+                'description' => "Blocked IP address: {$ipAddress}. Reason: {$reason}",
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+                'route' => $request->route()->getName(),
+                'method' => $request->method(),
+            ]);
+        } catch (\Exception $e) {
+            // Silently continue if logging fails
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "IP address {$ipAddress} has been blocked successfully.",
+        ]);
+    }
+
+    /**
+     * Unblock an IP address
+     */
+    public function unblockIp(Request $request)
+    {
+        $request->validate([
+            'ip_address' => 'required|ip',
+        ]);
+
+        $ipAddress = $request->ip_address;
+
+        // Find and deactivate block
+        $block = BlockedIp::where('ip_address', $ipAddress)
+            ->where('is_active', true)
+            ->first();
+
+        if (!$block) {
+            return response()->json([
+                'success' => false,
+                'message' => 'IP address is not currently blocked.',
+            ], 400);
+        }
+
+        $block->update([
+            'is_active' => false,
+            'unblocked_at' => now(),
+        ]);
+
+        // Update failed login attempts for this IP
+        FailedLoginAttempt::where('ip_address', $ipAddress)
+            ->where('ip_blocked', true)
+            ->update([
+                'ip_blocked' => false,
+                'ip_unblocked_at' => now(),
+            ]);
+
+        // Log this activity
+        try {
+            ActivityLog::create([
+                'user_id' => Auth::id(),
+                'action' => 'unblock_ip',
+                'description' => "Unblocked IP address: {$ipAddress}",
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+                'route' => $request->route()->getName(),
+                'method' => $request->method(),
+            ]);
+        } catch (\Exception $e) {
+            // Silently continue if logging fails
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "IP address {$ipAddress} has been unblocked successfully.",
+        ]);
+    }
+
+    /**
+     * Get device details for a system log
+     */
+    public function getDeviceDetails($logId)
+    {
+        $log = SystemLog::findOrFail($logId);
+        
+        return response()->json([
+            'device_type' => $log->device_type,
+            'device_name' => $log->device_name,
+            'browser' => $log->browser,
+            'os' => $log->os,
+            'mac_address' => $log->mac_address,
+            'screen_resolution' => $log->screen_resolution,
+            'timezone' => $log->timezone,
+            'language' => $log->language,
+            'device_properties' => $log->device_properties,
+            'ip_address' => $log->ip_address,
+            'user_agent' => $log->user_agent,
+        ]);
+    }
+
+    /**
+     * Display system monitoring page
+     */
+    public function systemMonitor()
+    {
+        return view('admin.system-monitor');
+    }
+
+    /**
+     * Get system information (AJAX endpoint)
+     */
+    public function getSystemInfo()
+    {
+        try {
+            $systemInfo = SystemMonitorService::getSystemInfo();
+            
+            return response()->json([
+                'success' => true,
+                'data' => $systemInfo,
+                'timestamp' => now()->toDateTimeString(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to get system info: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve system information: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Clear application cache
+     */
+    public function clearCache(Request $request)
+    {
+        try {
+            $cacheType = $request->input('type', 'all');
+            $results = [];
+            $errors = [];
+
+            // Helper function to safely call Artisan commands
+            $safeArtisanCall = function($command, $successMessage) use (&$results, &$errors) {
+                try {
+                    Artisan::call($command);
+                    $results[$command] = $successMessage;
+                    return true;
+                } catch (\Exception $e) {
+                    $errors[$command] = $e->getMessage();
+                    Log::warning("Failed to execute artisan command {$command}: " . $e->getMessage());
+                    return false;
+                }
+            };
+
+            switch ($cacheType) {
+                case 'all':
+                    $safeArtisanCall('cache:clear', 'Application cache cleared');
+                    $safeArtisanCall('config:clear', 'Configuration cache cleared');
+                    $safeArtisanCall('route:clear', 'Route cache cleared');
+                    $safeArtisanCall('view:clear', 'View cache cleared');
+                    
+                    // Try optimize:clear, but don't fail if it doesn't exist
+                    try {
+                        Artisan::call('optimize:clear');
+                        $results['optimize'] = 'Optimization cache cleared';
+                    } catch (\Exception $e) {
+                        // Command might not exist in older Laravel versions
+                        Log::info('optimize:clear command not available: ' . $e->getMessage());
+                        $results['optimize'] = 'Optimization cache skipped (command not available)';
+                    }
+                    
+                    // Clear Laravel cache
+                    try {
+                        Cache::flush();
+                        $results['laravel'] = 'Laravel cache flushed';
+                    } catch (\Exception $e) {
+                        $errors['laravel'] = $e->getMessage();
+                        Log::warning('Failed to flush Laravel cache: ' . $e->getMessage());
+                    }
+                    break;
+                    
+                case 'application':
+                    if (!$safeArtisanCall('cache:clear', 'Application cache cleared')) {
+                        throw new \Exception('Failed to clear application cache');
+                    }
+                    break;
+                    
+                case 'config':
+                    if (!$safeArtisanCall('config:clear', 'Configuration cache cleared')) {
+                        throw new \Exception('Failed to clear config cache');
+                    }
+                    break;
+                    
+                case 'route':
+                    if (!$safeArtisanCall('route:clear', 'Route cache cleared')) {
+                        throw new \Exception('Failed to clear route cache');
+                    }
+                    break;
+                    
+                case 'view':
+                    if (!$safeArtisanCall('view:clear', 'View cache cleared')) {
+                        throw new \Exception('Failed to clear view cache');
+                    }
+                    break;
+                    
+                case 'optimize':
+                    try {
+                        Artisan::call('optimize:clear');
+                        $results['optimize'] = 'Optimization cache cleared';
+                    } catch (\Exception $e) {
+                        throw new \Exception('Failed to clear optimization cache: ' . $e->getMessage());
+                    }
+                    break;
+                    
+                case 'laravel':
+                    try {
+                        Cache::flush();
+                        $results['laravel'] = 'Laravel cache flushed';
+                    } catch (\Exception $e) {
+                        throw new \Exception('Failed to flush Laravel cache: ' . $e->getMessage());
+                    }
+                    break;
+                    
+                default:
+                    throw new \Exception('Invalid cache type: ' . $cacheType);
+            }
+
+            // Log the action
+            try {
+                ActivityLog::create([
+                    'user_id' => Auth::id(),
+                    'action' => 'clear_cache',
+                    'description' => "Cleared {$cacheType} cache",
+                    'ip_address' => $request->ip(),
+                    'user_agent' => $request->userAgent(),
+                ]);
+            } catch (\Exception $e) {
+                // Don't fail if logging fails
+                Log::warning('Failed to log cache clear action: ' . $e->getMessage());
+            }
+
+            // Prepare response
+            $responseData = [
+                'success' => true,
+                'message' => 'Cache cleared successfully',
+                'results' => $results,
+            ];
+
+            // Include warnings if any
+            if (!empty($errors)) {
+                $responseData['warnings'] = $errors;
+                $responseData['message'] = 'Cache cleared with some warnings';
+            }
+
+            // Always return JSON for AJAX/JSON requests
+            if ($request->wantsJson() || $request->ajax() || $request->expectsJson()) {
+                return response()->json($responseData, 200, [], JSON_UNESCAPED_UNICODE);
+            }
+
+            return redirect()->route('admin.system-monitor')
+                ->with('success', $responseData['message'])
+                ->with('cache_results', $results)
+                ->with('cache_warnings', $errors);
+                
+        } catch (\Exception $e) {
+            Log::error('Failed to clear cache: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'cache_type' => $request->input('type', 'all'),
+            ]);
+            
+            $errorMessage = 'Failed to clear cache: ' . $e->getMessage();
+            
+            // Always return JSON for AJAX/JSON requests
+            if ($request->wantsJson() || $request->ajax() || $request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $errorMessage,
+                    'error' => $e->getMessage(),
+                ], 500, [], JSON_UNESCAPED_UNICODE);
+            }
+
+            return redirect()->route('admin.system-monitor')
+                ->with('error', $errorMessage);
+        }
     }
 }
 

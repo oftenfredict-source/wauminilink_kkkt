@@ -32,7 +32,7 @@ window.addEventListener('DOMContentLoaded', event => {
                 
                 // Save state to localStorage (as string 'true' or 'false' to match layout handler)
                 const isToggled = layoutSidenav ? layoutSidenav.classList.contains('sb-sidenav-toggled') : document.body.classList.contains('sb-sidenav-toggled');
-                localStorage.setItem('sb|sidebar-toggle', isToggled ? 'true' : 'false');
+                localStorage.setItem('sb-sidebar-toggle', isToggled ? 'true' : 'false');
                 
                 console.log('Sidebar toggled:', isToggled);
                 
@@ -40,13 +40,25 @@ window.addEventListener('DOMContentLoaded', event => {
             });
             
             // Restore sidebar state from localStorage
-            const savedState = localStorage.getItem('sb|sidebar-toggle');
-            if (savedState === 'true') {
+            // On mobile, always start with sidebar closed (remove toggled class)
+            // On desktop, sb-sidenav-toggled means CLOSED, on mobile it means OPEN
+            if (window.innerWidth <= 768) {
                 const layoutSidenav = document.getElementById('layoutSidenav');
                 if (layoutSidenav) {
-                    layoutSidenav.classList.add('sb-sidenav-toggled');
+                    layoutSidenav.classList.remove('sb-sidenav-toggled');
                 }
-                document.body.classList.add('sb-sidenav-toggled');
+                document.body.classList.remove('sb-sidenav-toggled');
+                localStorage.setItem('sb-sidebar-toggle', 'false');
+            } else {
+                // On desktop, restore saved state (true = closed, false = open)
+                const savedState = localStorage.getItem('sb-sidebar-toggle');
+                if (savedState === 'true') {
+                    const layoutSidenav = document.getElementById('layoutSidenav');
+                    if (layoutSidenav) {
+                        layoutSidenav.classList.add('sb-sidenav-toggled');
+                    }
+                    document.body.classList.add('sb-sidenav-toggled');
+                }
             }
         }
     }

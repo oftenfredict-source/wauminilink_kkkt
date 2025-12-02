@@ -480,8 +480,125 @@
     
     /* Responsive improvements */
     @media (max-width: 768px) {
+        .container-fluid {
+            padding-left: 10px !important;
+            padding-right: 10px !important;
+        }
+
+        .dashboard-header {
+            margin-bottom: 12px !important;
+            border-radius: 12px !important;
+            overflow: hidden !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+        }
+
+        .dashboard-header .card-body {
+            padding: 12px 14px !important;
+        }
+
+        .dashboard-header .rounded-circle {
+            width: 38px !important;
+            height: 38px !important;
+            min-width: 38px !important;
+            flex-shrink: 0 !important;
+            background: rgba(255,255,255,0.2) !important;
+            border: 2px solid rgba(255,255,255,0.3) !important;
+        }
+
+        .dashboard-header .rounded-circle i {
+            font-size: 0.95rem !important;
+        }
+
+        .dashboard-header .d-flex.align-items-center.gap-3 {
+            gap: 12px !important;
+            flex: 1 !important;
+            min-width: 0 !important;
+        }
+
+        .dashboard-header .lh-sm {
+            flex: 1 !important;
+            min-width: 0 !important;
+            overflow: hidden !important;
+        }
+
+        .dashboard-header h5 {
+            font-size: 1rem !important;
+            line-height: 1.3 !important;
+            margin-bottom: 2px !important;
+            font-weight: 600 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+        }
+
+        .dashboard-header small {
+            font-size: 0.75rem !important;
+            line-height: 1.2 !important;
+            display: block !important;
+            opacity: 0.9 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+        }
+
+        .dashboard-header .btn {
+            margin-top: 0 !important;
+            padding: 8px 14px !important;
+            font-size: 0.85rem !important;
+            border-radius: 8px !important;
+            white-space: nowrap !important;
+            flex-shrink: 0 !important;
+            font-weight: 500 !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+            transition: all 0.2s ease !important;
+        }
+
+        .dashboard-header .btn:hover {
+            transform: translateY(-1px) !important;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.15) !important;
+        }
+
+        .dashboard-header .d-flex.justify-content-between {
+            align-items: center !important;
+            flex-wrap: nowrap !important;
+        }
+
+        .dashboard-header .d-flex.justify-content-between > div:first-child {
+            flex: 1 !important;
+            min-width: 0 !important;
+            overflow: hidden !important;
+        }
+
         .card-header {
             padding: 0.75rem 1rem !important;
+        }
+        
+        /* Filter form - stack on mobile */
+        .card-body .row.g-3 > div {
+            margin-bottom: 15px;
+        }
+
+        .card-body .row.g-3 .col-md-3,
+        .card-body .row.g-3 .col-md-2 {
+            width: 100%;
+            margin-bottom: 15px;
+        }
+
+        .card-body .btn {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        
+        /* Table responsive */
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            display: block;
+            width: 100%;
+        }
+
+        .table {
+            min-width: 800px;
         }
         
         .table thead th,
@@ -493,6 +610,94 @@
         .btn {
             padding: 0.5rem 1rem !important;
             font-size: 0.875rem !important;
+        }
+
+        .card-body {
+            padding: 15px !important;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .container-fluid {
+            padding-left: 5px !important;
+            padding-right: 5px !important;
+        }
+
+        .dashboard-header {
+            margin-bottom: 10px !important;
+            border-radius: 10px !important;
+        }
+
+        .dashboard-header .card-body {
+            padding: 10px 12px !important;
+        }
+
+        .dashboard-header .rounded-circle {
+            width: 36px !important;
+            height: 36px !important;
+            min-width: 36px !important;
+        }
+
+        .dashboard-header .rounded-circle i {
+            font-size: 0.9rem !important;
+        }
+
+        .dashboard-header .d-flex.align-items-center.gap-3 {
+            gap: 10px !important;
+        }
+
+        .dashboard-header h5 {
+            font-size: 0.95rem !important;
+            line-height: 1.25 !important;
+            margin-bottom: 1px !important;
+        }
+
+        .dashboard-header small {
+            font-size: 0.72rem !important;
+            line-height: 1.15 !important;
+        }
+
+        .dashboard-header .d-flex.justify-content-between {
+            flex-wrap: wrap !important;
+            gap: 8px !important;
+        }
+
+        .dashboard-header .btn {
+            margin-top: 0 !important;
+            width: auto !important;
+            min-width: fit-content !important;
+            padding: 7px 12px !important;
+            font-size: 0.8rem !important;
+            flex: 0 0 auto !important;
+        }
+
+        /* Stack on very small screens */
+        @media (max-width: 400px) {
+            .dashboard-header .d-flex.justify-content-between {
+                flex-direction: column !important;
+                align-items: stretch !important;
+            }
+
+            .dashboard-header .btn {
+                width: 100% !important;
+                margin-top: 8px !important;
+            }
+        }
+
+        .table {
+            min-width: 700px;
+            font-size: 0.75rem;
+        }
+
+        .table thead th,
+        .table tbody td {
+            padding: 0.5rem 0.25rem !important;
+            font-size: 0.75rem !important;
+        }
+
+        .btn {
+            font-size: 0.8rem !important;
+            padding: 0.4rem 0.8rem !important;
         }
     }
     

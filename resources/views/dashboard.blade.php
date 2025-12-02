@@ -1,30 +1,57 @@
 @extends('layouts.index')
 
 @section('content')
-<div class="container-fluid px-4">
-    <!-- Compact, interactive header -->
-    <div class="row mb-3">
+<div class="container-fluid px-4 pt-0">
+    <!-- Enhanced Dashboard Header -->
+    <div class="row mb-0 mt-0">
         <div class="col-12">
-            <div class="card border-0 shadow-sm dashboard-header" style="background:white;">
+            <div class="card border-0 shadow-sm dashboard-header" style="background: white; border-radius: 10px; overflow: hidden;">
                 <div class="card-body py-2 px-3">
-                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="rounded-circle d-flex align-items-center justify-content-center border border-primary border-2" style="width:48px; height:48px; background:rgba(0,123,255,.1);">
-                                <i class="fas fa-tachometer-alt text-primary"></i>
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                        <!-- Left Section: User Info -->
+                        <div class="d-flex align-items-center gap-2 flex-grow-1">
+                            <div class="dashboard-profile-img position-relative">
+                                @if(isset($secretary) && $secretary->member && $secretary->member->profile_picture)
+                                    <img src="{{ asset('storage/' . $secretary->member->profile_picture) }}" 
+                                         alt="Secretary Profile" 
+                                         class="rounded-circle border border-primary border-2 shadow-sm" 
+                                         style="width:50px; height:50px; object-fit:cover; background:white;">
+                                @elseif(isset($user) && $user->profile_picture)
+                                    <img src="{{ asset('storage/' . $user->profile_picture) }}" 
+                                         alt="User Profile" 
+                                         class="rounded-circle border border-primary border-2 shadow-sm" 
+                                         style="width:50px; height:50px; object-fit:cover; background:white;">
+                                @else
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center border border-primary border-2 shadow-sm" 
+                                         style="width:50px; height:50px; background:rgba(0,123,255,0.1);">
+                                        <i class="fas fa-user-tie text-primary" style="font-size: 1.3rem;"></i>
+                                    </div>
+                                @endif
+                                <span class="position-absolute bottom-0 end-0 bg-success border border-white border-2 rounded-circle" 
+                                      style="width: 14px; height: 14px;"></span>
                             </div>
                             <div class="lh-sm">
-                                <h5 class="mb-0 fw-semibold text-dark">Secretary Dashboard</h5>
-                                <small class="text-muted">Overview and quick insights</small>
-                            </div>
-                        </div>
-                        <div class="d-flex align-items-center gap-3 header-widgets">
-                            <div class="widget d-flex align-items-center gap-2 px-3 py-2 rounded-3 bg-primary text-white">
-                                <i class="fas fa-clock text-white"></i>
-                                <span id="current-time" class="fw-bold text-white" style="font-family:'Courier New',monospace;"></span>
-                            </div>
-                            <div class="widget d-flex align-items-center gap-2 px-3 py-2 rounded-3 bg-primary text-white">
-                                <i class="fas fa-calendar-day text-white"></i>
-                                <span id="current-date" class="text-white"></span>
+                                @php
+                                    $hour = (int)date('H');
+                                    $greeting = $hour < 12 ? 'Good Morning' : ($hour < 17 ? 'Good Afternoon' : 'Good Evening');
+                                    $userName = 'Secretary';
+                                    if(isset($secretary) && $secretary->member) {
+                                        $userName = $secretary->member->full_name;
+                                    } elseif(isset($user)) {
+                                        $userName = $user->name;
+                                    }
+                                @endphp
+                                <h5 class="mb-0 fw-semibold text-dark">
+                                    {{ $greeting }}, {{ $userName }}
+                                </h5>
+                                <small class="text-muted">
+                                    <i class="fas fa-briefcase me-1 text-primary"></i>
+                                    @if(isset($secretary) && $secretary->position_display)
+                                        {{ $secretary->position_display }}
+                                    @else
+                                        Secretary Dashboard
+                                    @endif
+                                </small>
                             </div>
                         </div>
                     </div>
@@ -34,21 +61,269 @@
     </div>
     
     <style>
-        /* Header widgets */
-        .dashboard-header .widget{
-            transition: transform .2s ease, background .2s ease;
+        /* Reduce gap between topbar and content */
+        #layoutSidenav_content main {
+            padding-top: 0 !important;
+        }
+        .container-fluid {
+            padding-top: 0 !important;
+        }
+        
+        /* Enhanced Header Styles */
+        .dashboard-header {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        
+        .dashboard-profile-img {
+            position: relative;
+        }
+        
+        .dashboard-profile-img img,
+        .dashboard-profile-img div {
+            transition: transform 0.3s ease;
+        }
+        
+        .dashboard-profile-img:hover img,
+        .dashboard-profile-img:hover div {
+            transform: scale(1.05);
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .dashboard-profile-img .bg-success {
+            animation: pulse 2s infinite;
         }
 
-        .dashboard-header .widget:hover{
-            transform: translateY(-2px);
-            opacity: 0.9;
+        /* Mobile Responsive Styles */
+        @media (max-width: 768px) {
+            /* Reduce gap between topbar and content on mobile */
+            #layoutSidenav_content main {
+                padding-top: 0 !important;
+                margin-top: -0.25rem !important;
+            }
+            /* Container padding adjustment */
+            .container-fluid {
+                padding-left: 10px !important;
+                padding-right: 10px !important;
+                padding-top: 0 !important;
+                margin-top: -0.25rem !important;
+            }
+            .row.mb-0.mt-0 {
+                margin-top: -0.15rem !important;
+                margin-bottom: 0.1rem !important;
+            }
+            
+            /* Header adjustments */
+            .dashboard-header .card-body {
+                padding: 12px 10px !important;
+            }
+            
+            .dashboard-header > .card-body > .d-flex {
+                flex-direction: row !important;
+                align-items: center !important;
+                gap: 12px !important;
+            }
+            
+            /* Keep profile and text on same line */
+            .dashboard-header .d-flex.align-items-center.gap-2 {
+                flex-direction: row !important;
+                flex-wrap: nowrap !important;
+            }
+            
+            
+            .dashboard-header h5 {
+                font-size: 1.1rem !important;
+            }
+            
+            .dashboard-header small {
+                font-size: 0.8rem !important;
+            }
+            
+            .dashboard-profile-img img,
+            .dashboard-profile-img div {
+                width: 45px !important;
+                height: 45px !important;
+            }
+            
+            .dashboard-profile-img i {
+                font-size: 1.2rem !important;
+            }
+            
+            /* Statistics cards - stack on mobile */
+            .row > [class*="col-"] {
+                padding-left: 8px !important;
+                padding-right: 8px !important;
+                margin-bottom: 10px !important;
+            }
+            
+            .card-body {
+                padding: 15px 12px !important;
+            }
+            
+            .card-body .h4 {
+                font-size: 1.5rem !important;
+            }
+            
+            .card-body .small {
+                font-size: 0.8rem !important;
+            }
+            
+            .card-footer {
+                padding: 10px 12px !important;
+                font-size: 0.85rem !important;
+            }
+            
+            /* Quick Actions - stack buttons */
+            .card-body .row > [class*="col-"] {
+                margin-bottom: 10px !important;
+            }
+            
+            .btn {
+                padding: 10px 15px !important;
+                font-size: 0.9rem !important;
+            }
+            
+            /* Demographics cards */
+            .card-body .row > [class*="col-lg-3"] {
+                margin-bottom: 15px !important;
+            }
+            
+            .card-body .rounded-circle {
+                width: 60px !important;
+                height: 60px !important;
+            }
+            
+            .card-body .rounded-circle i {
+                font-size: 1.5rem !important;
+            }
+            
+            .card-body h4 {
+                font-size: 1.3rem !important;
+            }
+            
+            /* Family breakdown */
+            .card-body .row > [class*="col-md-4"] {
+                margin-bottom: 15px !important;
+            }
+            
+            /* Chart section */
+            .card-body .row > [class*="col-md-6"] {
+                margin-bottom: 15px !important;
+            }
+            
+            /* Announcements and Events - stack on mobile */
+            .row > [class*="col-lg-6"] {
+                margin-bottom: 20px !important;
+            }
+            
+            .list-group-item {
+                padding: 12px 10px !important;
+            }
+            
+            .list-group-item h6 {
+                font-size: 0.95rem !important;
+            }
+            
+            .list-group-item p {
+                font-size: 0.85rem !important;
+            }
+            
+            .list-group-item small {
+                font-size: 0.75rem !important;
+            }
+            
+            /* Card headers */
+            .card-header {
+                padding: 12px 15px !important;
+                font-size: 0.95rem !important;
+            }
+            
+            .card-header i {
+                font-size: 0.9rem !important;
+            }
         }
-
-        .dashboard-header h5{ font-weight:600; }
-
-        @media (max-width: 576px){
-            .dashboard-header .header-widgets{ width:100%; }
-            .dashboard-header .widget{ flex:1; justify-content:center; }
+        
+        @media (max-width: 576px) {
+            /* Further reduce gap on extra small mobile */
+            #layoutSidenav_content main {
+                padding-top: 0 !important;
+                margin-top: -0.35rem !important;
+            }
+            .container-fluid {
+                padding-top: 0 !important;
+                margin-top: -0.35rem !important;
+            }
+            .row.mb-0.mt-0 {
+                margin-top: -0.25rem !important;
+                margin-bottom: 0.05rem !important;
+            }
+            
+            .dashboard-header .card-body {
+                padding: 10px 8px !important;
+            }
+            
+            .dashboard-header h5 {
+                font-size: 1rem !important;
+            }
+            
+            .dashboard-profile-img img,
+            .dashboard-profile-img div {
+                width: 40px !important;
+                height: 40px !important;
+            }
+            
+            .dashboard-profile-img i {
+                font-size: 1rem !important;
+            }
+            
+            /* Ensure profile and text stay on same line on mobile */
+            .dashboard-header .d-flex.align-items-center.gap-2 {
+                flex-direction: row !important;
+                flex-wrap: nowrap !important;
+            }
+            
+            .dashboard-header .lh-sm {
+                min-width: 0;
+                flex: 1;
+            }
+            
+            .dashboard-header h5 {
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            
+            .container-fluid {
+                padding-left: 8px !important;
+                padding-right: 8px !important;
+            }
+            
+            .card-body {
+                padding: 12px 10px !important;
+            }
+            
+            .card-body .h4 {
+                font-size: 1.3rem !important;
+            }
+            
+            .btn {
+                font-size: 0.85rem !important;
+                padding: 8px 12px !important;
+            }
+            
+            .card-body .rounded-circle {
+                width: 50px !important;
+                height: 50px !important;
+            }
+            
+            .card-body .rounded-circle i {
+                font-size: 1.2rem !important;
+            }
         }
         /* Fix dashboard card header visibility */
         .card-header {
@@ -136,7 +411,7 @@
         </div>
     </div>
     <div class="row">
-        <div class="col-xl-3 col-md-6">
+        <div class="col-xl-3 col-md-6 col-12">
             <div class="card bg-primary text-white mb-4">
                 <div class="card-body">
                     <div class="d-flex align-items-center">
@@ -159,7 +434,7 @@
             </div>
         </div>
 
-        <div class="col-xl-3 col-md-6">
+        <div class="col-xl-3 col-md-6 col-12">
             <div class="card bg-success text-white mb-4">
                 <div class="card-body">
                     <div class="d-flex align-items-center">
@@ -179,7 +454,7 @@
             </div>
         </div>
 
-        <div class="col-xl-3 col-md-6">
+        <div class="col-xl-3 col-md-6 col-12">
             <div class="card bg-warning text-white mb-4">
                 <div class="card-body">
                     <div class="d-flex align-items-center">
@@ -199,7 +474,7 @@
             </div>
         </div>
 
-        <div class="col-xl-3 col-md-6">
+        <div class="col-xl-3 col-md-6 col-12">
             <div class="card bg-info text-white mb-4">
                 <div class="card-body">
                     <div class="d-flex align-items-center">
@@ -230,22 +505,22 @@
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-3 col-12 mb-3">
                             <a href="{{ route('members.add') }}" class="btn btn-primary w-100">
                                 <i class="fas fa-user-plus me-2"></i>Add New Member
                             </a>
                         </div>
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-3 col-12 mb-3">
                             <a href="{{ route('special.events.index') }}?action=add" class="btn btn-success w-100">
                                 <i class="fas fa-calendar-plus me-2"></i>Add Special Event
                             </a>
                         </div>
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-3 col-12 mb-3">
                             <a href="{{ route('celebrations.index') }}?action=add" class="btn btn-warning w-100">
                                 <i class="fas fa-gift me-2"></i>Add Celebration
                             </a>
                         </div>
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-3 col-12 mb-3">
                             <a href="{{ route('services.sunday.index') }}" class="btn btn-info w-100">
                                 <i class="fas fa-church me-2"></i>Sunday Services
                             </a>
@@ -267,7 +542,7 @@
                 <div class="card-body">
                     <div class="row">
                         <!-- Male Members -->
-                        <div class="col-lg-3 col-md-6 mb-4">
+                        <div class="col-lg-3 col-md-6 col-12 mb-4">
                             <div class="card border-0 shadow-sm h-100">
                                 <div class="card-body text-center">
                                     <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 80px; height: 80px;">
@@ -281,7 +556,7 @@
                         </div>
 
                         <!-- Female Members -->
-                        <div class="col-lg-3 col-md-6 mb-4">
+                        <div class="col-lg-3 col-md-6 col-12 mb-4">
                             <div class="card border-0 shadow-sm h-100">
                                 <div class="card-body text-center">
                                     <div class="bg-pink text-white rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 80px; height: 80px; background-color: #e91e63 !important;">
@@ -295,7 +570,7 @@
                         </div>
 
                         <!-- Children -->
-                        <div class="col-lg-3 col-md-6 mb-4">
+                        <div class="col-lg-3 col-md-6 col-12 mb-4">
                             <div class="card border-0 shadow-sm h-100">
                                 <div class="card-body text-center">
                                     <div class="bg-warning text-white rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 80px; height: 80px;">
@@ -309,7 +584,7 @@
                         </div>
 
                         <!-- Adults -->
-                        <div class="col-lg-3 col-md-6 mb-4">
+                        <div class="col-lg-3 col-md-6 col-12 mb-4">
                             <div class="card border-0 shadow-sm h-100">
                                 <div class="card-body text-center">
                                     <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 80px; height: 80px;">
@@ -332,7 +607,7 @@
                                         <i class="fas fa-family me-2"></i>Family Member Breakdown
                                     </h6>
                                     <div class="row">
-                                        <div class="col-md-4 mb-3">
+                                        <div class="col-md-4 col-12 mb-3">
                                             <div class="d-flex align-items-center">
                                                 <div class="bg-primary rounded me-2" style="width: 20px; height: 20px;"></div>
                                                 <div>
@@ -341,7 +616,7 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="col-md-4 mb-3">
+                                        <div class="col-md-4 col-12 mb-3">
                                             <div class="d-flex align-items-center">
                                                 <div class="bg-success rounded me-2" style="width: 20px; height: 20px;"></div>
                                                 <div>
@@ -350,7 +625,7 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="col-md-4 mb-3">
+                                        <div class="col-md-4 col-12 mb-3">
                                             <div class="d-flex align-items-center">
                                                 <div class="bg-warning rounded me-2" style="width: 20px; height: 20px;"></div>
                                                 <div>
@@ -374,7 +649,7 @@
                                         <i class="fas fa-chart-bar me-2"></i>Family Member Distribution
                                     </h6>
                                     <div class="row">
-                                        <div class="col-md-6">
+                                        <div class="col-md-6 col-12 mb-3">
                                             <div class="d-flex align-items-center mb-2">
                                                 <div class="bg-primary rounded me-2" style="width: 20px; height: 20px;"></div>
                                                 <span class="small">Male: {{ $maleMembers }} ({{ $totalMembers > 0 ? round(($maleMembers / $totalMembers) * 100, 1) : 0 }}%)</span>
@@ -383,7 +658,7 @@
                                                 <div class="progress-bar bg-primary" role="progressbar" style="width: {{ $totalMembers > 0 ? ($maleMembers / $totalMembers) * 100 : 0 }}%"></div>
                                             </div>
                                         </div>
-                                        <div class="col-md-6">
+                                        <div class="col-md-6 col-12 mb-3">
                                             <div class="d-flex align-items-center mb-2">
                                                 <div class="rounded me-2" style="width: 20px; height: 20px; background-color: #e91e63;"></div>
                                                 <span class="small">Female: {{ $femaleMembers }} ({{ $totalMembers > 0 ? round(($femaleMembers / $totalMembers) * 100, 1) : 0 }}%)</span>
@@ -394,13 +669,13 @@
                                         </div>
                                     </div>
                                     <div class="row">
-                                        <div class="col-md-6">
+                                        <div class="col-md-6 col-12 mb-2">
                                             <div class="d-flex align-items-center mb-2">
                                                 <div class="bg-warning rounded me-2" style="width: 20px; height: 20px;"></div>
                                                 <span class="small">Children: {{ $totalChildren }}</span>
                                             </div>
                                         </div>
-                                        <div class="col-md-6">
+                                        <div class="col-md-6 col-12 mb-2">
                                             <div class="d-flex align-items-center mb-2">
                                                 <div class="bg-success rounded me-2" style="width: 20px; height: 20px;"></div>
                                                 <span class="small">Adults: {{ $adultMembers }}</span>
@@ -418,7 +693,7 @@
 
     <!-- Latest Announcements + Upcoming Events lists -->
     <div class="row">
-        <div class="col-lg-6">
+        <div class="col-lg-6 col-12">
             <div class="card mb-4 border-0 shadow-sm">
                 <div class="card-header">
                     <i class="fas fa-bullhorn me-1"></i>
@@ -466,7 +741,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-lg-6">
+        <div class="col-lg-6 col-12">
             <div class="card mb-4 border-0 shadow-sm">
                 <div class="card-header">
                     <i class="fas fa-calendar-alt me-1"></i>
@@ -493,6 +768,7 @@
         </div>
     </div>
 </div>
+
 @endsection
 
 

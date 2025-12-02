@@ -333,13 +333,14 @@ function exportReport(format) {
         const [year, monthNum] = month.split('-');
         const startDate = `${year}-${monthNum}-01`;
         const endDate = new Date(year, monthNum, 0).toISOString().split('T')[0];
-        const url = `/reports/export/${format}?report_type=monthly-financial&start_date=${startDate}&end_date=${endDate}&filter_type=month&month=${month}`;
+        // Get the current page URL and extract the base path
+        const currentPath = window.location.pathname;
+        const basePath = currentPath.substring(0, currentPath.indexOf('/reports/'));
+        const baseUrl = window.location.origin + basePath;
+        const url = `${baseUrl}/reports/export/${format}?report_type=monthly-financial&start_date=${startDate}&end_date=${endDate}&filter_type=month&month=${month}`;
         
-        if (format === 'pdf') {
-            window.open(url, '_blank');
-        } else {
-            window.location.href = url;
-        }
+        // Force download - server will send Content-Disposition header
+        window.location.href = url;
     }
 }
 </script>

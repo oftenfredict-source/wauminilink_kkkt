@@ -114,8 +114,12 @@
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" id="navbarDropdown" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="fas fa-user fa-fw"></i></a>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                        <li><a class="dropdown-item" href="#!">Settings</a></li>
-                        <li><a class="dropdown-item" href="#!">Activity Log</a></li>
+                        @if(auth()->check() && auth()->user()->isMember())
+                            <li><a class="dropdown-item" href="{{ route('member.settings') }}"><i class="fas fa-cog me-2"></i>Settings</a></li>
+                        @else
+                            <li><a class="dropdown-item" href="#!">Settings</a></li>
+                            <li><a class="dropdown-item" href="#!">Activity Log</a></li>
+                        @endif
                         <li><hr class="dropdown-divider" /></li>
                         <li>
                             <a class="dropdown-item" href="{{ route('logout') }}" 
@@ -346,7 +350,7 @@
                             <div class="modal-footer d-flex justify-content-between align-items-center">
                                 <div class="small">
                                     <span class="me-1">Powered by</span>
-                                    <a href="https://emca.tech/#" target="_blank" rel="noopener" class="emca-link fw-semibold">EmCa Technologies</a>
+                                    <a href="https://emca.tech/#" target="_blank" rel="noopener" class="emca-link fw-semibold" style="color: #940000 !important;">EmCa Technologies</a>
                                 </div>
                                 <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
                             </div>
@@ -583,7 +587,7 @@
       <div class="col-md-6 text-center text-md-end">
         <small>
           Powered by 
-          <a href="https://emca.tech/#" class="text-decoration-none text-info fw-semibold">
+          <a href="https://emca.tech/#" class="text-decoration-none fw-semibold" style="color: #940000 !important;">
             EmCa Technologies
           </a>
         </small>
@@ -1570,7 +1574,7 @@
 
                 // Footer
                 w.document.write(`<div class="footer">
-                    Printed on ${printedAt} by ${printedBy} • © ${yearNow} Waumini Link • Powered by <a href="https://emca.tech/#" target="_blank" rel="noopener">EmCa Technologies</a>
+                    Printed on ${printedAt} by ${printedBy} • © ${yearNow} Waumini Link • Powered by <a href="https://emca.tech/#" target="_blank" rel="noopener" style="color: #940000 !important;">EmCa Technologies</a>
                 </div>`);
 
                 w.document.write('</div>');
@@ -1650,7 +1654,7 @@
                 html += '<table style="width:100%;border-collapse:separate;border-spacing:0"><tbody>'+
                         row('Living with family', m.living_with_family)+row('Family relationship', m.family_relationship)+row('Tribe', (m.tribe || '') + (m.other_tribe ? (' ('+m.other_tribe+')') : ''))+
                         '</tbody></table>';
-                html += '<div style="margin-top:18px;padding-top:10px;border-top:1px dashed #ced4da;font-size:12px;color:#6c757d;text-align:center">Powered by <a href="https://emca.tech/#" target="_blank" style="color:#5b2a86;text-decoration:none">EmCa Technologies</a></div>';
+                html += '<div style="margin-top:18px;padding-top:10px;border-top:1px dashed #ced4da;font-size:12px;color:#6c757d;text-align:center">Powered by <a href="https://emca.tech/#" target="_blank" style="color:#940000;text-decoration:none">EmCa Technologies</a></div>';
                 container.innerHTML = html;
                 document.body.appendChild(container);
                 // Preload images before generating PDF

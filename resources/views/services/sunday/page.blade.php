@@ -2,6 +2,152 @@
 
 @section('content')
         <style>
+            /* Mobile Responsive Styles */
+            @media (max-width: 767.98px) {
+                .container-fluid {
+                    padding-left: 0.75rem !important;
+                    padding-right: 0.75rem !important;
+                }
+                
+                /* Page Header - Stack on mobile */
+                .page-header-mobile {
+                    flex-direction: column !important;
+                    align-items: flex-start !important;
+                    gap: 1rem;
+                }
+                
+                .page-header-mobile h2 {
+                    font-size: 1.5rem !important;
+                    margin-bottom: 0 !important;
+                }
+                
+                .page-header-mobile .btn-group-mobile {
+                    display: flex;
+                    flex-direction: column;
+                    width: 100%;
+                    gap: 0.5rem;
+                }
+                
+                .page-header-mobile .btn-group-mobile .btn {
+                    width: 100%;
+                    justify-content: center;
+                    font-size: 0.875rem;
+                }
+                
+                /* Filter Form - Stack on mobile */
+                .filter-form .row > div {
+                    margin-bottom: 0.75rem;
+                }
+                
+                .filter-form .btn {
+                    width: 100%;
+                }
+                
+                /* Table - Horizontal scroll on mobile */
+                .table-responsive {
+                    overflow-x: auto;
+                    -webkit-overflow-scrolling: touch;
+                }
+                
+                .table {
+                    font-size: 0.875rem !important;
+                    min-width: 900px;
+                }
+                
+                .table th,
+                .table td {
+                    padding: 0.5rem !important;
+                    white-space: nowrap;
+                }
+                
+                .table th:first-child,
+                .table td:first-child {
+                    position: sticky;
+                    left: 0;
+                    background-color: inherit;
+                    z-index: 1;
+                }
+                
+                /* Button groups - Stack on mobile */
+                .btn-group-sm {
+                    flex-direction: column;
+                    width: 100%;
+                }
+                
+                .btn-group-sm .btn {
+                    width: 100%;
+                    margin-bottom: 0.25rem;
+                }
+                
+                /* Cards - Better spacing on mobile */
+                .card {
+                    margin-bottom: 1rem !important;
+                }
+                
+                .card-body {
+                    padding: 0.75rem !important;
+                }
+                
+                .card-footer {
+                    flex-direction: column;
+                    gap: 0.5rem;
+                    align-items: flex-start !important;
+                }
+                
+                /* Modals - Full width on mobile */
+                .modal-dialog {
+                    margin: 0.5rem;
+                    max-width: calc(100% - 1rem);
+                }
+                
+                .modal-content {
+                    border-radius: 0.5rem !important;
+                }
+                
+                .modal-body {
+                    padding: 1rem !important;
+                }
+                
+                .modal-body .row > div {
+                    margin-bottom: 0.75rem;
+                }
+                
+                /* Badge adjustments */
+                .badge {
+                    font-size: 0.75rem;
+                    padding: 0.25rem 0.5rem;
+                }
+            }
+            
+            @media (max-width: 575.98px) {
+                .container-fluid {
+                    padding-left: 0.5rem !important;
+                    padding-right: 0.5rem !important;
+                }
+                
+                .page-header-mobile h2 {
+                    font-size: 1.25rem !important;
+                }
+                
+                .table {
+                    font-size: 0.75rem !important;
+                }
+                
+                .btn {
+                    font-size: 0.875rem !important;
+                    padding: 0.375rem 0.75rem !important;
+                }
+                
+                .btn i {
+                    margin-right: 0.25rem !important;
+                }
+                
+                .modal-dialog {
+                    margin: 0.25rem;
+                    max-width: calc(100% - 0.5rem);
+                }
+            }
+            
             .table.interactive-table tbody tr:hover { background-color: #f8f9ff; }
             .table.interactive-table tbody tr td:first-child { border-left: 4px solid #5b2a86; }
             
@@ -60,36 +206,132 @@
             .searchable-dropdown-item:last-child {
                 border-bottom: none;
             }
+            
+            /* Compact Filter Section Styles */
+            #filtersForm {
+                transition: all 0.3s ease;
+            }
+            #filtersForm .card-header {
+                transition: background-color 0.2s ease;
+            }
+            #filterBody {
+                transition: all 0.3s ease;
+            }
+            
+            /* Desktop: Always show filters, make header non-clickable */
+            @media (min-width: 769px) {
+                .filter-header {
+                    cursor: default !important;
+                    pointer-events: none !important;
+                }
+                .filter-header .fa-chevron-down {
+                    display: none !important;
+                }
+                #filterBody {
+                    display: block !important;
+                }
+            }
+            
+            /* Mobile: Collapsible */
+            @media (max-width: 768px) {
+                .filter-header {
+                    cursor: pointer !important;
+                    pointer-events: auto !important;
+                }
+                #filterBody {
+                    display: none;
+                }
+                #filterToggleIcon {
+                    font-size: 1.1rem !important;
+                    width: 24px !important;
+                    height: 24px !important;
+                    display: inline-flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    cursor: pointer !important;
+                    transition: transform 0.3s ease !important;
+                    flex-shrink: 0 !important;
+                }
+            }
         </style>
                     <div class="container-fluid px-4">
-                        <div class="d-flex flex-wrap align-items-center justify-content-between mt-4 mb-3 gap-2">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between mt-4 mb-3 gap-2 page-header-mobile">
                             <h2 class="mb-0">Church Services</h2>
-                            <div class="d-flex gap-2">
-                                <a href="{{ route('attendance.index', ['service_type' => 'sunday_service']) }}" class="btn btn-info"><i class="fas fa-users me-2"></i>Record Attendance</a>
-                                <a href="{{ route('attendance.statistics') }}" class="btn btn-outline-info"><i class="fas fa-chart-bar me-2"></i>Statistics</a>
-                                <a href="{{ route('services.sunday.export.csv', request()->query()) }}" class="btn btn-outline-success"><i class="fas fa-file-excel me-2"></i>Export CSV</a>
-                                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addServiceModal"><i class="fas fa-plus me-2"></i>Add Service</button>
+                            <div class="d-flex flex-wrap gap-2 btn-group-mobile">
+                                <a href="{{ route('attendance.index', ['service_type' => 'sunday_service']) }}" class="btn btn-info btn-sm">
+                                    <i class="fas fa-users me-2"></i><span class="d-none d-sm-inline">Record </span>Attendance
+                                </a>
+                                <a href="{{ route('attendance.statistics') }}" class="btn btn-outline-info btn-sm">
+                                    <i class="fas fa-chart-bar me-2"></i>Statistics
+                                </a>
+                                <a href="{{ route('services.sunday.export.csv', request()->query()) }}" class="btn btn-outline-success btn-sm">
+                                    <i class="fas fa-file-excel me-2"></i><span class="d-none d-sm-inline">Export </span>CSV
+                                </a>
+                                <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addServiceModal">
+                                    <i class="fas fa-plus me-2"></i>Add Service
+                                </button>
                             </div>
                         </div>
 
-                        <form method="GET" action="{{ route('services.sunday.index') }}" class="card mb-3" id="filtersForm">
-                            <div class="card-body">
-                                <div class="row g-3 align-items-end">
-                                    <div class="col-md-4">
-                                        <label class="form-label">Search</label>
-                                        <input type="text" name="search" value="{{ request('search') }}" class="form-control" placeholder="Search theme, preacher, venue">
+                        <!-- Filters & Search - Collapsible on Mobile -->
+                        <form method="GET" action="{{ route('services.sunday.index') }}" class="card mb-3 border-0 shadow-sm" id="filtersForm">
+                            <!-- Filter Header -->
+                            <div class="card-header bg-white border-bottom p-2 px-3 filter-header" onclick="toggleFilters()">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="fas fa-filter text-primary"></i>
+                                        <span class="fw-semibold">Filters</span>
+                                        @if(request('search') || request('from') || request('to'))
+                                            <span class="badge bg-primary rounded-pill" id="activeFiltersCount">{{ (request('search') ? 1 : 0) + (request('from') ? 1 : 0) + (request('to') ? 1 : 0) }}</span>
+                                        @endif
                                     </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">From</label>
-                                        <input type="date" name="from" value="{{ request('from') }}" class="form-control">
+                                    <i class="fas fa-chevron-down text-muted d-md-none" id="filterToggleIcon"></i>
+                                </div>
+                            </div>
+                            
+                            <!-- Filter Body - Collapsible on Mobile -->
+                            <div class="card-body p-3" id="filterBody">
+                                <div class="row g-2 mb-2">
+                                    <!-- Search Field - Full Width on Mobile -->
+                                    <div class="col-12 col-md-4">
+                                        <label class="form-label small text-muted mb-1">
+                                            <i class="fas fa-search me-1 text-primary"></i>Search
+                                        </label>
+                                        <input type="text" name="search" value="{{ request('search') }}" class="form-control form-control-sm" placeholder="Search theme, preacher, venue">
                                     </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">To</label>
-                                        <input type="date" name="to" value="{{ request('to') }}" class="form-control">
+                                    
+                                    <!-- Date Range - Side by Side on Mobile -->
+                                    <div class="col-6 col-md-3">
+                                        <label class="form-label small text-muted mb-1">
+                                            <i class="fas fa-calendar-alt me-1 text-info"></i>From Date
+                                        </label>
+                                        <input type="date" name="from" value="{{ request('from') }}" class="form-control form-control-sm">
                                     </div>
-                                    <div class="col-md-2 d-flex gap-2">
-                                        <button type="submit" class="btn btn-primary w-100"><i class="fas fa-filter me-2"></i>Apply</button>
+                                    <div class="col-6 col-md-3">
+                                        <label class="form-label small text-muted mb-1">
+                                            <i class="fas fa-calendar-check me-1 text-info"></i>To Date
+                                        </label>
+                                        <input type="date" name="to" value="{{ request('to') }}" class="form-control form-control-sm">
                                     </div>
+                                    
+                                    <!-- Apply Button - Full Width on Mobile -->
+                                    <div class="col-12 col-md-2">
+                                        <label class="form-label small text-muted mb-1 d-block">&nbsp;</label>
+                                        <button type="submit" class="btn btn-primary btn-sm w-100">
+                                            <i class="fas fa-filter me-1"></i>
+                                            <span class="d-none d-sm-inline">Apply</span>
+                                            <span class="d-sm-none">Filter</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Action Buttons - Compact, Full Width on Mobile -->
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <a href="{{ route('services.sunday.index') }}" class="btn btn-outline-secondary btn-sm flex-fill flex-md-grow-0">
+                                        <i class="fas fa-redo me-1"></i>
+                                        <span class="d-none d-sm-inline">Reset</span>
+                                        <span class="d-sm-none">Clear</span>
+                                    </a>
                                 </div>
                             </div>
                         </form>
@@ -157,9 +399,15 @@
                                                     </td>
                                                     <td class="text-end">
                                                         <div class="btn-group btn-group-sm" role="group">
-                                                            <button class="btn btn-outline-info" onclick="viewService({{ $service->id }})"><i class="fas fa-eye"></i></button>
-                                                            <button class="btn btn-outline-primary" onclick="openEditService({{ $service->id }})"><i class="fas fa-edit"></i></button>
-                                                            <button class="btn btn-outline-danger" onclick="confirmDeleteService({{ $service->id }})"><i class="fas fa-trash"></i></button>
+                                                            <button class="btn btn-outline-info" onclick="viewService({{ $service->id }})" title="View">
+                                                                <i class="fas fa-eye"></i>
+                                                            </button>
+                                                            <button class="btn btn-outline-primary" onclick="openEditService({{ $service->id }})" title="Edit">
+                                                                <i class="fas fa-edit"></i>
+                                                            </button>
+                                                            <button class="btn btn-outline-danger" onclick="confirmDeleteService({{ $service->id }})" title="Delete">
+                                                                <i class="fas fa-trash"></i>
+                                                            </button>
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -170,31 +418,19 @@
                                     </table>
                                 </div>
                             </div>
-                            <div class="card-footer d-flex justify-content-between align-items-center">
-                                <div class="text-muted small">Showing {{ $services->firstItem() }} to {{ $services->lastItem() }} of {{ $services->total() }} entries</div>
+                            <div class="card-footer d-flex justify-content-between align-items-center flex-wrap">
+                                <div class="text-muted small mb-2 mb-md-0">Showing {{ $services->firstItem() }} to {{ $services->lastItem() }} of {{ $services->total() }} entries</div>
                                 <div>{{ $services->withQueryString()->links() }}</div>
                             </div>
                         </div>
                     </div>
                 </main>
-                <footer class="bg-dark text-light py-4 mt-auto">
-                    <div class="container px-4">
-                        <div class="row align-items-center">
-                            <div class="col-md-6 text-center text-md-start mb-3 mb-md-0">
-                                <small>&copy; <span id="year"></span> Waumini Link — Version 1.0</small>
-                            </div>
-                            <div class="col-md-6 text-center text-md-end">
-                                <small>Powered by <a href="https://emca.tech/#" class="text-decoration-none text-info fw-semibold">EmCa Technologies</a></small>
-                            </div>
-                        </div>
-                    </div>
-                </footer>
             </div>
         </div>
 
         <!-- Add Service Modal -->
         <div class="modal fade" id="addServiceModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-lg">
+            <div class="modal-dialog modal-lg modal-dialog-scrollable">
                 <div class="modal-content border-0 shadow-lg service-modal-content" style="border-radius: 20px; overflow: hidden;">
                     <!-- Stylish Header -->
                     <div class="modal-header border-0 service-modal-header" style="background: linear-gradient(180deg, #17082d 0%, #17082ddd 100%); padding: 1.25rem 1.5rem;">
@@ -214,7 +450,7 @@
                         <form id="addServiceForm">
                             <div class="row g-3">
                                 <!-- Row 1: Service Type & Theme -->
-                                <div class="col-md-6">
+                                <div class="col-md-6 col-12">
                                     <label class="form-label service-label mb-2">
                                         <i class="fas fa-church me-1 text-primary"></i>Service Type <span class="text-danger">*</span>
                                     </label>
@@ -231,13 +467,13 @@
                                         <option value="other">Other</option>
                                     </select>
                                 </div>
-                                <div class="col-md-6" id="svc_other_service_wrapper" style="display: none;">
+                                <div class="col-md-6 col-12" id="svc_other_service_wrapper" style="display: none;">
                                     <label class="form-label service-label mb-2">
                                         <i class="fas fa-edit me-1 text-primary"></i>Specify Type
                                     </label>
                                     <input type="text" class="form-control service-input" id="svc_other_service" placeholder="Enter service type">
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-6 col-12">
                                     <label class="form-label service-label mb-2">
                                         <i class="fas fa-star me-1 text-warning"></i>Theme
                                     </label>
@@ -245,19 +481,19 @@
                                 </div>
                                 
                                 <!-- Row 2: Date & Time -->
-                                <div class="col-md-4">
+                                <div class="col-md-4 col-12">
                                     <label class="form-label service-label mb-2">
                                         <i class="fas fa-calendar-alt me-1 text-info"></i>Date <span class="text-danger">*</span>
                                     </label>
                                     <input type="date" class="form-control service-input" id="svc_date" required>
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-4 col-6">
                                     <label class="form-label service-label mb-2">
                                         <i class="fas fa-clock me-1 text-success"></i>Start Time
                                     </label>
                                     <input type="time" class="form-control service-input" id="svc_start">
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-4 col-6">
                                     <label class="form-label service-label mb-2">
                                         <i class="fas fa-clock me-1 text-danger"></i>End Time
                                     </label>
@@ -265,61 +501,34 @@
                                 </div>
                                 
                                 <!-- Row 3: Preacher & Coordinator -->
-                                <div class="col-md-6">
+                                <div class="col-md-6 col-12">
                                     <label class="form-label service-label mb-2">
                                         <i class="fas fa-user-tie me-1 text-primary"></i>Preacher
                                     </label>
-                                    <div class="searchable-select-container">
-                                        <input type="text" class="form-control service-input searchable-input" id="svc_preacher_search" placeholder="Search preacher...">
-                                        <select class="form-select" id="svc_preacher_id" style="display: none;">
-                                            <option value=""></option>
-                                            @php
-                                                $pastors = \App\Models\Member::whereHas('leadershipPositions', function($query) {
-                                                    $query->whereIn('position', ['pastor', 'assistant_pastor'])
-                                                          ->where('is_active', true)
-                                                          ->where(function($q) {
-                                                              $q->whereNull('end_date')
-                                                                 ->orWhere('end_date', '>=', now()->toDateString());
-                                                          });
-                                                })->orderBy('full_name')->get();
-                                            @endphp
-                                            @foreach($pastors as $member)
-                                                <option value="{{ $member->full_name }}" data-text="{{ $member->full_name }} ({{ $member->member_id }})">{{ $member->full_name }} ({{ $member->member_id }})</option>
-                                            @endforeach
-                                        </select>
-                                        <div class="searchable-dropdown" id="svc_preacher_dropdown" style="display: none;"></div>
-                                    </div>
+                                    <select class="form-select service-input" id="svc_preacher_id">
+                                        <option value="">-- Select Preacher or Type Custom --</option>
+                                    </select>
+                                    <input type="text" class="form-control service-input mt-2" id="svc_preacher_custom" placeholder="Or type custom preacher name..." style="display: none;">
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-6 col-12">
                                     <label class="form-label service-label mb-2">
                                         <i class="fas fa-user-cog me-1 text-primary"></i>Coordinator
                                     </label>
-                                    <div class="searchable-select-container">
-                                        <input type="text" class="form-control service-input searchable-input" id="svc_coordinator_search" placeholder="Search coordinator...">
-                                        <select class="form-select" id="svc_coordinator_id" style="display: none;">
-                                            <option value=""></option>
-                                            @foreach(\App\Models\Member::whereIn('membership_type', ['permanent', 'temporary'])->orderBy('full_name')->get() as $member)
-                                                <option value="{{ $member->id }}" data-text="{{ $member->full_name }} ({{ $member->member_id }})">{{ $member->full_name }} ({{ $member->member_id }})</option>
-                                            @endforeach
-                                        </select>
-                                        <div class="searchable-dropdown" id="svc_coordinator_dropdown" style="display: none;"></div>
-                                    </div>
+                                    <select class="form-select service-input" id="svc_coordinator_id">
+                                        <option value="">-- Select Coordinator --</option>
+                                    </select>
                                 </div>
                                 
                                 <!-- Row 4: Church Elder & Venue -->
-                                <div class="col-md-6">
+                                <div class="col-md-6 col-12">
                                     <label class="form-label service-label mb-2">
                                         <i class="fas fa-user-shield me-1 text-primary"></i>Church Elder
                                     </label>
-                                    <div class="searchable-select-container">
-                                        <input type="text" class="form-control service-input searchable-input" id="svc_church_elder_search" placeholder="Search church elder...">
-                                        <select class="form-select" id="svc_church_elder_id" style="display: none;">
-                                            <option value=""></option>
-                                        </select>
-                                        <div class="searchable-dropdown" id="svc_church_elder_dropdown" style="display: none;"></div>
-                                    </div>
+                                    <select class="form-select service-input" id="svc_church_elder_id">
+                                        <option value="">-- Select Church Elder --</option>
+                                    </select>
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-6 col-12">
                                     <label class="form-label service-label mb-2">
                                         <i class="fas fa-map-marker-alt me-1 text-danger"></i>Venue
                                     </label>
@@ -327,25 +536,25 @@
                                 </div>
                                 
                                 <!-- Row 5: Choir, Attendance & Offerings -->
-                                <div class="col-md-3">
+                                <div class="col-md-3 col-6">
                                     <label class="form-label service-label mb-2">
                                         <i class="fas fa-music me-1 text-warning"></i>Choir
                                     </label>
                                     <input type="text" class="form-control service-input" id="svc_choir" placeholder="Choir name">
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-3 col-6">
                                     <label class="form-label service-label mb-2">
                                         <i class="fas fa-users me-1 text-info"></i>Registered Members <small class="text-muted">(Optional)</small>
                                     </label>
                                     <input type="number" min="0" class="form-control service-input" id="svc_attendance" placeholder="Count">
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-3 col-6">
                                     <label class="form-label service-label mb-2">
                                         <i class="fas fa-user-plus me-1 text-primary"></i>Guests <small class="text-muted">(Optional)</small>
                                     </label>
                                     <input type="number" min="0" class="form-control service-input" id="svc_guests" placeholder="Count">
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-3 col-6">
                                     <label class="form-label service-label mb-2">
                                         <i class="fas fa-coins me-1 text-success"></i>Offerings <small class="text-muted">(Optional)</small>
                                     </label>
@@ -563,7 +772,7 @@
                         <div class="text-center text-muted py-4">Loading...</div>
                     </div>
                     <div class="modal-footer d-flex justify-content-between align-items-center">
-                        <div class="small"><span class="me-1">Powered by</span><a href="https://emca.tech/#" target="_blank" rel="noopener" class="emca-link fw-semibold">EmCa Technologies</a></div>
+                        <div class="small"><span class="me-1">Powered by</span><a href="https://emca.tech/#" target="_blank" rel="noopener" class="emca-link fw-semibold" style="color: #940000 !important;">EmCa Technologies</a></div>
                         <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
                     </div>
                 </div>
@@ -572,7 +781,7 @@
 
         <!-- Edit Modal -->
         <div class="modal fade" id="editServiceModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-lg">
+            <div class="modal-dialog modal-lg modal-dialog-scrollable">
                 <div class="modal-content border-0 shadow-lg service-modal-content" style="border-radius: 20px; overflow: hidden;">
                     <!-- Stylish Header -->
                     <div class="modal-header border-0 service-modal-header" style="background: linear-gradient(180deg, #17082d 0%, #17082ddd 100%); padding: 1.25rem 1.5rem;">
@@ -593,7 +802,7 @@
                             <input type="hidden" id="edit_id">
                             <div class="row g-3">
                                 <!-- Row 1: Service Type & Theme -->
-                                <div class="col-md-6">
+                                <div class="col-md-6 col-12">
                                     <label class="form-label service-label mb-2">
                                         <i class="fas fa-church me-1 text-primary"></i>Service Type <span class="text-danger">*</span>
                                     </label>
@@ -616,7 +825,7 @@
                                     </label>
                                     <input type="text" class="form-control service-input" id="edit_other_service" placeholder="Enter service type">
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-6 col-12">
                                     <label class="form-label service-label mb-2">
                                         <i class="fas fa-star me-1 text-warning"></i>Theme
                                     </label>
@@ -624,19 +833,19 @@
                                 </div>
                                 
                                 <!-- Row 2: Date & Time -->
-                                <div class="col-md-4">
+                                <div class="col-md-4 col-12">
                                     <label class="form-label service-label mb-2">
                                         <i class="fas fa-calendar-alt me-1 text-info"></i>Date <span class="text-danger">*</span>
                                     </label>
                                     <input type="date" class="form-control service-input" id="edit_date" required>
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-4 col-6">
                                     <label class="form-label service-label mb-2">
                                         <i class="fas fa-clock me-1 text-success"></i>Start Time
                                     </label>
                                     <input type="time" class="form-control service-input" id="edit_start">
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-4 col-6">
                                     <label class="form-label service-label mb-2">
                                         <i class="fas fa-clock me-1 text-danger"></i>End Time
                                     </label>
@@ -644,61 +853,34 @@
                                 </div>
                                 
                                 <!-- Row 3: Preacher & Coordinator -->
-                                <div class="col-md-6">
+                                <div class="col-md-6 col-12">
                                     <label class="form-label service-label mb-2">
                                         <i class="fas fa-user-tie me-1 text-primary"></i>Preacher
                                     </label>
-                                    <div class="searchable-select-container">
-                                        <input type="text" class="form-control service-input searchable-input" id="edit_preacher_search" placeholder="Search preacher...">
-                                        <select class="form-select" id="edit_preacher_id" style="display: none;">
-                                            <option value=""></option>
-                                            @php
-                                                $editPastors = \App\Models\Member::whereHas('leadershipPositions', function($query) {
-                                                    $query->whereIn('position', ['pastor', 'assistant_pastor'])
-                                                          ->where('is_active', true)
-                                                          ->where(function($q) {
-                                                              $q->whereNull('end_date')
-                                                                 ->orWhere('end_date', '>=', now()->toDateString());
-                                                          });
-                                                })->orderBy('full_name')->get();
-                                            @endphp
-                                            @foreach($editPastors as $member)
-                                                <option value="{{ $member->full_name }}" data-text="{{ $member->full_name }} ({{ $member->member_id }})">{{ $member->full_name }} ({{ $member->member_id }})</option>
-                                            @endforeach
-                                        </select>
-                                        <div class="searchable-dropdown" id="edit_preacher_dropdown" style="display: none;"></div>
-                                    </div>
+                                    <select class="form-select service-input" id="edit_preacher_id">
+                                        <option value="">-- Select Preacher or Type Custom --</option>
+                                    </select>
+                                    <input type="text" class="form-control service-input mt-2" id="edit_preacher_custom" placeholder="Or type custom preacher name..." style="display: none;">
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-6 col-12">
                                     <label class="form-label service-label mb-2">
                                         <i class="fas fa-user-cog me-1 text-primary"></i>Coordinator
                                     </label>
-                                    <div class="searchable-select-container">
-                                        <input type="text" class="form-control service-input searchable-input" id="edit_coordinator_search" placeholder="Search coordinator...">
-                                        <select class="form-select" id="edit_coordinator_id" style="display: none;">
-                                            <option value=""></option>
-                                            @foreach(\App\Models\Member::whereIn('membership_type', ['permanent', 'temporary'])->orderBy('full_name')->get() as $member)
-                                                <option value="{{ $member->id }}" data-text="{{ $member->full_name }} ({{ $member->member_id }})">{{ $member->full_name }} ({{ $member->member_id }})</option>
-                                            @endforeach
-                                        </select>
-                                        <div class="searchable-dropdown" id="edit_coordinator_dropdown" style="display: none;"></div>
-                                    </div>
+                                    <select class="form-select service-input" id="edit_coordinator_id">
+                                        <option value="">-- Select Coordinator --</option>
+                                    </select>
                                 </div>
                                 
                                 <!-- Row 4: Church Elder & Venue -->
-                                <div class="col-md-6">
+                                <div class="col-md-6 col-12">
                                     <label class="form-label service-label mb-2">
                                         <i class="fas fa-user-shield me-1 text-primary"></i>Church Elder
                                     </label>
-                                    <div class="searchable-select-container">
-                                        <input type="text" class="form-control service-input searchable-input" id="edit_church_elder_search" placeholder="Search church elder...">
-                                        <select class="form-select" id="edit_church_elder_id" style="display: none;">
-                                            <option value=""></option>
-                                        </select>
-                                        <div class="searchable-dropdown" id="edit_church_elder_dropdown" style="display: none;"></div>
-                                    </div>
+                                    <select class="form-select service-input" id="edit_church_elder_id">
+                                        <option value="">-- Select Church Elder --</option>
+                                    </select>
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-6 col-12">
                                     <label class="form-label service-label mb-2">
                                         <i class="fas fa-map-marker-alt me-1 text-danger"></i>Venue
                                     </label>
@@ -706,25 +888,25 @@
                                 </div>
                                 
                                 <!-- Row 5: Choir, Attendance & Offerings -->
-                                <div class="col-md-3">
+                                <div class="col-md-3 col-6">
                                     <label class="form-label service-label mb-2">
                                         <i class="fas fa-music me-1 text-warning"></i>Choir
                                     </label>
                                     <input type="text" class="form-control service-input" id="edit_choir" placeholder="Choir name">
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-3 col-6">
                                     <label class="form-label service-label mb-2">
                                         <i class="fas fa-users me-1 text-info"></i>Registered Members <small class="text-muted">(Optional)</small>
                                     </label>
                                     <input type="number" min="0" class="form-control service-input" id="edit_attendance" placeholder="Count">
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-3 col-6">
                                     <label class="form-label service-label mb-2">
                                         <i class="fas fa-user-plus me-1 text-primary"></i>Guests <small class="text-muted">(Optional)</small>
                                     </label>
                                     <input type="number" min="0" class="form-control service-input" id="edit_guests" placeholder="Count">
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-3 col-6">
                                     <label class="form-label service-label mb-2">
                                         <i class="fas fa-coins me-1 text-success"></i>Offerings <small class="text-muted">(Optional)</small>
                                     </label>
@@ -766,7 +948,24 @@
         <script src="{{ asset('assets/js/bootstrap.bundle.min.js') }}" crossorigin="anonymous"></script>
         <script src="{{ asset('js/scripts.js') }}"></script>
         <script>
-            document.getElementById('year').textContent = new Date().getFullYear();
+            // Wait for DOM to be fully loaded
+            (function() {
+                // Set year in footer if element exists - try immediately and also on DOMContentLoaded
+                function setYear() {
+                    const yearElement = document.getElementById('year');
+                    if (yearElement) {
+                        yearElement.textContent = new Date().getFullYear();
+                    }
+                }
+                
+                // Try immediately (in case script is at end of body)
+                setYear();
+                
+                // Also try on DOMContentLoaded (in case script is in head)
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', setYear);
+                }
+            })();
             
             // Handle dynamic "Other" service type input
             function toggleOtherServiceInput(selectId, wrapperId, inputId) {
@@ -797,16 +996,44 @@
             function initializeSearchableDropdowns() {
                 // Initialize all searchable inputs
                 document.querySelectorAll('.searchable-input').forEach(function(input) {
+                    if (!input) return;
+                    
                     const selectId = input.id.replace('_search', '_id');
                     const dropdownId = input.id.replace('_search', '_dropdown');
                     const select = document.getElementById(selectId);
                     const dropdown = document.getElementById(dropdownId);
                     
-                    // Show dropdown on focus
+                    if (!select || !dropdown) {
+                        console.warn('Select or dropdown not found for input:', input.id);
+                        return;
+                    }
+                    
+                    // Show dropdown on focus and load data if needed
+                    const isCoordinatorField = input.id.includes('coordinator');
+                    const isChurchElderField = input.id.includes('church_elder');
+                    const isPreacherField = input.id.includes('preacher');
+                    
                     input.addEventListener('focus', function() {
-                        showDropdown(input, select, dropdown);
-                        // Add class to trigger label animation
-                        input.classList.add('has-value');
+                        // Load data if select is empty and it's a dynamic field
+                        if (select.options.length <= 1) {
+                            if (isCoordinatorField) {
+                                loadCoordinators(selectId, input.id, '').then(() => {
+                                    showDropdown(input, select, dropdown);
+                                });
+                            } else if (isChurchElderField) {
+                                loadChurchElders(selectId).then(() => {
+                                    showDropdown(input, select, dropdown);
+                                });
+                            } else if (isPreacherField) {
+                                loadPreachers(selectId).then(() => {
+                                    showDropdown(input, select, dropdown);
+                                });
+                            } else {
+                                showDropdown(input, select, dropdown);
+                            }
+                        } else {
+                            showDropdown(input, select, dropdown);
+                        }
                     });
                     
                     // Hide dropdown when clicking outside
@@ -820,9 +1047,62 @@
                         }
                     });
                     
-                    // Search functionality
+                    // Show dropdown when input is focused/clicked
+                    input.addEventListener('focus', function() {
+                        if (select.options.length > 1) {
+                            showDropdown(input, select, dropdown);
+                        } else {
+                            // If no options loaded yet, load them
+                            if (isCoordinatorField) {
+                                loadCoordinators(selectId, input.id, '').then(() => {
+                                    showDropdown(input, select, dropdown);
+                                });
+                            } else if (isChurchElderField) {
+                                loadChurchElders(selectId).then(() => {
+                                    showDropdown(input, select, dropdown);
+                                });
+                            } else {
+                                showDropdown(input, select, dropdown);
+                            }
+                        }
+                    });
+                    
+                    input.addEventListener('click', function() {
+                        if (select.options.length > 1) {
+                            showDropdown(input, select, dropdown);
+                        }
+                    });
+                    
+                    // Search functionality with debouncing for API calls
+                    let searchTimeout;
+                    
                     input.addEventListener('input', function() {
-                        filterOptions(input, select, dropdown);
+                        const searchTerm = input.value.trim();
+                        
+                        // Clear previous timeout
+                        if (searchTimeout) {
+                            clearTimeout(searchTimeout);
+                        }
+                        
+                        // For coordinator and church elder fields, use API search if typing
+                        if ((isCoordinatorField || isChurchElderField) && searchTerm.length >= 2) {
+                            // Debounce API calls - wait 300ms after user stops typing
+                            searchTimeout = setTimeout(function() {
+                                if (isCoordinatorField) {
+                                    loadCoordinators(selectId, input.id, searchTerm).then(function() {
+                                        filterOptions(input, select, dropdown);
+                                    });
+                                } else if (isChurchElderField) {
+                                    loadChurchElders(selectId, input.id, searchTerm).then(function() {
+                                        filterOptions(input, select, dropdown);
+                                    });
+                                }
+                            }, 300);
+                        } else {
+                            // For other fields or when search term is too short, use local filtering
+                            filterOptions(input, select, dropdown);
+                        }
+                        
                         // Add class to trigger label animation when typing
                         if (input.value.length > 0) {
                             input.classList.add('has-value');
@@ -830,18 +1110,34 @@
                             input.classList.remove('has-value');
                             // Clear the hidden select when input is cleared
                             select.value = '';
+                            // Reload full list if coordinator or church elder
+                            if (isCoordinatorField && searchTerm.length === 0) {
+                                loadCoordinators(selectId, input.id, '');
+                            } else if (isChurchElderField && searchTerm.length === 0) {
+                                loadChurchElders(selectId);
+                            }
                         }
                     });
                     
                     // Handle selection
                     dropdown.addEventListener('click', function(e) {
-                        if (e.target.classList.contains('searchable-dropdown-item')) {
+                        if (e.target && e.target.classList && e.target.classList.contains('searchable-dropdown-item')) {
                             const option = e.target;
-                            const value = option.dataset.value;
-                            const text = option.textContent;
+                            const value = (option && option.dataset) ? option.dataset.value : '';
+                            const text = (option && option.textContent) ? option.textContent : '';
                             
                             // For preacher fields, use just the name (value), not the full text with member ID
                             const isPreacherField = input.id.includes('preacher');
+                            
+                            // Handle "other" or custom option for preachers
+                            if (isPreacherField && (value === '__other__' || value === '__custom__')) {
+                                // Clear select to allow free text
+                                select.value = '';
+                                // Keep the current input value (user's custom text)
+                                input.classList.add('has-value');
+                                dropdown.style.display = 'none';
+                                return;
+                            }
                             
                             // Update hidden select
                             select.value = value;
@@ -863,25 +1159,63 @@
             }
             
             function showDropdown(input, select, dropdown) {
+                if (!select || !dropdown) {
+                    console.error('Select or dropdown element is null');
+                    return;
+                }
+                
                 const options = Array.from(select.options).slice(1); // Skip empty option
                 dropdown.innerHTML = '';
                 
-                options.forEach(function(option) {
-                    const item = document.createElement('div');
-                    item.className = 'searchable-dropdown-item';
-                    item.dataset.value = option.value;
-                    item.textContent = option.textContent;
-                    dropdown.appendChild(item);
-                });
+                if (options.length === 0) {
+                    const noOptions = document.createElement('div');
+                    if (noOptions && dropdown) {
+                        noOptions.className = 'searchable-dropdown-item';
+                        noOptions.textContent = 'No options available. Type to search...';
+                        noOptions.style.color = '#6c757d';
+                        noOptions.style.fontStyle = 'italic';
+                        dropdown.appendChild(noOptions);
+                    }
+                } else {
+                    options.forEach(function(option) {
+                        if (!option) return;
+                        
+                        // Skip disabled options (like "no results" messages)
+                        if (option.disabled) {
+                            const item = document.createElement('div');
+                            if (item && dropdown) {
+                                item.className = 'searchable-dropdown-item';
+                                item.textContent = (option && option.textContent) ? option.textContent : '';
+                                item.style.color = '#6c757d';
+                                item.style.fontStyle = 'italic';
+                                item.style.pointerEvents = 'none';
+                                dropdown.appendChild(item);
+                            }
+                        } else {
+                            const item = document.createElement('div');
+                            if (item && dropdown) {
+                                item.className = 'searchable-dropdown-item';
+                                item.dataset.value = (option && option.value) ? option.value : '';
+                                item.textContent = (option && option.textContent) ? option.textContent : '';
+                                dropdown.appendChild(item);
+                            }
+                        }
+                    });
+                }
                 
                 dropdown.style.display = 'block';
             }
             
             function filterOptions(input, select, dropdown) {
-                const searchTerm = input.value.toLowerCase();
-                const options = Array.from(select.options).slice(1); // Skip empty option
+                if (!input || !select || !dropdown) {
+                    console.error('filterOptions: Missing required parameters');
+                    return;
+                }
+                
+                const searchTerm = (input.value || '').toLowerCase();
+                const options = Array.from(select.options || []).slice(1); // Skip empty option
                 const filteredOptions = options.filter(function(option) {
-                    return option.textContent.toLowerCase().includes(searchTerm);
+                    return option && option.textContent && option.textContent.toLowerCase().includes(searchTerm);
                 });
                 
                 dropdown.innerHTML = '';
@@ -890,36 +1224,85 @@
                 
                 if (filteredOptions.length === 0) {
                     const noResults = document.createElement('div');
-                    noResults.className = 'searchable-dropdown-item';
-                    if (isPreacherField && searchTerm.length > 0) {
-                        noResults.textContent = 'No pastor found. You can type a custom name.';
-                    } else {
-                        noResults.textContent = 'No members found';
+                    if (noResults && dropdown) {
+                        noResults.className = 'searchable-dropdown-item';
+                        if (isPreacherField && searchTerm.length > 0) {
+                            // For preacher field, allow custom input
+                            noResults.textContent = 'No pastor found. You can type a custom name.';
+                            noResults.style.color = '#6c757d';
+                            noResults.style.fontStyle = 'italic';
+                            // Add option to use custom name
+                            const customOption = document.createElement('div');
+                            if (customOption) {
+                                customOption.className = 'searchable-dropdown-item';
+                                customOption.dataset.value = '__custom__';
+                                customOption.textContent = 'Use custom name: "' + (input ? input.value : '') + '"';
+                                customOption.style.color = '#007bff';
+                                customOption.style.fontWeight = '500';
+                                customOption.addEventListener('click', function() {
+                                    // Clear select value to indicate custom input
+                                    if (select) select.value = '';
+                                    if (input) input.classList.add('has-value');
+                                    if (dropdown) dropdown.style.display = 'none';
+                                });
+                                dropdown.appendChild(customOption);
+                            }
+                        } else {
+                            noResults.textContent = 'No members found';
+                            noResults.style.color = '#6c757d';
+                            noResults.style.fontStyle = 'italic';
+                        }
+                        dropdown.appendChild(noResults);
                     }
-                    noResults.style.color = '#6c757d';
-                    noResults.style.fontStyle = 'italic';
-                    dropdown.appendChild(noResults);
                 } else {
                     filteredOptions.forEach(function(option) {
-                        const item = document.createElement('div');
-                        item.className = 'searchable-dropdown-item';
-                        item.dataset.value = option.value;
-                        item.textContent = option.textContent;
-                        dropdown.appendChild(item);
+                        if (option && option.textContent && dropdown) {
+                            const item = document.createElement('div');
+                            if (item) {
+                                item.className = 'searchable-dropdown-item';
+                                item.dataset.value = (option.value !== undefined) ? option.value : '';
+                                item.textContent = option.textContent;
+                                dropdown.appendChild(item);
+                            }
+                        }
                     });
+                    
+                    // For preacher field, if user is typing and no exact match, show option to use custom text
+                    if (isPreacherField && searchTerm.length > 0) {
+                        const exactMatch = filteredOptions.some(opt => 
+                            opt.value.toLowerCase() === searchTerm || 
+                            opt.textContent.toLowerCase() === searchTerm
+                        );
+                        if (!exactMatch) {
+                            const customOption = document.createElement('div');
+                            if (customOption && dropdown && input) {
+                                customOption.className = 'searchable-dropdown-item';
+                                customOption.dataset.value = '__custom__';
+                                customOption.textContent = 'Use custom name: "' + input.value + '"';
+                                customOption.style.color = '#007bff';
+                                customOption.style.fontWeight = '500';
+                                customOption.style.borderTop = '1px solid #dee2e6';
+                                customOption.style.marginTop = '5px';
+                                customOption.style.paddingTop = '5px';
+                                customOption.addEventListener('click', function() {
+                                    // Clear select value to indicate custom input
+                                    if (select) select.value = '';
+                                    if (input) input.classList.add('has-value');
+                                    if (dropdown) dropdown.style.display = 'none';
+                                });
+                                dropdown.appendChild(customOption);
+                            }
+                        }
+                    }
                 }
                 
                 dropdown.style.display = 'block';
             }
             
-            // Function to load church elders dynamically
-            function loadChurchElders(selectId, searchInputId) {
-                // Add cache-busting parameter to ensure fresh data
-                const url = '{{ route("services.sunday.church.elders") }}?t=' + Date.now();
-                console.log('Loading church elders from:', url);
-                
+            // Function to load coordinators into dropdown
+            function loadCoordinators(selectId) {
+                const url = '{{ route("services.sunday.coordinators") }}?t=' + Date.now();
                 const select = document.getElementById(selectId);
-                const searchInput = document.getElementById(searchInputId);
                 
                 if (!select) {
                     console.error('Select element not found:', selectId);
@@ -934,60 +1317,267 @@
                     cache: 'no-cache',
                     credentials: 'same-origin'
                 })
-                .then(r => {
-                    console.log('Response status:', r.status);
+                .then(async r => {
+                    console.log('Coordinators API response status:', r.status);
                     if (!r.ok) {
-                        return r.text().then(text => {
-                            console.error('Error response:', text);
-                            throw new Error('HTTP ' + r.status + ': ' + text);
-                        });
+                        const errorText = await r.text();
+                        console.error('Coordinators API error:', errorText);
+                        throw new Error('Failed to load coordinators: ' + r.status);
                     }
                     return r.json();
                 })
                 .then(data => {
-                    console.log('Church elders loaded:', data);
-                    if (data && data.success && data.church_elders && Array.isArray(data.church_elders)) {
-                        // Clear existing options except the first empty one
-                        select.innerHTML = '<option value=""></option>';
+                    console.log('Coordinators API data:', data);
+                    if (data && data.success && data.coordinators && Array.isArray(data.coordinators)) {
+                        // Keep the first option (-- Select Coordinator --)
+                        select.innerHTML = '<option value="">-- Select Coordinator --</option>';
                         
-                        console.log('Adding ' + data.church_elders.length + ' church elders to dropdown');
-                        
-                        if (data.church_elders.length === 0) {
-                            console.warn('No active church elders found');
+                        if (!select) {
+                            console.error('Select element is null in coordinators callback');
+                            return null;
                         }
                         
-                        // Add new church elders
-                        data.church_elders.forEach(function(elder) {
-                            const option = document.createElement('option');
-                            option.value = elder.id;
-                            option.setAttribute('data-text', elder.display_text);
-                            option.textContent = elder.display_text;
-                            select.appendChild(option);
-                            console.log('Added elder:', elder.display_text);
-                        });
-                        
-                        // Only clear the search input if not editing (for add modal)
-                        if (searchInput && selectId === 'svc_church_elder_id') {
-                            searchInput.value = '';
-                            searchInput.classList.remove('has-value');
+                        if (data.coordinators.length === 0) {
+                            const noResultsOption = document.createElement('option');
+                            if (noResultsOption) {
+                                noResultsOption.value = '';
+                                noResultsOption.disabled = true;
+                                noResultsOption.textContent = 'No members found';
+                                select.appendChild(noResultsOption);
+                            }
+                            console.warn('No coordinators found in response');
+                        } else {
+                            // Add all coordinators
+                            data.coordinators.forEach(function(coordinator) {
+                                if (coordinator && coordinator.id && coordinator.display_text) {
+                                    const option = document.createElement('option');
+                                    if (option) {
+                                        option.value = coordinator.id;
+                                        option.textContent = coordinator.display_text || 'Unknown';
+                                        select.appendChild(option);
+                                    }
+                                }
+                            });
+                            
+                            // Show message if there are more results
+                            if (data.has_more && data.total) {
+                                const moreOption = document.createElement('option');
+                                if (moreOption) {
+                                    moreOption.value = '';
+                                    moreOption.disabled = true;
+                                    moreOption.textContent = `... and ${data.total - data.coordinators.length} more members`;
+                                    moreOption.style.fontStyle = 'italic';
+                                    moreOption.style.color = '#6c757d';
+                                    select.appendChild(moreOption);
+                                }
+                            }
                         }
                         
+                        console.log('Loaded ' + data.coordinators.length + ' coordinators into dropdown');
                         return data;
                     } else {
-                        console.warn('Invalid response format:', data);
-                        // Keep existing options or show empty
-                        if (select.options.length <= 1) {
-                            console.warn('No church elders available');
-                        }
-                        return data;
+                        console.error('Invalid coordinators data format:', data);
+                        select.innerHTML = '<option value="">-- Select Coordinator --</option><option value="" disabled>Error loading members</option>';
                     }
+                    return null;
+                })
+                .catch(err => {
+                    console.error('Failed to load coordinators:', err);
+                    select.innerHTML = '<option value="">-- Select Coordinator --</option><option value="" disabled>Error loading members. Please refresh.</option>';
+                    return null;
+                });
+            }
+
+            // Function to load preachers into dropdown
+            function loadPreachers(selectId) {
+                const url = '{{ route("services.sunday.preachers") }}?t=' + Date.now();
+                const select = document.getElementById(selectId);
+                const customInputId = selectId.replace('_id', '_custom');
+                const customInput = document.getElementById(customInputId);
+                
+                if (!select) {
+                    console.error('Select element not found:', selectId);
+                    return Promise.resolve(null);
+                }
+                
+                return fetch(url, {
+                    headers: { 
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    cache: 'no-cache',
+                    credentials: 'same-origin'
+                })
+                .then(async r => {
+                    console.log('Preachers API response status:', r.status);
+                    if (!r.ok) {
+                        const errorText = await r.text();
+                        console.error('Preachers API error:', errorText);
+                        throw new Error('Failed to load preachers: ' + r.status);
+                    }
+                    return r.json();
+                })
+                .then(data => {
+                    console.log('Preachers data loaded:', data);
+                    
+                    if (!select) {
+                        console.error('Select element is null in preachers callback');
+                        return null;
+                    }
+                    
+                    if (data && data.success && data.preachers && Array.isArray(data.preachers)) {
+                        select.innerHTML = '<option value="">-- Select Preacher or Type Custom --</option>';
+                        
+                        // Add pastors
+                        if (data.preachers.length > 0) {
+                            data.preachers.forEach(function(preacher) {
+                                if (preacher && preacher.name && preacher.display_text) {
+                                    const option = document.createElement('option');
+                                    if (option) {
+                                        option.value = preacher.name;
+                                        option.textContent = preacher.display_text || preacher.name || 'Unknown';
+                                        select.appendChild(option);
+                                    }
+                                }
+                            });
+                        }
+                        
+                        // Add "Other" option at the end
+                        const otherOption = document.createElement('option');
+                        if (otherOption) {
+                            otherOption.value = '__other__';
+                            otherOption.textContent = 'Other (Type custom name)';
+                            select.appendChild(otherOption);
+                        }
+                        
+                        // Handle "Other" selection to show custom input
+                        if (select && select.parentNode) {
+                            // Remove existing listeners by cloning (avoids duplicate event listeners)
+                            const existingValue = select.value;
+                            const newSelect = select.cloneNode(true);
+                            newSelect.value = existingValue;
+                            
+                            // Replace the select element
+                            select.parentNode.replaceChild(newSelect, select);
+                            const updatedSelect = document.getElementById(selectId);
+                            
+                            if (updatedSelect) {
+                                updatedSelect.addEventListener('change', function() {
+                                    if (this.value === '__other__' && customInput) {
+                                        customInput.style.display = 'block';
+                                        customInput.value = '';
+                                    } else if (customInput) {
+                                        customInput.style.display = 'none';
+                                        customInput.value = '';
+                                    }
+                                });
+                            }
+                        } else if (select) {
+                            // Fallback: just add the listener if we can't replace
+                            select.addEventListener('change', function() {
+                                if (this.value === '__other__' && customInput) {
+                                    customInput.style.display = 'block';
+                                    customInput.value = '';
+                                } else if (customInput) {
+                                    customInput.style.display = 'none';
+                                    customInput.value = '';
+                                }
+                            });
+                        }
+                        
+                        console.log('Added ' + data.preachers.length + ' preachers to dropdown');
+                        return data;
+                    } else {
+                        console.warn('Invalid preachers data:', data);
+                        if (select) {
+                            select.innerHTML = '<option value="">-- Select Preacher or Type Custom --</option><option value="" disabled>Error loading preachers</option>';
+                        }
+                    }
+                    return null;
+                })
+                .catch(err => {
+                    console.error('Failed to load preachers:', err);
+                    if (select) {
+                        select.innerHTML = '<option value="">-- Select Preacher or Type Custom --</option><option value="" disabled>Error loading preachers. Please refresh.</option>';
+                    }
+                    return null;
+                });
+            }
+
+            // Function to load church elders into dropdown
+            function loadChurchElders(selectId) {
+                const url = '{{ route("services.sunday.church.elders") }}?t=' + Date.now();
+                const select = document.getElementById(selectId);
+                
+                if (!select) {
+                    console.error('Select element not found:', selectId);
+                    return Promise.resolve(null);
+                }
+                
+                return fetch(url, {
+                    headers: { 
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    cache: 'no-cache',
+                    credentials: 'same-origin'
+                })
+                .then(async r => {
+                    console.log('Church Elders API response status:', r.status);
+                    if (!r.ok) {
+                        const errorText = await r.text();
+                        console.error('Church Elders API error:', errorText);
+                        throw new Error('Failed to load church elders: ' + r.status);
+                    }
+                    return r.json();
+                })
+                .then(data => {
+                    console.log('Church elders API data:', data);
+                    
+                    if (!select) {
+                        console.error('Select element is null in church elders callback');
+                        return null;
+                    }
+                    
+                    if (data && data.success && data.church_elders && Array.isArray(data.church_elders)) {
+                        select.innerHTML = '<option value="">-- Select Church Elder --</option>';
+                        
+                        if (data.church_elders.length === 0) {
+                            const noResultsOption = document.createElement('option');
+                            if (noResultsOption) {
+                                noResultsOption.value = '';
+                                noResultsOption.disabled = true;
+                                noResultsOption.textContent = 'No active church elders found';
+                                noResultsOption.style.fontStyle = 'italic';
+                                noResultsOption.style.color = '#6c757d';
+                                select.appendChild(noResultsOption);
+                            }
+                            console.warn('No church elders found in response');
+                        } else {
+                            // Add all church elders
+                            data.church_elders.forEach(function(elder) {
+                                if (elder && elder.id && elder.display_text) {
+                                    const option = document.createElement('option');
+                                    if (option) {
+                                        option.value = elder.id;
+                                        option.textContent = elder.display_text || 'Unknown';
+                                        select.appendChild(option);
+                                    }
+                                }
+                            });
+                        }
+                        
+                        console.log('Loaded ' + data.church_elders.length + ' church elders into dropdown');
+                        return data;
+                    } else {
+                        console.error('Invalid church elders data format:', data);
+                        select.innerHTML = '<option value="">-- Select Church Elder --</option><option value="" disabled>Error loading church elders</option>';
+                    }
+                    return null;
                 })
                 .catch(err => {
                     console.error('Failed to load church elders:', err);
-                    // Show error message to user
-                    if (searchInput) {
-                        searchInput.placeholder = 'Error loading church elders. Please refresh the page.';
-                    }
+                    select.innerHTML = '<option value="">-- Select Church Elder --</option><option value="" disabled>Error loading church elders. Please refresh.</option>';
                     return null;
                 });
             }
@@ -998,15 +1588,23 @@
                 // Fix aria-hidden accessibility issue
                 addServiceModal.addEventListener('show.bs.modal', function() {
                     this.setAttribute('aria-hidden', 'false');
-                    console.log('Add Service modal opening, loading church elders...');
-                    loadChurchElders('svc_church_elder_id', 'svc_church_elder_search').then(() => {
-                        // After loading elders, check if date is already set and auto-populate
+                    console.log('Add Service modal opening, loading data...');
+                    // Load all dropdowns immediately so users can see options
+                    Promise.all([
+                        loadPreachers('svc_preacher_id'),
+                        loadCoordinators('svc_coordinator_id'),
+                        loadChurchElders('svc_church_elder_id')
+                    ]).then(() => {
+                        console.log('All dropdowns loaded successfully');
+                        // After loading, check if date is already set and auto-populate
                         const serviceDateInput = document.getElementById('svc_date');
                         if (serviceDateInput && serviceDateInput.value) {
                             setTimeout(() => {
                                 checkWeeklyAssignmentForDate(serviceDateInput.value);
                             }, 300);
                         }
+                    }).catch(err => {
+                        console.error('Error loading dropdowns:', err);
                     });
                 });
                 
@@ -1043,27 +1641,51 @@
                 // Fix aria-hidden accessibility issue
                 editServiceModal.addEventListener('show.bs.modal', function() {
                     this.setAttribute('aria-hidden', 'false');
-                    console.log('Edit Service modal opening, loading church elders...');
-                    loadChurchElders('edit_church_elder_id', 'edit_church_elder_search').then(() => {
-                        // After loading church elders, restore the selected value if editing
-                        if (currentEditServiceData && currentEditServiceData.church_elder_id) {
-                            const select = document.getElementById('edit_church_elder_id');
-                            const searchInput = document.getElementById('edit_church_elder_search');
-                            if (select && searchInput) {
-                                select.value = currentEditServiceData.church_elder_id;
-                                
-                                const elderOption = select.querySelector(`option[value="${currentEditServiceData.church_elder_id}"]`);
-                                if (elderOption) {
-                                    searchInput.value = elderOption.textContent;
-                                    searchInput.classList.add('has-value');
-                                } else if (currentEditServiceData.church_elder) {
-                                    // Fallback if option not found
-                                    searchInput.value = currentEditServiceData.church_elder.full_name + ' (ID: ' + currentEditServiceData.church_elder_id + ')';
-                                    searchInput.classList.add('has-value');
+                    console.log('Edit Service modal opening, loading data...');
+                    // Load all dropdowns
+                    Promise.all([
+                        loadPreachers('edit_preacher_id'),
+                        loadCoordinators('edit_coordinator_id'),
+                        loadChurchElders('edit_church_elder_id')
+                    ]).then(() => {
+                        // If editing and values exist, restore them
+                        if (currentEditServiceData) {
+                            // Restore coordinator
+                            if (currentEditServiceData.coordinator_id) {
+                                const coordinatorSelect = document.getElementById('edit_coordinator_id');
+                                if (coordinatorSelect) {
+                                    coordinatorSelect.value = currentEditServiceData.coordinator_id;
+                                }
+                            }
+                            
+                            // Restore church elder
+                            if (currentEditServiceData.church_elder_id) {
+                                const elderSelect = document.getElementById('edit_church_elder_id');
+                                if (elderSelect) {
+                                    elderSelect.value = currentEditServiceData.church_elder_id;
+                                }
+                            }
+                            
+                            // Restore preacher
+                            if (currentEditServiceData.preacher) {
+                                const preacherSelect = document.getElementById('edit_preacher_id');
+                                const preacherCustom = document.getElementById('edit_preacher_custom');
+                                if (preacherSelect) {
+                                    // Check if preacher exists in dropdown
+                                    const preacherOption = Array.from(preacherSelect.options).find(opt => opt.value === currentEditServiceData.preacher);
+                                    if (preacherOption) {
+                                        preacherSelect.value = currentEditServiceData.preacher;
+                                    } else if (preacherCustom) {
+                                        // Use custom input
+                                        preacherSelect.value = '__other__';
+                                        preacherCustom.style.display = 'block';
+                                        preacherCustom.value = currentEditServiceData.preacher;
+                                    }
                                 }
                             }
                         }
                     });
+                    
                 });
                 editServiceModal.addEventListener('shown.bs.modal', function() {
                     this.setAttribute('aria-hidden', 'false');
@@ -1224,11 +1846,13 @@
                                         
                                         // Try to create a temporary option if possible
                                         const tempOption = document.createElement('option');
-                                        tempOption.value = assignment.member_id;
-                                        tempOption.textContent = assignment.display_text;
-                                        tempOption.setAttribute('data-text', assignment.display_text);
-                                        select.appendChild(tempOption);
-                                        select.value = assignment.member_id;
+                                        if (tempOption && select && assignment) {
+                                            tempOption.value = assignment.member_id || '';
+                                            tempOption.textContent = assignment.display_text || 'Unknown';
+                                            tempOption.setAttribute('data-text', assignment.display_text || '');
+                                            select.appendChild(tempOption);
+                                            select.value = assignment.member_id || '';
+                                        }
                                         
                                         console.log('Created temporary option and set value:', assignment.display_text);
                                     }
@@ -1416,34 +2040,8 @@
                         document.getElementById('edit_start').value = (s.start_time || '');
                         document.getElementById('edit_end').value = (s.end_time || '');
                         document.getElementById('edit_theme').value = s.theme || '';
-                        document.getElementById('edit_preacher_search').value = s.preacher || '';
-                        if (s.preacher) {
-                            document.getElementById('edit_preacher_search').classList.add('has-value');
-                        }
-                        // Clear search inputs first
-                        document.getElementById('edit_coordinator_search').value = '';
-                        document.getElementById('edit_church_elder_search').value = '';
-                        document.getElementById('edit_coordinator_search').classList.remove('has-value');
-                        document.getElementById('edit_church_elder_search').classList.remove('has-value');
-                        
-                        // Set hidden select values (church elder will be set when modal shows and options are loaded)
-                        document.getElementById('edit_coordinator_id').value = s.coordinator_id || '';
-                        document.getElementById('edit_church_elder_id').value = s.church_elder_id || '';
-                        
-                        // Update coordinator search input with selected value
-                        if (s.coordinator_id) {
-                            const coordinatorOption = document.querySelector(`#edit_coordinator_id option[value="${s.coordinator_id}"]`);
-                            if (coordinatorOption) {
-                                document.getElementById('edit_coordinator_search').value = coordinatorOption.textContent;
-                                document.getElementById('edit_coordinator_search').classList.add('has-value');
-                            } else if (s.coordinator) {
-                                // Fallback: use the coordinator name from API if option not found
-                                document.getElementById('edit_coordinator_search').value = s.coordinator.full_name + ' (ID: ' + s.coordinator_id + ')';
-                                document.getElementById('edit_coordinator_search').classList.add('has-value');
-                            }
-                        }
-                        
-                        // Note: Church elder will be set in the modal show event after options are loaded
+                        // Preacher will be set after dropdown loads in modal show event
+                        // Values will be set after dropdowns load in modal show event
                         document.getElementById('edit_venue').value = s.venue || '';
                         document.getElementById('edit_attendance').value = s.attendance_count || '';
                         document.getElementById('edit_guests').value = s.guests_count || '';
@@ -1463,19 +2061,90 @@
             }
             document.getElementById('addServiceForm').addEventListener('submit', function(e){
                 e.preventDefault();
-                const fd = new FormData();
+                
+                // Validate required fields
                 const serviceDate = document.getElementById('svc_date').value;
+                const serviceType = document.getElementById('svc_service_type').value;
+                
+                if (!serviceDate || serviceDate.trim() === '') {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Validation Error',
+                        text: 'Service date is required. Please select a date.',
+                        showConfirmButton: true
+                    });
+                    return;
+                }
+                
+                if (!serviceType || serviceType.trim() === '') {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Validation Error',
+                        text: 'Service type is required. Please select a service type.',
+                        showConfirmButton: true
+                    });
+                    return;
+                }
+                
+                if (serviceType === 'other') {
+                    const otherService = document.getElementById('svc_other_service').value;
+                    if (!otherService || otherService.trim() === '') {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Validation Error',
+                            text: 'Please specify the service type when selecting "Other".',
+                            showConfirmButton: true
+                        });
+                        return;
+                    }
+                }
+                
+                const fd = new FormData();
                 console.log('Service date value:', serviceDate);
                 fd.append('service_date', serviceDate);
-                const serviceType = document.getElementById('svc_service_type').value;
+                
                 const otherService = document.getElementById('svc_other_service').value;
-                fd.append('service_type', serviceType === 'other' && otherService ? otherService : serviceType);
-                fd.append('start_time', document.getElementById('svc_start').value);
-                fd.append('end_time', document.getElementById('svc_end').value);
+                const finalServiceType = serviceType === 'other' && otherService ? otherService : serviceType;
+                fd.append('service_type', finalServiceType);
+                console.log('Service type:', finalServiceType);
+                // Handle time fields - only append if not empty
+                const startTime = document.getElementById('svc_start').value;
+                const endTime = document.getElementById('svc_end').value;
+                if (startTime && startTime.trim() !== '') {
+                    fd.append('start_time', startTime);
+                }
+                if (endTime && endTime.trim() !== '') {
+                    fd.append('end_time', endTime);
+                }
                 fd.append('theme', document.getElementById('svc_theme').value);
-                fd.append('preacher', document.getElementById('svc_preacher_search').value);
-                fd.append('coordinator_id', document.getElementById('svc_coordinator_id').value);
-                fd.append('church_elder_id', document.getElementById('svc_church_elder_id').value);
+                
+                // Handle preacher - get from select or custom input
+                const preacherSelect = document.getElementById('svc_preacher_id');
+                const preacherCustom = document.getElementById('svc_preacher_custom');
+                let preacherValue = '';
+                if (preacherSelect && preacherSelect.value) {
+                    if (preacherSelect.value === '__other__' && preacherCustom && preacherCustom.value) {
+                        preacherValue = preacherCustom.value;
+                    } else if (preacherSelect.value !== '__other__') {
+                        preacherValue = preacherSelect.value;
+                    }
+                }
+                if (preacherValue) {
+                    fd.append('preacher', preacherValue);
+                }
+                
+                // Handle coordinator_id - only append if not empty
+                const coordinatorId = document.getElementById('svc_coordinator_id').value;
+                if (coordinatorId && coordinatorId.trim() !== '') {
+                    fd.append('coordinator_id', coordinatorId);
+                }
+                
+                // Handle church_elder_id - only append if not empty
+                const churchElderId = document.getElementById('svc_church_elder_id').value;
+                if (churchElderId && churchElderId.trim() !== '') {
+                    fd.append('church_elder_id', churchElderId);
+                }
+                
                 fd.append('venue', document.getElementById('svc_venue').value);
                 // Handle empty values for optional fields
                 const attendanceValue = document.getElementById('svc_attendance').value;
@@ -1500,45 +2169,123 @@
                 console.log('CSRF Token for add:', csrfToken);
                 console.log('Form data being sent:', Object.fromEntries(fd));
                 
+                // Show loading indicator
+                const submitButton = document.querySelector('#addServiceForm button[type="submit"]');
+                const originalButtonText = submitButton ? submitButton.innerHTML : '';
+                if (submitButton) {
+                    submitButton.disabled = true;
+                    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Saving...';
+                }
+                
+                // Log all form data before sending
+                console.log('=== FORM SUBMISSION ===');
+                console.log('Service Date:', serviceDate);
+                console.log('Service Type:', finalServiceType);
+                console.log('All form data:', Object.fromEntries(fd));
+                
                 fetch(`{{ route('services.sunday.store') }}`, { 
                     method: 'POST', 
                     headers: { 
-                        'X-Requested-With': 'XMLHttpRequest'
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     }, 
                     body: fd 
                 })
-                    .then(r => {
+                    .then(async r => {
                         console.log('Response status:', r.status);
+                        console.log('Response headers:', r.headers);
+                        
+                        const contentType = r.headers.get('content-type');
+                        console.log('Content-Type:', contentType);
+                        
                         if (!r.ok) {
-                            return r.text().then(text => {
-                                console.log('Error response:', text);
-                                try {
-                                    const errorData = JSON.parse(text);
-                                    console.log('Parsed error data:', errorData);
-                                    throw new Error(`HTTP ${r.status}: ${errorData.message || r.statusText}`);
-                                } catch (e) {
-                                    throw new Error(`HTTP ${r.status}: ${r.statusText} - ${text.substring(0, 200)}`);
+                            // Try to parse as JSON first
+                            if (contentType && contentType.includes('application/json')) {
+                                const errorData = await r.json();
+                                console.log('Error response (JSON):', errorData);
+                                
+                                // Handle validation errors
+                                if (errorData.errors) {
+                                    let errorMessages = [];
+                                    for (const [field, messages] of Object.entries(errorData.errors)) {
+                                        errorMessages.push(`${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`);
+                                    }
+                                    throw new Error(errorMessages.join('\n'));
                                 }
-                            });
+                                throw new Error(errorData.message || errorData.error || `HTTP ${r.status}: ${r.statusText}`);
+                            } else {
+                                // Try to get text response
+                                const text = await r.text();
+                                console.log('Error response (text):', text);
+                                throw new Error(`HTTP ${r.status}: ${r.statusText}\n${text.substring(0, 200)}`);
+                            }
                         }
-                        return r.json();
+                        
+                        // Parse JSON response
+                        if (contentType && contentType.includes('application/json')) {
+                            return r.json();
+                        } else {
+                            const text = await r.text();
+                            console.warn('Non-JSON response:', text);
+                            throw new Error('Server returned non-JSON response');
+                        }
                     })
                     .then(res => { 
                         console.log('Response data:', res);
-                        if(res.success){ 
-                            Swal.fire({ icon:'success', title:'Saved', timer:1200, showConfirmButton:false }).then(()=>location.reload()); 
+                        if(res && res.success){ 
+                            Swal.fire({ 
+                                icon:'success', 
+                                title:'Service Scheduled!', 
+                                text: res.message || 'Sunday service has been scheduled successfully.',
+                                timer:2000, 
+                                showConfirmButton:false 
+                            }).then(()=>{
+                                // Close modal and reload
+                                const modal = bootstrap.Modal.getInstance(document.getElementById('addServiceModal'));
+                                if (modal) {
+                                    modal.hide();
+                                }
+                                location.reload();
+                            }); 
                         } else { 
-                            Swal.fire({ icon:'error', title:'Failed', text: res.message || 'Try again' }); 
+                            Swal.fire({ 
+                                icon:'error', 
+                                title:'Failed to Schedule', 
+                                text: res.message || res.error || 'Please check the form and try again.',
+                                showConfirmButton: true
+                            }); 
                         } 
                     })
                     .catch(error => {
                         console.error('Error details:', error);
+                        console.error('Error stack:', error.stack);
+                        let errorMessage = 'An error occurred. Please try again.';
+                        
+                        if (error.message) {
+                            errorMessage = error.message;
+                        } else if (typeof error === 'string') {
+                            errorMessage = error;
+                        }
+                        
                         Swal.fire({ 
                             icon:'error', 
-                            title:'Error', 
-                            text: error.message || 'Network error occurred',
-                            showConfirmButton: true
+                            title:'Error Scheduling Service', 
+                            html: '<div style="text-align: left;">' + 
+                                  '<strong>Error:</strong><br>' + 
+                                  errorMessage.replace(/\n/g, '<br>') +
+                                  '<br><br><small>Check the browser console (F12) for more details.</small>' +
+                                  '</div>',
+                            showConfirmButton: true,
+                            width: '500px'
                         });
+                    })
+                    .finally(() => {
+                        // Restore button state
+                        if (submitButton) {
+                            submitButton.disabled = false;
+                            submitButton.innerHTML = originalButtonText;
+                        }
                     });
             });
             document.getElementById('editServiceForm').addEventListener('submit', function(e){
@@ -1552,9 +2299,33 @@
                 fd.append('start_time', document.getElementById('edit_start').value);
                 fd.append('end_time', document.getElementById('edit_end').value);
                 fd.append('theme', document.getElementById('edit_theme').value);
-                fd.append('preacher', document.getElementById('edit_preacher_search').value);
-                fd.append('coordinator_id', document.getElementById('edit_coordinator_id').value);
-                fd.append('church_elder_id', document.getElementById('edit_church_elder_id').value);
+                // Handle preacher - get from select or custom input
+                const editPreacherSelect = document.getElementById('edit_preacher_id');
+                const editPreacherCustom = document.getElementById('edit_preacher_custom');
+                let editPreacherValue = '';
+                if (editPreacherSelect && editPreacherSelect.value) {
+                    if (editPreacherSelect.value === '__other__' && editPreacherCustom && editPreacherCustom.value) {
+                        editPreacherValue = editPreacherCustom.value;
+                    } else if (editPreacherSelect.value !== '__other__') {
+                        editPreacherValue = editPreacherSelect.value;
+                    }
+                }
+                if (editPreacherValue) {
+                    fd.append('preacher', editPreacherValue);
+                }
+                
+                // Handle coordinator_id - only append if not empty
+                const editCoordinatorId = document.getElementById('edit_coordinator_id').value;
+                if (editCoordinatorId && editCoordinatorId.trim() !== '') {
+                    fd.append('coordinator_id', editCoordinatorId);
+                }
+                
+                // Handle church_elder_id - only append if not empty
+                const editChurchElderId = document.getElementById('edit_church_elder_id').value;
+                if (editChurchElderId && editChurchElderId.trim() !== '') {
+                    fd.append('church_elder_id', editChurchElderId);
+                }
+                
                 fd.append('venue', document.getElementById('edit_venue').value);
                 // Handle empty values for optional fields
                 const editAttendanceValue = document.getElementById('edit_attendance').value;
@@ -1627,6 +2398,63 @@
                     .then(res => { if(res.success){ document.getElementById(`row-${id}`)?.remove(); Swal.fire({ icon:'success', title:'Deleted', timer:1200, showConfirmButton:false }); } else { Swal.fire({ icon:'error', title:'Delete failed', text: res.message || 'Try again' }); } })
                     .catch(()=> Swal.fire({ icon:'error', title:'Error', text:'Request failed.' })); } });
             }
+            
+            // Toggle Filters Function
+            function toggleFilters() {
+                // Only toggle on mobile devices
+                if (window.innerWidth > 768) {
+                    return; // Don't toggle on desktop
+                }
+                
+                const filterBody = document.getElementById('filterBody');
+                const filterIcon = document.getElementById('filterToggleIcon');
+                const filterHeader = document.querySelector('.filter-header');
+                
+                if (!filterBody || !filterIcon) return;
+                
+                // Check computed style to see if it's visible
+                const computedStyle = window.getComputedStyle(filterBody);
+                const isVisible = computedStyle.display !== 'none';
+                
+                if (isVisible) {
+                    filterBody.style.display = 'none';
+                    filterIcon.classList.remove('fa-chevron-up');
+                    filterIcon.classList.add('fa-chevron-down');
+                    if (filterHeader) filterHeader.classList.remove('active');
+                } else {
+                    filterBody.style.display = 'block';
+                    filterIcon.classList.remove('fa-chevron-down');
+                    filterIcon.classList.add('fa-chevron-up');
+                    if (filterHeader) filterHeader.classList.add('active');
+                }
+            }
+            
+            // Auto-expand filters on mobile if filters are active
+            document.addEventListener('DOMContentLoaded', function() {
+                if (window.innerWidth <= 768) {
+                    const hasActiveFilters = {{ (request('search') || request('from') || request('to')) ? 'true' : 'false' }};
+                    if (hasActiveFilters) {
+                        toggleFilters(); // Expand if filters are active
+                    }
+                }
+                
+                // Handle window resize
+                window.addEventListener('resize', function() {
+                    const filterBody = document.getElementById('filterBody');
+                    const filterIcon = document.getElementById('filterToggleIcon');
+                    
+                    if (window.innerWidth > 768) {
+                        // Always show on desktop
+                        if (filterBody && filterIcon) {
+                            filterBody.style.display = 'block';
+                            filterIcon.style.display = 'none';
+                        }
+                    } else {
+                        // On mobile, show chevrons
+                        if (filterIcon) filterIcon.style.display = 'block';
+                    }
+                });
+            });
 
         </script>
 @endsection

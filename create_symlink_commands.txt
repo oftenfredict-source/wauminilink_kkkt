@@ -1,0 +1,30 @@
+# Commands to Run on Live Server (Copy and Paste)
+
+# Step 1: Navigate to project directory
+cd /home/wauminilink/demo
+
+# Step 2: Remove old storage folder (if it exists and is NOT a symlink)
+rm -rf public/storage
+
+# Step 3: Create the symlink
+php artisan storage:link
+
+# Step 4: Set correct permissions
+chmod -R 755 storage/app/public
+chmod -R 755 public/storage
+
+# Step 5: Verify symlink was created
+ls -la public/storage
+
+# Expected output should show:
+# lrwxrwxrwx ... storage -> ../storage/app/public
+
+# Step 6: Test if file is accessible through symlink
+ls -la public/storage/member/profile-pictures/
+
+# If you see files listed, symlink is working!
+
+# Step 7: Test in browser
+# Go to: https://www.wauminilink.co.tz/demo/storage/member/profile-pictures/1LLmjUHvBMG63RybHfnnfHtkISb8p8fqP0Vvwlgn.jpg
+# Should now display the image (not 404)
+

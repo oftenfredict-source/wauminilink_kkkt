@@ -94,6 +94,9 @@ class AdminUserSeeder extends Seeder
             
             // Analytics permissions
             ['name' => 'View Analytics', 'slug' => 'analytics.view', 'category' => 'analytics', 'description' => 'View system analytics'],
+            
+            // Evangelism permissions
+            ['name' => 'Bereavement Management', 'slug' => 'evangelism.bereavement.manage', 'category' => 'evangelism', 'description' => 'Manage bereavement events and contributions'],
         ];
 
         foreach ($permissions as $permission) {

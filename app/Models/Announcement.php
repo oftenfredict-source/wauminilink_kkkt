@@ -75,7 +75,7 @@ class Announcement extends Model
             })
             ->where(function($q) use ($now) {
                 $q->whereNull('end_date')
-                  ->orWhere('end_date', '>=', $now);
+                  ->orWhere('end_date', '>', $now);
             });
     }
 
@@ -102,7 +102,7 @@ class Announcement extends Model
             return false;
         }
 
-        if ($this->end_date && $this->end_date->toDateString() < $now) {
+        if ($this->end_date && $this->end_date->toDateString() <= $now) {
             return false;
         }
 

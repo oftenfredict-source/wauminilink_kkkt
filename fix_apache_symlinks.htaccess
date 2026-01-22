@@ -1,0 +1,27 @@
+# Add this to /home/wauminilink/demo/public/.htaccess
+# Or create a new .htaccess file in /home/wauminilink/demo/public/storage/
+
+# Enable following symlinks
+Options +FollowSymLinks
+
+# Allow access to storage directory
+<Directory "storage">
+    Options +FollowSymLinks
+    AllowOverride All
+    Require all granted
+    Order allow,deny
+    Allow from all
+</Directory>
+
+# For Apache 2.4+
+<IfModule mod_authz_core.c>
+    <Directory "storage">
+        Require all granted
+    </Directory>
+</IfModule>
+
+# Ensure storage files are served correctly
+<FilesMatch "\.(jpg|jpeg|png|gif|webp)$">
+    SetHandler default-handler
+</FilesMatch>
+

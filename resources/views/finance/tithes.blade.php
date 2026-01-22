@@ -155,7 +155,7 @@
                     <table class="table table-bordered table-striped table-hover">
                         <thead>
                             <tr>
-                                <th class="d-none d-md-table-cell">Member</th>
+                                <th class="d-none d-md-table-cell">Branch</th>
                                 <th class="d-table-cell d-md-none">Tithe</th>
                                 <th>Amount</th>
                                 <th>Date</th>
@@ -172,11 +172,29 @@
                                     <td>
                                         <div class="d-flex align-items-center">
                                             <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
-                                                <i class="fas fa-user text-white small"></i>
+                                                <i class="fas fa-building text-white small"></i>
                                             </div>
                                             <div>
-                                                <div class="fw-bold">{{ $tithe->member ? $tithe->member->full_name : 'Unknown Member' }}</div>
-                                                <small class="text-muted d-none d-md-inline">{{ $tithe->member ? $tithe->member->member_id : ($tithe->member_id ? 'ID: ' . $tithe->member_id : 'N/A') }}</small>
+                                                <div class="fw-bold">
+                                                    @if($tithe->campus)
+                                                        {{ $tithe->campus->name }}
+                                                    @elseif($tithe->evangelismLeader && $tithe->evangelismLeader->getCampus())
+                                                        {{ $tithe->evangelismLeader->getCampus()->name }}
+                                                    @else
+                                                        {{ $tithe->member ? $tithe->member->full_name : 'Unknown' }}
+                                                    @endif
+                                                </div>
+                                                <small class="text-muted d-none d-md-inline">
+                                                    @if($tithe->campus && $tithe->campus->code)
+                                                        {{ $tithe->campus->code }}
+                                                    @elseif($tithe->evangelismLeader && $tithe->evangelismLeader->getCampus() && $tithe->evangelismLeader->getCampus()->code)
+                                                        {{ $tithe->evangelismLeader->getCampus()->code }}
+                                                    @elseif($tithe->member)
+                                                        {{ $tithe->member->member_id }}
+                                                    @else
+                                                        N/A
+                                                    @endif
+                                                </small>
                                                 <div class="d-md-none">
                                                     <small class="text-muted d-block">
                                                         <i class="fas fa-credit-card me-1"></i>
@@ -252,103 +270,80 @@
 </div>
 
 <!-- Add Tithe Modal -->
-<div class="modal fade" id="addTitheModal" tabindex="-1" aria-labelledby="addTitheModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content stylish-modal">
-            <form action="{{ route('finance.tithes.store') }}" method="POST">
+<div class="modal fade" id="addTitheModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ route('finance.tithes.store') }}" method="POST" id="titheForm">
                 @csrf
-                <div class="modal-header stylish-modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                    <div class="d-flex align-items-center">
-                        <div class="modal-icon-wrapper me-3">
-                            <i class="fas fa-coins"></i>
-                        </div>
-                        <div>
-                            <h5 class="modal-title text-white mb-0" id="addTitheModalLabel">
-                                <strong>Add New Tithe</strong>
-                            </h5>
-                            <small class="text-white-50">Record a member's tithe payment</small>
-                        </div>
-                    </div>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-hand-holding-usd me-2"></i>Record Aggregate Tithes</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label for="tithe_member_id" class="form-label">Member <span class="text-danger">*</span></label>
-                            <select class="form-select select2-member-modal @error('member_id') is-invalid @enderror" id="tithe_member_id" name="member_id" required>
-                                <option value="">Select Member</option>
-                                @foreach($members as $member)
-                                    <option value="{{ $member->id }}" {{ old('member_id') == $member->id ? 'selected' : '' }}>
-                                        {{ $member->full_name }} ({{ $member->member_id }})
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('member_id')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                        <div class="col-md-6">
-                            <label for="amount" class="form-label">Amount (TZS) <span class="text-danger">*</span></label>
-                            <input type="number" class="form-control @error('amount') is-invalid @enderror" id="amount" name="amount" 
-                                   value="{{ old('amount') }}" min="0" step="0.01" required>
-                            @error('amount')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                        <div class="col-md-6">
-                            <label for="tithe_date" class="form-label">Tithe Date <span class="text-danger">*</span></label>
-                            <input type="date" class="form-control @error('tithe_date') is-invalid @enderror" id="tithe_date" name="tithe_date" 
-                                   value="{{ old('tithe_date', date('Y-m-d')) }}" required>
-                            @error('tithe_date')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                        <div class="col-md-6">
-                            <label for="payment_method" class="form-label">Payment Method <span class="text-danger">*</span></label>
-                            <select class="form-select @error('payment_method') is-invalid @enderror" id="payment_method" name="payment_method" required>
-                                <option value="">Select Method</option>
-                                <option value="cash" {{ old('payment_method') == 'cash' ? 'selected' : '' }}>Cash</option>
-                                <option value="check" {{ old('payment_method') == 'check' ? 'selected' : '' }}>Check</option>
-                                <option value="bank_transfer" {{ old('payment_method') == 'bank_transfer' ? 'selected' : '' }}>Bank Transfer</option>
-                                <option value="mobile_money" {{ old('payment_method') == 'mobile_money' ? 'selected' : '' }}>Mobile Money</option>
-                            </select>
-                            @error('payment_method')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                        <div class="col-md-6" id="tithe_reference_group">
-                            <label for="reference_number" class="form-label">Reference Number</label>
-                            <input type="text" class="form-control @error('reference_number') is-invalid @enderror" id="reference_number" name="reference_number" 
-                                   value="{{ old('reference_number') }}" placeholder="e.g., Check #123, Transaction ID">
-                            @error('reference_number')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-check mt-4">
-                                <input class="form-check-input" type="checkbox" id="is_verified" name="is_verified" value="1" {{ old('is_verified') ? 'checked' : '' }}>
-                                <label class="form-check-label" for="is_verified">
-                                    Mark as verified
-                                </label>
-                            </div>
-                        </div>
-                        <div class="col-12">
-                            <label for="notes" class="form-label">Notes</label>
-                            <textarea class="form-control @error('notes') is-invalid @enderror" id="notes" name="notes" rows="3" 
-                                      placeholder="Additional notes about this tithe...">{{ old('notes') }}</textarea>
-                            @error('notes')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Note:</strong> This records the total tithe amount collected from all members. Individual member contributions are not tracked.
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Branch/Campus <span class="text-danger">*</span></label>
+                        <select name="campus_id" class="form-select @error('campus_id') is-invalid @enderror" required>
+                            <option value="">Select Branch/Campus</option>
+                            @foreach($campuses as $campus)
+                                <option value="{{ $campus->id }}" {{ old('campus_id') == $campus->id ? 'selected' : '' }}>
+                                    {{ $campus->name }} @if($campus->code)({{ $campus->code }})@endif
+                                </option>
+                            @endforeach
+                        </select>
+                        <small class="text-muted">Select the branch/campus where this tithe was collected</small>
+                        @error('campus_id')
+                            <div class="text-danger">{{ $message }}</div>
+                        @enderror
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Tithe Date <span class="text-danger">*</span></label>
+                        <input type="date" name="tithe_date" class="form-control" value="{{ old('tithe_date', date('Y-m-d')) }}" required>
+                        @error('tithe_date')
+                            <div class="text-danger">{{ $message }}</div>
+                        @enderror
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Total Amount (TZS) <span class="text-danger">*</span></label>
+                        <input type="number" name="total_amount" id="totalAmount" class="form-control" step="0.01" min="0" value="{{ old('total_amount') }}" required>
+                        <small class="text-muted">Enter the total tithe amount collected from all members</small>
+                        @error('total_amount')
+                            <div class="text-danger">{{ $message }}</div>
+                        @enderror
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Payment Method <span class="text-danger">*</span></label>
+                        <select name="payment_method" class="form-select" required>
+                            <option value="cash" {{ old('payment_method') == 'cash' ? 'selected' : '' }}>Cash</option>
+                            <option value="check" {{ old('payment_method') == 'check' ? 'selected' : '' }}>Check</option>
+                            <option value="bank_transfer" {{ old('payment_method') == 'bank_transfer' ? 'selected' : '' }}>Bank Transfer</option>
+                            <option value="mobile_money" {{ old('payment_method') == 'mobile_money' ? 'selected' : '' }}>Mobile Money</option>
+                        </select>
+                        @error('payment_method')
+                            <div class="text-danger">{{ $message }}</div>
+                        @enderror
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Reference Number</label>
+                        <input type="text" name="reference_number" class="form-control" value="{{ old('reference_number') }}" placeholder="Optional reference number">
+                        @error('reference_number')
+                            <div class="text-danger">{{ $message }}</div>
+                        @enderror
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Notes</label>
+                        <textarea name="notes" class="form-control" rows="3" placeholder="Optional notes about this tithe collection">{{ old('notes') }}</textarea>
+                        @error('notes')
+                            <div class="text-danger">{{ $message }}</div>
+                        @enderror
                     </div>
                 </div>
-                <div class="modal-footer stylish-modal-footer">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
-                        <i class="fas fa-times me-1"></i>Cancel
-                    </button>
-                    <button type="submit" class="btn btn-primary stylish-submit-btn">
-                        <i class="fas fa-save me-1"></i>Save Tithe
-                    </button>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="recordTitheBtn">Record Tithe</button>
                 </div>
             </form>
         </div>
@@ -367,8 +362,25 @@
             <div class="modal-body">
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <label class="form-label fw-bold">Member</label>
-                        <p>{{ $tithe->member ? $tithe->member->full_name : 'Unknown Member' }} ({{ $tithe->member ? $tithe->member->member_id : ($tithe->member_id ? 'ID: ' . $tithe->member_id : 'N/A') }})</p>
+                        <label class="form-label fw-bold">Branch</label>
+                        <p>
+                            @if($tithe->campus)
+                                {{ $tithe->campus->name }}
+                                @if($tithe->campus->code)
+                                    ({{ $tithe->campus->code }})
+                                @endif
+                            @elseif($tithe->evangelismLeader && $tithe->evangelismLeader->getCampus())
+                                {{ $tithe->evangelismLeader->getCampus()->name }}
+                                @if($tithe->evangelismLeader->getCampus()->code)
+                                    ({{ $tithe->evangelismLeader->getCampus()->code }})
+                                @endif
+                            @else
+                                {{ $tithe->member ? $tithe->member->full_name : 'Unknown' }}
+                                @if($tithe->member)
+                                    ({{ $tithe->member->member_id }})
+                                @endif
+                            @endif
+                        </p>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-bold">Amount</label>
@@ -572,18 +584,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     language: { noResults: function() { return 'No members found'; } }
                 });
             }
-            // Modal dropdown in Add Tithe
-            var modalEls = document.querySelectorAll('.select2-member-modal');
-            if (modalEls.length) {
-                $('.select2-member-modal').select2({
-                    placeholder: 'Search for a member...',
-                    allowClear: true,
-                    width: '100%',
-                    minimumResultsForSearch: 0,
-                    dropdownParent: $('#addTitheModal'),
-                    language: { noResults: function() { return 'No members found'; } }
-                });
-            }
+            // Modal dropdown removed - no longer needed for aggregate tithes
             return true;
         }
         return false;
@@ -610,48 +611,42 @@ document.addEventListener('DOMContentLoaded', function() {
                 language: { noResults: function() { return 'No members found'; } }
             });
         }
-        // Modal dropdown in Add Tithe
-        var modalEls = document.querySelectorAll('.select2-member-modal');
-        if (modalEls.length) {
-            $('.select2-member-modal').select2({
-                placeholder: 'Search for a member...',
-                allowClear: true,
-                width: '100%',
-                minimumResultsForSearch: 0,
-                dropdownParent: $('#addTitheModal'),
-                language: { noResults: function() { return 'No members found'; } }
-            });
-        }
+        // Modal dropdown removed - no longer needed for aggregate tithes
     }
-    // Bind Bootstrap modal event using native listener
-    var titheModal = document.getElementById('addTitheModal');
-    if (titheModal) {
-        titheModal.addEventListener('shown.bs.modal', function() {
-            // Always try init on modal show (handles late asset load)
-            initSelect2Now();
+    // Simple tithe form validation and button control
+    const totalAmountInput = document.getElementById('totalAmount');
+    const recordTitheBtn = document.getElementById('recordTitheBtn');
+    const titheForm = document.getElementById('titheForm');
+    
+    if (totalAmountInput && recordTitheBtn) {
+        // Enable/disable button based on amount
+        totalAmountInput.addEventListener('input', function() {
+            const totalAmount = parseFloat(this.value) || 0;
+            recordTitheBtn.disabled = totalAmount <= 0;
         });
-
-        // Toggle reference number visibility based on payment method
-        var methodEl = titheModal.querySelector('#payment_method');
-        var refGroup = titheModal.querySelector('#tithe_reference_group');
-        var refInput = titheModal.querySelector('#reference_number');
-        function updateTitheRefVisibility() {
-            var method = methodEl ? methodEl.value : '';
-            var hide = method === 'cash' || method === '';
-            if (refGroup) {
-                refGroup.style.display = hide ? 'none' : '';
+        
+        // Initial state
+        const totalAmount = parseFloat(totalAmountInput.value) || 0;
+        recordTitheBtn.disabled = totalAmount <= 0;
+    }
+    
+    if (titheForm) {
+        titheForm.addEventListener('submit', function(e) {
+            const totalAmount = parseFloat(totalAmountInput.value) || 0;
+            if (totalAmount <= 0) {
+                e.preventDefault();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Invalid Amount',
+                    text: 'Please enter a valid total amount greater than 0.'
+                });
+                return false;
             }
-            if (refInput) {
-                refInput.required = !hide;
-                if (hide) refInput.value = '';
-            }
-        }
-        if (methodEl) {
-            methodEl.addEventListener('change', updateTitheRefVisibility);
-        }
-        titheModal.addEventListener('shown.bs.modal', updateTitheRefVisibility);
-        // Initialize on load
-        updateTitheRefVisibility();
+            
+            // Show loading state
+            recordTitheBtn.disabled = true;
+            recordTitheBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Recording...';
+        });
     }
 });
 

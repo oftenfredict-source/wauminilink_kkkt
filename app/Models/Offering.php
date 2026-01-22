@@ -11,6 +11,8 @@ class Offering extends Model
 
     protected $fillable = [
         'member_id',
+        'campus_id',
+        'evangelism_leader_id',
         'amount',
         'offering_date',
         'offering_type',
@@ -25,7 +27,9 @@ class Offering extends Model
         'approved_by',
         'approved_at',
         'approval_notes',
-        'rejection_reason'
+        'rejection_reason',
+        'submitted_to_secretary',
+        'submitted_at'
     ];
 
     protected $casts = [
@@ -39,6 +43,16 @@ class Offering extends Model
     public function member()
     {
         return $this->belongsTo(Member::class);
+    }
+
+    public function campus()
+    {
+        return $this->belongsTo(Campus::class);
+    }
+
+    public function evangelismLeader()
+    {
+        return $this->belongsTo(User::class, 'evangelism_leader_id');
     }
 
     public function approver()

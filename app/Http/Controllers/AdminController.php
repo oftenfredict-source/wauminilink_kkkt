@@ -377,15 +377,98 @@ class AdminController extends Controller
     public function users()
     {
         $users = User::withCount('activityLogs')
-            ->whereIn('role', ['admin', 'pastor', 'secretary', 'treasurer'])
+            // Add 'evangelism_leader' and 'elder' to the list of roles to show
+            ->whereIn('role', ['admin', 'pastor', 'secretary', 'treasurer', 'evangelism_leader', 'elder'])
+            // OR include users who are members but also active leaders (backward compatibility)
+            ->orWhere(function($query) {
+                $query->where('role', 'member')
+                      ->whereHas('member.activeLeadershipPositions', function($q) {
+                          $q->whereIn('position', ['evangelism_leader', 'elder', 'deacon', 'deaconess', 'presiding_elder']);
+                      });
+            })
+            // Optimize by eager loading the member and their active leadership positions
+            ->with(['member.activeLeadershipPositions' => function($query) {
+                // Determine which positions to fetch - we'll sort them in PHP
+                $query->whereIn('position', ['evangelism_leader', 'elder', 'deacon', 'deaconess', 'presiding_elder']);
+            }])
             ->orderBy('role')
             ->orderBy('name')
             ->get()
             ->map(function ($user) {
                 $user->is_login_blocked = $user->isLoginBlocked();
                 $user->remaining_block_time = $user->getRemainingBlockTime();
+                
+                // Determine display role and leader status
+                // Default values
+                $user->display_role = ucfirst(str_replace('_', ' ', $user->role));
+                $user->is_leader_member = false;
+                $user->leader_position = null;
+                
+                // If user has specific leader role (elder/evangelism_leader), set display properly
+                if (in_array($user->role, ['elder', 'evangelism_leader'])) {
+                     $user->is_leader_member = true; // Treat as leader member for badge styling
+                     $user->leader_position = $user->role;
+                     $user->display_role = $user->role === 'evangelism_leader' ? 'Evangelism Leader' : 'Church Elder';
+                }
+                // Handle 'member' role users who are actually leaders (Legacy/Mixed accounts)
+                elseif ($user->role === 'member' && $user->member && $user->member->activeLeadershipPositions->isNotEmpty()) {
+                    // Logic remains the same for member-role leaders
+                    $positions = $user->member->activeLeadershipPositions;
+                    
+                    // Priority map
+                    $priority = [
+                        'evangelism_leader' => 10,
+                        'elder' => 20,
+                        'presiding_elder' => 15,
+                        'deacon' => 5,
+                        'deaconess' => 5
+                    ];
+                    
+                    $highestPriority = 0;
+                    $bestPosition = null;
+                    
+                    foreach ($positions as $pos) {
+                        $p = $priority[$pos->position] ?? 0;
+                        if ($p > $highestPriority) {
+                            $highestPriority = $p;
+                            $bestPosition = $pos;
+                        }
+                    }
+                    
+                    if ($bestPosition) {
+                        $user->is_leader_member = true;
+                        $user->leader_position = $bestPosition->position;
+                        // Use the nice display name if available, otherwise format the position code
+                        $user->display_role = $bestPosition->position_display ?? ucfirst(str_replace('_', ' ', $bestPosition->position));
+                    }
+                }
+                
                 return $user;
-            });
+            })
+            // Verify and deduplicate users
+            // If a member has BOTH a 'member' account and a 'leader' (elder/evangelism_leader) account,
+            // we should only show the 'leader' account (to avoid duplicates).
+            ->groupBy('member_id')
+            ->flatMap(function($groupedUsers) {
+                // If only one user for this member_id, return it
+                if ($groupedUsers->count() <= 1) {
+                    return $groupedUsers;
+                }
+                
+                // If multiple users, check if we have a specific leader account
+                $leaderAccount = $groupedUsers->first(function($u) {
+                    return in_array($u->role, ['elder', 'evangelism_leader', 'pastor', 'secretary', 'treasurer', 'admin']);
+                });
+                
+                // If we found a leader account, use that one and ignore the generic 'member' account
+                if ($leaderAccount) {
+                    return collect([$leaderAccount]);
+                }
+                
+                // Otherwise return all (fallback)
+                return $groupedUsers;
+            })
+            ->values(); // Re-index keys
 
         return view('admin.users', compact('users'));
     }
@@ -396,78 +479,81 @@ class AdminController extends Controller
      */
     public function create()
     {
-        // Get member IDs that already have user accounts with leader/admin roles
-        // Regular member accounts (role='member') don't count - they're separate
-        $membersWithUsers = User::whereNotNull('member_id')
-            ->whereIn('role', ['admin', 'pastor', 'secretary', 'treasurer'])
-            ->pluck('member_id')
-            ->toArray();
-        
-        // Debug: Get all leaders first to see what we're working with
-        $allLeaders = \App\Models\Leader::with('member')
-            ->whereIn('position', ['pastor', 'assistant_pastor', 'secretary', 'assistant_secretary', 'treasurer', 'assistant_treasurer'])
-            ->get();
-        
-        // Debug: Log for troubleshooting
-        Log::info('User creation - All leaders found', [
-            'total_leaders' => $allLeaders->count(),
-            'leaders_details' => $allLeaders->map(function($l) use ($membersWithUsers) {
-                return [
-                    'id' => $l->id,
-                    'position' => $l->position,
-                    'is_active' => $l->is_active,
-                    'member_id' => $l->member_id,
-                    'member_name' => $l->member ? $l->member->full_name : 'NO MEMBER',
-                    'has_user_account' => in_array($l->member_id, $membersWithUsers),
-                    'member_has_user' => $l->member && $l->member->user ? 'YES' : 'NO'
-                ];
-            })->toArray(),
-            'members_with_users' => $membersWithUsers
-        ]);
-        
-        // Get active leaders with their member information
-        // Only show leaders who don't already have a user account
-        // Show all active leaders regardless of end_date (admin can still create account)
-        $leaders = \App\Models\Leader::with('member')
-            ->where('is_active', true)
-            ->whereNotIn('member_id', $membersWithUsers)
-            ->whereIn('position', ['pastor', 'assistant_pastor', 'secretary', 'assistant_secretary', 'treasurer', 'assistant_treasurer'])
-            ->whereHas('member') // Ensure member relationship exists
-            ->orderBy('position')
-            ->orderBy('appointment_date', 'desc')
-            ->get()
-            ->map(function($leader) {
-                // Skip if member relationship is missing
-                if (!$leader->member) {
-                    return null;
-                }
-                
-                // Map leader position to user role
-                $role = match($leader->position) {
-                    'pastor', 'assistant_pastor' => 'pastor',
-                    'secretary', 'assistant_secretary' => 'secretary',
-                    'treasurer', 'assistant_treasurer' => 'treasurer',
-                    default => null
-                };
-                
-                return [
-                    'id' => $leader->id,
-                    'member_id' => $leader->member_id,
-                    'member_name' => $leader->member->full_name ?? 'Unknown',
-                    'member_email' => $leader->member->email ?? '',
-                    'member_phone' => $leader->member->phone_number ?? '',
-                    'position' => $leader->position,
-                    'position_display' => $leader->position_display,
-                    'role' => $role,
-                    'appointment_date' => $leader->appointment_date ? $leader->appointment_date->format('Y-m-d') : '',
-                    'end_date' => $leader->end_date ? $leader->end_date->format('Y-m-d') : null,
-                ];
-            })
-            ->filter(function($leader) {
-                // Only include positions that map to user roles and have valid data
-                return $leader !== null && $leader['role'] !== null;
-            })
-            ->values(); // Re-index array after filtering
+        // Get member IDs that already have user accounts with specific leader roles
+    // We only exclude members who ALREADY have a user account for their specific leadership role
+    // This allows a member to have a 'member' account AND an 'elder' account
+    $existingLeaderUserIds = User::whereNotNull('member_id')
+        ->whereIn('role', ['admin', 'pastor', 'secretary', 'treasurer', 'evangelism_leader', 'elder'])
+        ->pluck('member_id')
+        ->toArray();
+    
+    // Debug: Get all leaders first to see what we're working with
+    $allLeaders = \App\Models\Leader::with('member')
+        ->whereIn('position', ['pastor', 'assistant_pastor', 'secretary', 'assistant_secretary', 'treasurer', 'assistant_treasurer', 'evangelism_leader', 'elder'])
+        ->get();
+    
+    // Debug: Log for troubleshooting
+    Log::info('User creation - All leaders found', [
+        'total_leaders' => $allLeaders->count(),
+        'leaders_details' => $allLeaders->map(function($l) use ($existingLeaderUserIds) {
+            return [
+                'id' => $l->id,
+                'position' => $l->position,
+                'is_active' => $l->is_active,
+                'member_id' => $l->member_id,
+                'member_name' => $l->member ? $l->member->full_name : 'NO MEMBER',
+                'has_leader_account' => in_array($l->member_id, $existingLeaderUserIds),
+                'member_has_user' => $l->member && $l->member->user ? 'YES' : 'NO'
+            ];
+        })->toArray(),
+        'existing_leader_user_ids' => $existingLeaderUserIds
+    ]);
+    
+    // Get active leaders with their member information
+    // Only filter out if they already have a matching LEADER account
+    $leaders = \App\Models\Leader::with('member')
+        ->where('is_active', true)
+        ->whereNotIn('member_id', $existingLeaderUserIds)
+        ->whereIn('position', ['pastor', 'assistant_pastor', 'secretary', 'assistant_secretary', 'treasurer', 'assistant_treasurer', 'evangelism_leader', 'elder'])
+        ->whereHas('member') // Ensure member relationship exists
+        ->orderBy('position')
+        ->orderBy('appointment_date', 'desc')
+        ->get()
+        ->map(function($leader) {
+            // Skip if member relationship is missing
+            if (!$leader->member) {
+                return null;
+            }
+            
+            // Map leader position to user role
+            // Now mapping elders and evangelism leaders to their own roles instead of 'member'
+            $role = match($leader->position) {
+                'pastor', 'assistant_pastor' => 'pastor',
+                'secretary', 'assistant_secretary' => 'secretary',
+                'treasurer', 'assistant_treasurer' => 'treasurer',
+                'evangelism_leader' => 'evangelism_leader', // DISTINCT ROLE
+                'elder' => 'elder', // DISTINCT ROLE
+                default => null
+            };
+            
+            return [
+                'id' => $leader->id,
+                'member_id' => $leader->member_id,
+                'member_name' => $leader->member->full_name ?? 'Unknown',
+                'member_email' => $leader->member->email ?? '',
+                'member_phone' => $leader->member->phone_number ?? '',
+                'position' => $leader->position,
+                'position_display' => $leader->position_display,
+                'role' => $role,
+                'appointment_date' => $leader->appointment_date ? $leader->appointment_date->format('Y-m-d') : '',
+                'end_date' => $leader->end_date ? $leader->end_date->format('Y-m-d') : null,
+            ];
+        })
+        ->filter(function($leader) {
+            // Only include positions that map to user roles and have valid data
+            return $leader !== null && $leader['role'] !== null;
+        })
+        ->values(); // Re-index array after filtering
         
         // Debug: Log final leaders that will be shown
         Log::info('User creation - Final leaders to display', [
@@ -534,11 +620,18 @@ class AdminController extends Controller
             $userName = $validated['name'];
             $userEmail = $validated['email'];
             $phoneNumber = null;
+            $phoneNumberWarning = null;
             if (!empty($validated['phone_number'])) {
                 $phone = trim($validated['phone_number']);
                 $phone = preg_replace('/^\+255/', '', $phone);
                 $phone = ltrim($phone, '0');
                 $phoneNumber = '+255' . $phone;
+                
+                // Check if phone number already exists
+                if (User::where('phone_number', $phoneNumber)->exists()) {
+                    $phoneNumber = null;
+                    $phoneNumberWarning = "Note: The admin account was created without a phone number because this phone number is already in use by another user account.";
+                }
             }
         } else {
             // Leader creation (must be tied to a member who is a leader)
@@ -570,20 +663,16 @@ class AdminController extends Controller
             
             $leader = \App\Models\Leader::with('member')->findOrFail($validated['leader_id']);
             
-            // Verify leader doesn't already have a leader/admin user account
-            // Regular member accounts (role='member') are allowed - a person can have both
-            $existingUser = $leader->member->user;
-            if ($existingUser && in_array($existingUser->role, ['admin', 'pastor', 'secretary', 'treasurer'])) {
-                return redirect()->back()
-                    ->with('error', 'This leader already has a user account with role: ' . ucfirst($existingUser->role) . '.')
-                    ->withInput();
-            }
+
             
             // Map leader position to user role
+            // Now mapping elders and evangelism leaders to their own roles instead of 'member'
             $role = match($leader->position) {
                 'pastor', 'assistant_pastor' => 'pastor',
                 'secretary', 'assistant_secretary' => 'secretary',
                 'treasurer', 'assistant_treasurer' => 'treasurer',
+                'evangelism_leader' => 'evangelism_leader', 
+                'elder' => 'elder',
                 default => null
             };
             
@@ -597,6 +686,7 @@ class AdminController extends Controller
             $member = $leader->member;
             $memberId = $member->id;
             $userName = $member->full_name;
+            $existingUser = $member->user; // Define for validation usage
             
             // Get email from validated data
             $userEmail = $validated['email'];
@@ -648,27 +738,80 @@ class AdminController extends Controller
                 $phoneNumber = '+255' . $phone;
             }
             
-            // Validate phone number uniqueness if provided
-            // Allow same phone if it's the same member's regular account
+            // Handle phone number for leader account creation
+            // Note: Member may already have a "member" role account with this phone number
+            // Since it's the same person, we'll allow the leader account to use the same phone
+            // by temporarily removing it from the member account
+            $phoneNumberWarning = null;
+            $memberAccountPhoneToRestore = null;
+            
             if ($phoneNumber) {
-                $existingUserWithPhone = User::where('phone_number', $phoneNumber)
-                    ->where(function($query) use ($existingUser, $memberId) {
-                        // Exclude member's own regular account if it exists
-                        if ($existingUser && $existingUser->role === 'member') {
-                            $query->where('id', '!=', $existingUser->id);
+                // First, check if member already has a user account with this phone
+                if ($existingUser && $existingUser->phone_number === $phoneNumber) {
+                    // Member already has an account (likely "member" role) with this phone
+                    // Since it's the same person, we'll allow the leader account to use the phone
+                    // We'll temporarily remove it from the member account to avoid constraint violation
+                    Log::info('Member already has user account with same phone number - transferring phone to leader account', [
+                        'member_id' => $memberId,
+                        'member_name' => $member->full_name,
+                        'existing_user_id' => $existingUser->id,
+                        'existing_role' => $existingUser->role,
+                        'new_role' => $role,
+                        'phone' => $phoneNumber
+                    ]);
+                    
+                    // Store the phone to restore later if needed (though we'll use it for leader account)
+                    $memberAccountPhoneToRestore = $phoneNumber;
+                    
+                    // Temporarily remove phone from member account to allow leader account to use it
+                    // The leader account will have the phone number (more important for SMS notifications)
+                    $existingUser->phone_number = null;
+                    $existingUser->save();
+                    
+                    $phoneNumberWarning = "Note: The phone number has been transferred from the member account to the leader account. The member account ({$existingUser->role} role) no longer has a phone number, but the leader account ({$role} role) now has it for SMS notifications.";
+                } else {
+                    // Check if any OTHER user (different member) has this phone number
+                    $existingUserWithPhone = User::where('phone_number', $phoneNumber)
+                        ->where(function($q) use ($memberId, $existingUser) {
+                            // Exclude this member's accounts
+                            if ($existingUser) {
+                                $q->where('id', '!=', $existingUser->id);
+                            }
+                            // Also exclude any other accounts for this member
+                            $q->where(function($subQ) use ($memberId) {
+                                $subQ->whereNull('member_id')
+                                     ->orWhere('member_id', '!=', $memberId);
+                            });
+                        })
+                        ->first();
+                    
+                    if ($existingUserWithPhone) {
+                        $existingUserRole = $existingUserWithPhone->role;
+                        $existingUserName = $existingUserWithPhone->name;
+                        $existingMemberId = $existingUserWithPhone->member_id;
+                        
+                        // Get member name if it's a member account
+                        $memberName = $existingUserName;
+                        if ($existingMemberId) {
+                            $existingMember = \App\Models\Member::find($existingMemberId);
+                            if ($existingMember) {
+                                $memberName = $existingMember->full_name;
+                            }
                         }
-                        // Exclude if it's the same member's other account
-                        $query->where(function($q) use ($memberId) {
-                            $q->whereNull('member_id')
-                              ->orWhere('member_id', '!=', $memberId);
-                        });
-                    })
-                    ->first();
-                
-                if ($existingUserWithPhone) {
-                    return redirect()->back()
-                        ->with('error', 'This phone number is already in use by another user.')
-                        ->withInput();
+                        
+                        // Another user (different member) has this phone - set to null and continue
+                        Log::warning('Phone number already used by different member - creating leader account without phone', [
+                            'member_id' => $memberId,
+                            'member_name' => $member->full_name,
+                            'existing_user_id' => $existingUserWithPhone->id,
+                            'existing_member_name' => $memberName,
+                            'existing_role' => $existingUserRole,
+                            'phone' => $phoneNumber
+                        ]);
+                        
+                        $phoneNumber = null;
+                        $phoneNumberWarning = "Note: The leader account was created without a phone number because phone number {$member->phone_number} is already in use by {$memberName}'s account ({$existingUserRole} role). Each user account must have a unique phone number.";
+                    }
                 }
             }
         }
@@ -726,7 +869,7 @@ class AdminController extends Controller
                     ]);
                 } else {
                     $smsService = app(SmsService::class);
-                    $churchName = SettingsService::get('church_name', 'AIC Moshi Kilimanjaro');
+                    $churchName = SettingsService::get('church_name', 'KKKT Ushirika wa Longuo');
                     
                     $roleLabel = ucfirst($role);
                     $message = "Hongera {$user->name}! Akaunti yako ya {$roleLabel} imeundwa kikamilifu kwenye mfumo wa {$churchName}.\n\n";
@@ -799,9 +942,15 @@ class AdminController extends Controller
             // Silently continue if logging fails
         }
 
+        // Build success message
+        $successMessage = "User account for {$user->name} has been created successfully.";
+        if ($phoneNumberWarning) {
+            $successMessage .= " {$phoneNumberWarning}";
+        }
+        
         // Store credentials in session for SweetAlert popup
         return redirect()->route('admin.users')
-            ->with('success', "User account for {$user->name} has been created successfully.")
+            ->with('success', $successMessage)
             ->with('user_created', true)
             ->with('user_name', $user->name)
             ->with('user_email', $user->email)
@@ -810,14 +959,15 @@ class AdminController extends Controller
             ->with('sms_sent', $smsSent)
             ->with('sms_error', $smsError)
             ->with('sms_reason', $smsReason)
-            ->with('phone_number', $phoneNumber);
+            ->with('phone_number', $phoneNumber)
+            ->with('phone_warning', $phoneNumberWarning ?? null);
     }
 
     /**
      * Generate a strong random password that meets all requirements
-     * Minimum 12 characters, uppercase, lowercase, numbers, symbols
+     * Minimum 5 characters, uppercase, lowercase, numbers, symbols
      */
-    private function generateStrongPassword($length = 16)
+    private function generateStrongPassword($length = 8)
     {
         $uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
         $lowercase = 'abcdefghijklmnopqrstuvwxyz';
@@ -830,9 +980,10 @@ class AdminController extends Controller
         $password .= $numbers[random_int(0, strlen($numbers) - 1)];
         $password .= $symbols[random_int(0, strlen($symbols) - 1)];
         
-        // Fill the rest randomly from all character sets
+        // Fill the rest randomly from all character sets (minimum 5 characters total)
         $all = $uppercase . $lowercase . $numbers . $symbols;
-        for ($i = strlen($password); $i < $length; $i++) {
+        $minLength = max(5, $length); // Ensure minimum 5 characters
+        for ($i = strlen($password); $i < $minLength; $i++) {
             $password .= $all[random_int(0, strlen($all) - 1)];
         }
         
@@ -881,7 +1032,7 @@ class AdminController extends Controller
      */
     public function rolesPermissions()
     {
-        $roles = ['admin', 'pastor', 'secretary', 'treasurer'];
+        $roles = ['admin', 'pastor', 'secretary', 'evangelism_leader'];
         $permissions = Permission::orderBy('category')->orderBy('name')->get()->groupBy('category');
 
         $rolePermissions = [];
@@ -902,7 +1053,7 @@ class AdminController extends Controller
     public function updateRolePermissions(Request $request)
     {
         $request->validate([
-            'role' => 'required|in:admin,pastor,secretary,treasurer',
+            'role' => 'required|in:admin,pastor,secretary,evangelism_leader',
             'permissions' => 'array',
             'permissions.*' => 'exists:permissions,slug',
         ]);
@@ -913,29 +1064,85 @@ class AdminController extends Controller
         // Get permission IDs
         $permissionIds = Permission::whereIn('slug', $permissionSlugs)->pluck('id');
 
-        // Delete existing permissions for this role
-        DB::table('role_permissions')->where('role', $role)->delete();
+        // Retry logic for deadlock handling
+        $maxRetries = 3;
+        $retryCount = 0;
+        $retryDelay = 100; // milliseconds
 
-        // Insert new permissions
-        foreach ($permissionIds as $permissionId) {
-            DB::table('role_permissions')->insert([
-                'role' => $role,
-                'permission_id' => $permissionId,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+        while ($retryCount < $maxRetries) {
+            try {
+                DB::transaction(function () use ($role, $permissionIds) {
+                    // Delete existing permissions for this role
+                    DB::table('role_permissions')->where('role', $role)->delete();
+
+                    // Prepare batch insert data
+                    $insertData = [];
+                    $now = now();
+                    foreach ($permissionIds as $permissionId) {
+                        $insertData[] = [
+                            'role' => $role,
+                            'permission_id' => $permissionId,
+                            'created_at' => $now,
+                            'updated_at' => $now,
+                        ];
+                    }
+
+                    // Batch insert all permissions at once (more efficient and reduces lock time)
+                    if (!empty($insertData)) {
+                        DB::table('role_permissions')->insert($insertData);
+                    }
+                }, 5); // 5 attempts for the transaction itself
+
+                // If we get here, the transaction succeeded
+                break;
+
+            } catch (\Illuminate\Database\QueryException $e) {
+                // Check if it's a deadlock error
+                // MySQL deadlock: SQLSTATE[40001] with error code 1213
+                // Also check for "Deadlock" in the message
+                $isDeadlock = $e->getCode() == 40001 || 
+                              str_contains($e->getMessage(), 'Deadlock') ||
+                              str_contains($e->getMessage(), '1213');
+                
+                if ($isDeadlock) {
+                    $retryCount++;
+                    
+                    if ($retryCount >= $maxRetries) {
+                        Log::error('Deadlock retry limit exceeded in updateRolePermissions', [
+                            'role' => $role,
+                            'retry_count' => $retryCount,
+                            'error' => $e->getMessage(),
+                            'error_code' => $e->getCode(),
+                        ]);
+                        
+                        return back()->with('error', 'Failed to update permissions due to a database conflict. Please try again in a moment.');
+                    }
+                    
+                    // Wait before retrying (exponential backoff)
+                    usleep($retryDelay * 1000 * $retryCount);
+                    continue;
+                }
+                
+                // If it's not a deadlock, re-throw the exception
+                throw $e;
+            }
         }
 
         // Log this activity
-        ActivityLog::create([
-            'user_id' => Auth::id(),
-            'action' => 'update',
-            'description' => "Updated permissions for role: {$role}",
-            'ip_address' => $request->ip(),
-            'user_agent' => $request->userAgent(),
-            'route' => $request->route()->getName(),
-            'method' => $request->method(),
-        ]);
+        try {
+            ActivityLog::create([
+                'user_id' => Auth::id(),
+                'action' => 'update',
+                'description' => "Updated permissions for role: {$role}",
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+                'route' => $request->route()->getName(),
+                'method' => $request->method(),
+            ]);
+        } catch (\Exception $e) {
+            // Silently continue if logging fails
+            Log::warning('Failed to log role permissions update: ' . $e->getMessage());
+        }
 
         return back()->with('success', "Permissions updated successfully for {$role} role.");
     }
@@ -996,7 +1203,7 @@ class AdminController extends Controller
                         ]);
                     } else {
                         $smsService = app(SmsService::class);
-                        $churchName = SettingsService::get('church_name', 'AIC Moshi Kilimanjaro');
+                        $churchName = SettingsService::get('church_name', 'KKKT Ushirika wa Longuo');
                         
                         $roleLabel = ucfirst($user->role);
                         $message = "Shalom {$user->name}, nenosiri lako jipya la akaunti yako ya {$roleLabel} ni: {$newPassword}.\n\n";

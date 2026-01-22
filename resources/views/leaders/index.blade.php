@@ -54,9 +54,33 @@
     
     /* Mobile Responsive Styles for Leaders Page */
     @media (max-width: 768px) {
+        /* CRITICAL: Remove sidebar padding on mobile - fixes left gap issue */
+        #layoutSidenav_content {
+            padding-left: 0 !important;
+            margin-left: 0 !important;
+            width: 100% !important;
+            max-width: 100vw !important;
+        }
+        
+        #layoutSidenav_content main {
+            padding-left: 0 !important;
+            margin-left: 0 !important;
+            width: 100% !important;
+        }
+        
         .container-fluid {
-            padding-left: 0.75rem !important;
-            padding-right: 0.75rem !important;
+            padding-left: 15px !important;
+            padding-right: 15px !important;
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+        
+        .row {
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+            width: 100% !important;
         }
         
         /* Actions card improvements */
@@ -365,12 +389,12 @@
     }
 </style>
 
-<div class="container-fluid px-4">
+<div class="container-fluid">
     <!-- Page Title and Quick Actions - Compact Collapsible -->
     <div class="card border-0 shadow-sm mb-3 actions-card">
         <div class="card-header bg-white border-bottom p-2 px-3 d-flex align-items-center justify-content-between actions-header" onclick="toggleActions()">
             <div class="d-flex align-items-center gap-2">
-                <h1 class="mb-0 mt-2" style="font-size: 1.5rem;">Church Leadership</h1>
+                <h1 class="mb-0 mt-2" style="font-size: 1.5rem;">{{ autoTranslate('Church Leadership') }}</h1>
             </div>
             <div class="d-flex align-items-center gap-2">
                 <i class="fas fa-chevron-down text-muted d-md-none" id="actionsToggleIcon"></i>
@@ -380,24 +404,24 @@
             <div class="d-flex flex-wrap gap-2">
                 <a href="{{ route('weekly-assignments.index') }}" class="btn btn-warning btn-sm">
                     <i class="fas fa-calendar-week"></i>
-                    <span class="d-none d-sm-inline">Weekly Assignments</span>
-                    <span class="d-sm-none">Assignments</span>
+                    <span class="d-none d-sm-inline">{{ autoTranslate('Weekly Assignments') }}</span>
+                    <span class="d-sm-none">{{ autoTranslate('Assignments') }}</span>
                 </a>
                 <a href="{{ route('leaders.reports') }}" class="btn btn-info btn-sm">
                     <i class="fas fa-chart-bar"></i>
-                    <span class="d-none d-sm-inline">Reports</span>
-                    <span class="d-sm-none">Reports</span>
+                    <span class="d-none d-sm-inline">{{ autoTranslate('Reports') }}</span>
+                    <span class="d-sm-none">{{ autoTranslate('Reports') }}</span>
                 </a>
                 <a href="{{ route('leaders.identity-cards.bulk') }}" class="btn btn-success btn-sm" target="_blank">
                     <i class="fas fa-id-card"></i>
-                    <span class="d-none d-sm-inline">All ID Cards</span>
-                    <span class="d-sm-none">ID Cards</span>
+                    <span class="d-none d-sm-inline">{{ autoTranslate('All ID Cards') }}</span>
+                    <span class="d-sm-none">{{ autoTranslate('ID Cards') }}</span>
                 </a>
                 @if(auth()->user()->canManageLeadership())
                     <a href="{{ route('leaders.create') }}" class="btn btn-primary btn-sm">
                         <i class="fas fa-plus"></i>
-                        <span class="d-none d-sm-inline">Assign Position</span>
-                        <span class="d-sm-none">Assign</span>
+                        <span class="d-none d-sm-inline">{{ autoTranslate('Assign Position') }}</span>
+                        <span class="d-sm-none">{{ autoTranslate('Assign') }}</span>
                     </a>
                 @endif
             </div>
@@ -425,7 +449,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
-                            <div class="small text-white-50">Total Active Leaders</div>
+                            <div class="small text-white-50">{{ autoTranslate('Total Active Leaders') }}</div>
                             <div class="h4">{{ $leaders->count() }}</div>
                         </div>
                         <div class="align-self-center">
@@ -440,7 +464,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
-                            <div class="small text-white-50">Pastoral Team</div>
+                            <div class="small text-white-50">{{ autoTranslate('Pastoral Team') }}</div>
                             <div class="h4">{{ $leadersByPosition->get('pastor', collect())->count() + $leadersByPosition->get('assistant_pastor', collect())->count() }}</div>
                         </div>
                         <div class="align-self-center">
@@ -455,7 +479,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
-                            <div class="small text-white-50">Ministry Leaders</div>
+                            <div class="small text-white-50">{{ autoTranslate('Ministry Leaders') }}</div>
                             <div class="h4">{{ $leadersByPosition->filter(function($group, $position) {
                                 return in_array($position, ['youth_leader', 'children_leader', 'worship_leader', 'choir_leader', 'usher_leader', 'evangelism_leader', 'prayer_leader']);
                             })->flatten()->count() }}</div>
@@ -472,7 +496,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
-                            <div class="small text-white-50">Administrative</div>
+                            <div class="small text-white-50">{{ autoTranslate('Administrative') }}</div>
                             <div class="h4">{{ $leadersByPosition->get('secretary', collect())->count() + $leadersByPosition->get('treasurer', collect())->count() + $leadersByPosition->get('elder', collect())->count() }}</div>
                         </div>
                         <div class="align-self-center">
@@ -499,7 +523,7 @@
                     </button>
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item" href="{{ route('leaders.create') }}?position={{ $position }}">
-                            <i class="fas fa-plus me-2"></i>Add {{ $positionLeaders->first()->position_display }}
+                            <i class="fas fa-plus me-2"></i>{{ autoTranslate('Add') }} {{ $positionLeaders->first()->position_display }}
                         </a></li>
                     </ul>
                 </div>
@@ -507,6 +531,7 @@
             <div class="card-body">
                 <div class="row">
                     @foreach($positionLeaders as $leader)
+                        @if($leader->member)
                         <div class="col-12 col-md-6 col-lg-4 mb-3 mb-md-3">
                             <div class="card h-100 border-start border-4 border-primary">
                                 <div class="card-body">
@@ -518,21 +543,21 @@
                                             </button>
                                             <ul class="dropdown-menu">
                                                 <li><a class="dropdown-item" href="{{ route('leaders.show', $leader) }}">
-                                                    <i class="fas fa-eye me-2"></i>View Details
+                                                    <i class="fas fa-eye me-2"></i>{{ autoTranslate('View Details') }}
                                                 </a></li>
                                                 <li><a class="dropdown-item" href="{{ route('leaders.identity-card', $leader) }}" target="_blank">
-                                                    <i class="fas fa-id-card me-2"></i>Generate ID Card
+                                                    <i class="fas fa-id-card me-2"></i>{{ autoTranslate('Generate ID Card') }}
                                                 </a></li>
                                                 @if(auth()->user()->canManageLeadership())
                                                     <li><a class="dropdown-item" href="{{ route('leaders.edit', $leader) }}">
-                                                        <i class="fas fa-edit me-2"></i>Edit
+                                                        <i class="fas fa-edit me-2"></i>{{ autoTranslate('Edit') }}
                                                     </a></li>
                                                     <li><hr class="dropdown-divider"></li>
                                                     <li>
                                                         <form action="{{ route('leaders.deactivate', $leader) }}" method="POST" class="d-inline deactivate-leader-form">
                                                             @csrf
                                                             <button type="submit" class="dropdown-item text-warning">
-                                                                <i class="fas fa-pause me-2"></i>Deactivate
+                                                                <i class="fas fa-pause me-2"></i>{{ autoTranslate('Deactivate') }}
                                                             </button>
                                                         </form>
                                                     </li>
@@ -541,7 +566,7 @@
                                                             @csrf
                                                             @method('DELETE')
                                                             <button type="submit" class="dropdown-item text-danger">
-                                                                <i class="fas fa-trash me-2"></i>Remove
+                                                                <i class="fas fa-trash me-2"></i>{{ autoTranslate('Remove') }}
                                                             </button>
                                                         </form>
                                                     </li>
@@ -554,28 +579,85 @@
                                         <i class="fas fa-id-card me-1"></i>{{ $leader->member->member_id }}
                                     </p>
                                     
+                                    @if($leader->campus)
+                                        <p class="card-text small mb-2">
+                                            <i class="fas fa-building me-1 text-info"></i>
+                                            <strong>{{ autoTranslate('Campus') }}:</strong> 
+                                            <a href="{{ route('campuses.show', $leader->campus) }}" class="text-decoration-none">
+                                                {{ $leader->campus->name }}
+                                            </a>
+                                            @if($leader->campus->is_main_campus)
+                                                <span class="badge bg-primary ms-1">{{ autoTranslate('Main') }}</span>
+                                            @else
+                                                <span class="badge bg-info ms-1">{{ autoTranslate('Branch') }}</span>
+                                            @endif
+                                        </p>
+                                    @else
+                                        <p class="card-text small mb-2 text-muted">
+                                            <i class="fas fa-building me-1"></i>
+                                            <em>{{ autoTranslate('Not assigned to a campus') }}</em>
+                                        </p>
+                                    @endif
+                                    
+                                    @if($leader->position === 'evangelism_leader' && isset($leader->assignedCampus) && $leader->assignedCampus)
+                                        <p class="card-text small mb-2">
+                                            <i class="fas fa-cross me-1 text-warning"></i>
+                                            <strong>{{ autoTranslate('Evangelism Leader for') }}:</strong> 
+                                            <a href="{{ route('campuses.show', $leader->assignedCampus) }}" class="text-decoration-none">
+                                                {{ $leader->assignedCampus->name }}
+                                            </a>
+                                            <span class="badge bg-warning text-dark ms-1">{{ autoTranslate('Assigned') }}</span>
+                                        </p>
+                                    @endif
+                                    
+                                    @if($leader->position === 'elder' && $leader->communities && $leader->communities->count() > 0)
+                                        <p class="card-text small mb-2">
+                                            <i class="fas fa-users me-1 text-success"></i>
+                                            <strong>{{ autoTranslate('Community') }}:</strong> 
+                                            @foreach($leader->communities as $community)
+                                                @if($community->campus)
+                                                    <a href="{{ route('campuses.communities.show', [$community->campus, $community]) }}" class="text-decoration-none">
+                                                        {{ $community->name }}
+                                                    </a>
+                                                @else
+                                                    {{ $community->name }}
+                                                @endif
+                                                @if(!$community->is_active)
+                                                    <span class="badge bg-secondary ms-1">{{ autoTranslate('Inactive') }}</span>
+                                                @endif
+                                                @if(!$loop->last), @endif
+                                            @endforeach
+                                            <span class="badge bg-success ms-1">{{ autoTranslate('Assigned') }}</span>
+                                        </p>
+                                    @elseif($leader->position === 'elder')
+                                        <p class="card-text small mb-2 text-muted">
+                                            <i class="fas fa-users me-1"></i>
+                                            <em>{{ autoTranslate('Not assigned to a community') }}</em>
+                                        </p>
+                                    @endif
+                                    
                                     @if($leader->position_title)
                                         <p class="card-text small mb-2">
-                                            <strong>Title:</strong> {{ $leader->position_title }}
+                                            <strong>{{ autoTranslate('Title') }}:</strong> {{ $leader->position_title }}
                                         </p>
                                     @endif
                                     
                                     <p class="card-text small mb-2">
                                         <i class="fas fa-calendar-alt me-1"></i>
-                                        Appointed: {{ $leader->appointment_date->format('M d, Y') }}
+                                        {{ autoTranslate('Appointed') }}: {{ $leader->appointment_date->format('M d, Y') }}
                                     </p>
                                     
                                     @if($leader->end_date)
                                         <p class="card-text small mb-2">
                                             <i class="fas fa-calendar-times me-1"></i>
-                                            Term Ends: {{ $leader->end_date->format('M d, Y') }}
+                                            {{ autoTranslate('Term Ends') }}: {{ $leader->end_date->format('M d, Y') }}
                                         </p>
                                     @endif
                                     
                                     @if($leader->appointed_by)
                                         <p class="card-text small mb-2">
                                             <i class="fas fa-user-check me-1"></i>
-                                            Appointed by: {{ $leader->appointed_by }}
+                                            {{ autoTranslate('Appointed by') }}: {{ $leader->appointed_by }}
                                         </p>
                                     @endif
                                     
@@ -587,12 +669,13 @@
                                     
                                     <div class="mt-2">
                                         <span class="badge bg-success">
-                                            <i class="fas fa-check-circle me-1"></i>Active
+                                            <i class="fas fa-check-circle me-1"></i>{{ autoTranslate('Active') }}
                                         </span>
                                     </div>
                                 </div>
                             </div>
                         </div>
+                        @endif
                     @endforeach
                 </div>
             </div>
@@ -603,10 +686,10 @@
         <div class="card">
             <div class="card-body text-center py-5">
                 <i class="fas fa-users fa-3x text-muted mb-3"></i>
-                <h5 class="text-muted">No Leadership Positions Assigned</h5>
-                <p class="text-muted">Start by assigning leadership positions to church members.</p>
+                <h5 class="text-muted">{{ autoTranslate('No Leadership Positions Assigned') }}</h5>
+                <p class="text-muted">{{ autoTranslate('Start by assigning leadership positions to church members.') }}</p>
                 <a href="{{ route('leaders.create') }}" class="btn btn-primary">
-                    <i class="fas fa-plus me-2"></i>Assign First Leadership Position
+                    <i class="fas fa-plus me-2"></i>{{ autoTranslate('Assign First Leadership Position') }}
                 </a>
             </div>
         </div>
@@ -619,7 +702,7 @@ document.addEventListener('DOMContentLoaded', function() {
     @if(session('success'))
         Swal.fire({
             icon: 'success',
-            title: 'Success!',
+            title: '{{ autoTranslate('Success!') }}',
             text: '{{ session('success') }}',
             timer: 3000,
             showConfirmButton: false,
@@ -633,7 +716,7 @@ document.addEventListener('DOMContentLoaded', function() {
     @if(session('error'))
         Swal.fire({
             icon: 'error',
-            title: 'Error!',
+            title: '{{ autoTranslate('Error!') }}',
             text: '{{ session('error') }}',
             timer: 4000,
             showConfirmButton: true,
@@ -651,12 +734,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const leaderName = form.closest('.card').querySelector('.card-title')?.textContent || 'this leader';
             
             Swal.fire({
-                title: 'Deactivate Leadership Position?',
-                html: `Are you sure you want to deactivate the leadership position for <strong>${leaderName}</strong>?<br><br>This will mark the position as inactive but will not delete the record.`,
+                title: '{{ autoTranslate('Deactivate Leadership Position?') }}',
+                html: `{{ autoTranslate('Are you sure you want to deactivate the leadership position for') }} <strong>${leaderName}</strong>?<br><br>{{ autoTranslate('This will mark the position as inactive but will not delete the record.') }}`,
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonText: 'Yes, deactivate it',
-                cancelButtonText: 'Cancel',
+                confirmButtonText: '{{ autoTranslate('Yes, deactivate it') }}',
+                cancelButtonText: '{{ autoTranslate('Cancel') }}',
                 confirmButtonColor: '#ffc107',
                 cancelButtonColor: '#6c757d',
                 reverseButtons: true
@@ -664,8 +747,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (result.isConfirmed) {
                     // Show loading
                     Swal.fire({
-                        title: 'Deactivating...',
-                        text: 'Please wait',
+                        title: '{{ autoTranslate('Deactivating...') }}',
+                        text: '{{ autoTranslate('Please wait') }}',
                         allowOutsideClick: false,
                         didOpen: () => {
                             Swal.showLoading();
@@ -687,12 +770,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const leaderName = form.closest('.card').querySelector('.card-title')?.textContent || 'this leader';
             
             Swal.fire({
-                title: 'Remove Leadership Position?',
-                html: `Are you sure you want to permanently remove the leadership position for <strong>${leaderName}</strong>?<br><br><span class="text-danger">This action cannot be undone!</span>`,
+                title: '{{ autoTranslate('Remove Leadership Position?') }}',
+                html: `{{ autoTranslate('Are you sure you want to permanently remove the leadership position for') }} <strong>${leaderName}</strong>?<br><br><span class="text-danger">{{ autoTranslate('This action cannot be undone!') }}</span>`,
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonText: 'Yes, remove it',
-                cancelButtonText: 'Cancel',
+                confirmButtonText: '{{ autoTranslate('Yes, remove it') }}',
+                cancelButtonText: '{{ autoTranslate('Cancel') }}',
                 confirmButtonColor: '#dc3545',
                 cancelButtonColor: '#6c757d',
                 reverseButtons: true
@@ -700,8 +783,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (result.isConfirmed) {
                     // Show loading
                     Swal.fire({
-                        title: 'Removing...',
-                        text: 'Please wait',
+                        title: '{{ autoTranslate('Removing...') }}',
+                        text: '{{ autoTranslate('Please wait') }}',
                         allowOutsideClick: false,
                         didOpen: () => {
                             Swal.showLoading();

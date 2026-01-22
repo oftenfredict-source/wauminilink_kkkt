@@ -11,6 +11,7 @@ class DeletedMember extends Model
 
     protected $fillable = [
         'member_id',
+        'campus_id',
         'member_snapshot',
         'reason',
         'deleted_at_actual',

@@ -22,12 +22,23 @@ return new class extends Migration
         // MySQL constraint names are usually the column name
         DB::statement('ALTER TABLE `sunday_services` DROP INDEX IF EXISTS `sunday_services_service_date_unique`');
         
-        // Now add the new composite unique constraint
-        Schema::table('sunday_services', function (Blueprint $table) {
-            // Add new unique constraint on service_date + service_type combination
-            // This allows multiple service types on the same date
-            $table->unique(['service_date', 'service_type'], 'unique_service_date_type');
-        });
+        // Check if the new unique constraint already exists
+        $constraintExists = DB::select("
+            SELECT COUNT(*) as count 
+            FROM information_schema.table_constraints 
+            WHERE table_schema = DATABASE() 
+            AND table_name = 'sunday_services' 
+            AND constraint_name = 'unique_service_date_type'
+        ");
+        
+        // Only add the constraint if it doesn't exist
+        if ($constraintExists[0]->count == 0) {
+            Schema::table('sunday_services', function (Blueprint $table) {
+                // Add new unique constraint on service_date + service_type combination
+                // This allows multiple service types on the same date
+                $table->unique(['service_date', 'service_type'], 'unique_service_date_type');
+            });
+        }
     }
 
     /**

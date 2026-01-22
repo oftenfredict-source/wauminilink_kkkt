@@ -11,6 +11,8 @@ class Tithe extends Model
 
     protected $fillable = [
         'member_id',
+        'campus_id',
+        'evangelism_leader_id',
         'amount',
         'tithe_date',
         'payment_method',
@@ -22,20 +24,36 @@ class Tithe extends Model
         'approved_by',
         'approved_at',
         'approval_notes',
-        'rejection_reason'
+        'rejection_reason',
+        'is_aggregate',
+        'submitted_to_secretary',
+        'submitted_at'
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
         'tithe_date' => 'date',
         'is_verified' => 'boolean',
+        'is_aggregate' => 'boolean',
+        'submitted_to_secretary' => 'boolean',
         'approved_at' => 'datetime',
+        'submitted_at' => 'datetime',
     ];
 
     // Relationships
     public function member()
     {
         return $this->belongsTo(Member::class);
+    }
+
+    public function campus()
+    {
+        return $this->belongsTo(Campus::class);
+    }
+
+    public function evangelismLeader()
+    {
+        return $this->belongsTo(User::class, 'evangelism_leader_id');
     }
 
     public function approver()

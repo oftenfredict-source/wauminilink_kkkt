@@ -561,24 +561,49 @@
                             </td>
                             <td>{{ $user->email }}</td>
                             <td>
-                                @php
-                                    $roleBadgeClass = match($user->role) {
-                                        'admin' => 'badge-danger',
-                                        'pastor' => 'badge-warning',
-                                        'secretary' => 'badge-info',
-                                        'treasurer' => 'badge-secondary',
-                                        default => 'badge-secondary'
-                                    };
-                                @endphp
-                                <span class="badge {{ $roleBadgeClass }}">
-                                    {{ ucfirst($user->role) }}
-                                </span>
+                                                            @php
+                                                $badgeClass = 'badge-secondary'; // Default
+                                                
+                                                // If it's a leader-member (elder, evangelism leader, deacon via member role or explicit role)
+                                                if ($user->is_leader_member ?? false) {
+                                                    $pos = $user->leader_position;
+                                                    $badgeClass = match($pos) {
+                                                        'elder' => 'badge-dark', // Dark for elders (more visible)
+                                                        'presiding_elder' => 'badge-info',
+                                                        'evangelism_leader' => 'badge-success',
+                                                        'deacon', 'deaconess' => 'badge-warning',
+                                                        default => 'badge-info'
+                                                    };
+                                                } else {
+                                                    // Standard roles
+                                                    $badgeClass = match($user->role) {
+                                                        'admin' => 'badge-danger',
+                                                        'pastor' => 'badge-warning', // Pastors get warning (orange/yellow)
+                                                        'secretary' => 'badge-info',
+                                                        'treasurer' => 'badge-success',
+                                                        'member' => 'badge-secondary',
+                                                        'elder' => 'badge-dark', // Dark for elders (more visible)
+                                                        'evangelism_leader' => 'badge-success', // Explicit Evangelism Leader role
+                                                        default => 'badge-secondary'
+                                                    };
+                                                }
+                                                
+                                                $displayText = $user->display_role ?? ucfirst(str_replace('_', ' ', $user->role));
+                                                
+                                                $style = '';
+                                                if ($badgeClass === 'badge-dark') {
+                                                    $style = 'background-color: black; color: white;';
+                                                }
+                                            @endphp
+                                            <span class="badge {{ $badgeClass }}" style="{{ $style }}">
+                                                {{ $displayText }}
+
                             </td>
                             <td>
                                 @if($user->can_approve_finances)
                                     <span class="badge badge-success">Yes</span>
                                 @else
-                                    <span class="badge badge-secondary">No</span>
+                                    
                                 @endif
                             </td>
                             <td>
@@ -826,14 +851,47 @@ function resetPassword(userId) {
         cancelButtonText: 'Cancel',
         showLoaderOnConfirm: true,
         preConfirm: () => {
-            return fetch(`/admin/users/${userId}/reset-password`, {
+            // Construct URL using base path - route is /admin/users/{userId}/reset-password
+            const baseUrl = '{{ url("/") }}';
+            const url = `${baseUrl}/admin/users/${userId}/reset-password`;
+            console.log('Resetting password for user ID:', userId);
+            console.log('Request URL:', url);
+            
+            return fetch(url, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}'
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
                 }
             })
-            .then(response => response.json())
+            .then(async response => {
+                // Check if response is OK
+                if (!response.ok) {
+                    // Try to parse error message from JSON response
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.message || `Server error: ${response.status} ${response.statusText}`);
+                    } else {
+                        // If not JSON, it's likely an HTML error page
+                        const text = await response.text();
+                        if (response.status === 404) {
+                            throw new Error('Route not found. Please check if the route is properly configured.');
+                        } else if (response.status === 419) {
+                            throw new Error('CSRF token mismatch. Please refresh the page and try again.');
+                        } else if (response.status === 403) {
+                            throw new Error('You do not have permission to perform this action.');
+                        } else {
+                            throw new Error(`Server error: ${response.status} ${response.statusText}`);
+                        }
+                    }
+                }
+                
+                // Parse JSON response
+                return response.json();
+            })
             .then(data => {
                 if (!data.success) {
                     throw new Error(data.message || 'Failed to reset password');
@@ -961,14 +1019,47 @@ function deleteUser(userId, userName) {
         cancelButtonText: 'Cancel',
         showLoaderOnConfirm: true,
         preConfirm: () => {
-            return fetch(`/admin/users/${userId}`, {
+            // Construct URL using base path - route is /admin/users/{userId}
+            const baseUrl = '{{ url("/") }}';
+            const url = `${baseUrl}/admin/users/${userId}`;
+            console.log('Deleting user ID:', userId);
+            console.log('Request URL:', url);
+            
+            return fetch(url, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}'
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
                 }
             })
-            .then(response => response.json())
+            .then(async response => {
+                // Check if response is OK
+                if (!response.ok) {
+                    // Try to parse error message from JSON response
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.message || `Server error: ${response.status} ${response.statusText}`);
+                    } else {
+                        // If not JSON, it's likely an HTML error page
+                        const text = await response.text();
+                        if (response.status === 404) {
+                            throw new Error('Route not found. Please check if the route is properly configured.');
+                        } else if (response.status === 419) {
+                            throw new Error('CSRF token mismatch. Please refresh the page and try again.');
+                        } else if (response.status === 403) {
+                            throw new Error('You do not have permission to perform this action.');
+                        } else {
+                            throw new Error(`Server error: ${response.status} ${response.statusText}`);
+                        }
+                    }
+                }
+                
+                // Parse JSON response
+                return response.json();
+            })
             .then(data => {
                 if (!data.success) {
                     throw new Error(data.message || 'Failed to delete user');

@@ -3,13 +3,13 @@
 @section('content')
 <div class="container-fluid px-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="mt-4"><i class="fas fa-chart-line me-2"></i>Financial Dashboard</h1>
+        <h1 class="mt-4"><i class="fas fa-chart-line me-2"></i>{{ autoTranslate('Financial Dashboard') }}</h1>
         <div class="btn-group" role="group">
             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#quickAddModal">
-                <i class="fas fa-plus me-1"></i>Quick Add
+                <i class="fas fa-plus me-1"></i>{{ autoTranslate('Quick Add') }}
             </button>
             <a href="{{ route('reports.index') }}" class="btn btn-outline-primary">
-                <i class="fas fa-chart-bar me-1"></i>Reports
+                <i class="fas fa-chart-bar me-1"></i>{{ autoTranslate('Reports') }}
             </a>
         </div>
     </div>
@@ -21,7 +21,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
-                            <div class="small text-white-50">Total Income (This Month)</div>
+                            <div class="small text-white-50">{{ autoTranslate('Total Income (This Month)') }}</div>
                             <div class="h4">TZS {{ number_format($totalIncome, 0) }}</div>
                         </div>
                         <div class="d-flex align-items-center">
@@ -31,7 +31,7 @@
                 </div>
                 <div class="card-footer d-flex align-items-center justify-content-between">
                     <a class="small text-white text-decoration-none" href="{{ route('finance.tithes') }}">
-                        View Details
+                        {{ autoTranslate('View Details') }}
                     </a>
                     <div class="small text-white-50">
                         <i class="fas fa-angle-right"></i>
@@ -45,7 +45,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
-                            <div class="small text-white-50">Net Income (This Month)</div>
+                            <div class="small text-white-50">{{ autoTranslate('Net Income (This Month)') }}</div>
                             <div class="h4">TZS {{ number_format($netIncome, 0) }}</div>
                         </div>
                         <div class="d-flex align-items-center">
@@ -55,7 +55,7 @@
                 </div>
                 <div class="card-footer d-flex align-items-center justify-content-between">
                     <a class="small text-white text-decoration-none" href="{{ route('reports.income-vs-expenditure') }}">
-                        View Report
+                        {{ autoTranslate('View Report') }}
                     </a>
                     <div class="small text-white-50">
                         <i class="fas fa-angle-right"></i>
@@ -69,10 +69,10 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
-                            <div class="small text-white-50">Expenses (This Year)</div>
+                            <div class="small text-white-50">{{ autoTranslate('Expenses (This Year)') }}</div>
                             <div class="h4">TZS {{ number_format($monthlyExpenses, 0) }}</div>
                             @if(isset($currentMonthExpenses))
-                                <div class="small text-white-50 mt-1">This Month: TZS {{ number_format($currentMonthExpenses, 0) }}</div>
+                                <div class="small text-white-50 mt-1">{{ autoTranslate('This Month') }}: TZS {{ number_format($currentMonthExpenses, 0) }}</div>
                             @endif
                         </div>
                         <div class="d-flex align-items-center">
@@ -82,7 +82,7 @@
                 </div>
                 <div class="card-footer d-flex align-items-center justify-content-between">
                     <a class="small text-white text-decoration-none" href="{{ route('finance.expenses') }}">
-                        View Details
+                        {{ autoTranslate('View Details') }}
                     </a>
                     <div class="small text-white-50">
                         <i class="fas fa-angle-right"></i>
@@ -96,7 +96,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
-                            <div class="small text-white-50">Active Pledges</div>
+                            <div class="small text-white-50">{{ autoTranslate('Active Pledges') }}</div>
                             <div class="h4">{{ $activePledges->count() }}</div>
                         </div>
                         <div class="d-flex align-items-center">
@@ -106,7 +106,7 @@
                 </div>
                 <div class="card-footer d-flex align-items-center justify-content-between">
                     <a class="small text-white text-decoration-none" href="{{ route('finance.pledges') }}">
-                        View Details
+                        {{ autoTranslate('View Details') }}
                     </a>
                     <div class="small text-white-50">
                         <i class="fas fa-angle-right"></i>
@@ -122,14 +122,14 @@
             <div class="card mb-4">
                 <div class="card-header bg-primary text-white">
                     <i class="fas fa-chart-pie me-1"></i>
-                    <strong>Income Breakdown (This Month)</strong>
+                    <strong>{{ autoTranslate('Income Breakdown (This Month)') }}</strong>
                 </div>
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-3">
                             <div class="text-center">
                                 <div class="h5 text-primary">TZS {{ number_format($monthlyTithes, 0) }}</div>
-                                <div class="small text-muted">Tithes</div>
+                                <div class="small text-muted">{{ autoTranslate('Tithes') }}</div>
                                 <div class="progress mt-2" style="height: 8px;">
                                     <div class="progress-bar bg-primary" style="width: {{ $totalIncome > 0 ? ($monthlyTithes / $totalIncome) * 100 : 0 }}%"></div>
                                 </div>
@@ -138,7 +138,7 @@
                         <div class="col-md-3">
                             <div class="text-center">
                                 <div class="h5 text-success">TZS {{ number_format($monthlyOfferings, 0) }}</div>
-                                <div class="small text-muted">Offerings</div>
+                                <div class="small text-muted">{{ autoTranslate('Offerings') }}</div>
                                 <div class="progress mt-2" style="height: 8px;">
                                     <div class="progress-bar bg-success" style="width: {{ $totalIncome > 0 ? ($monthlyOfferings / $totalIncome) * 100 : 0 }}%"></div>
                                 </div>
@@ -147,7 +147,7 @@
                         <div class="col-md-3">
                             <div class="text-center">
                                 <div class="h5 text-info">TZS {{ number_format($monthlyDonations, 0) }}</div>
-                                <div class="small text-muted">Donations</div>
+                                <div class="small text-muted">{{ autoTranslate('Donations') }}</div>
                                 <div class="progress mt-2" style="height: 8px;">
                                     <div class="progress-bar bg-info" style="width: {{ $totalIncome > 0 ? ($monthlyDonations / $totalIncome) * 100 : 0 }}%"></div>
                                 </div>
@@ -156,7 +156,7 @@
                         <div class="col-md-3">
                             <div class="text-center">
                                 <div class="h5 text-warning">TZS {{ number_format($monthlyPledgePayments, 0) }}</div>
-                                <div class="small text-muted">Pledge Payments</div>
+                                <div class="small text-muted">{{ autoTranslate('Pledge Payments') }}</div>
                                 <div class="progress mt-2" style="height: 8px;">
                                     <div class="progress-bar bg-warning" style="width: {{ $totalIncome > 0 ? ($monthlyPledgePayments / $totalIncome) * 100 : 0 }}%"></div>
                                 </div>
@@ -171,7 +171,7 @@
             <div class="card mb-4">
                 <div class="card-header bg-primary text-white">
                     <i class="fas fa-chart-line me-1"></i>
-                    <strong>Income Trend (Last 6 Months)</strong>
+                    <strong>{{ autoTranslate('Income Trend (Last 6 Months)') }}</strong>
                 </div>
                 <div class="card-body">
                     <canvas id="incomeTrendChart" width="100%" height="50"></canvas>
@@ -186,7 +186,7 @@
             <div class="card mb-4">
                 <div class="card-header bg-primary text-white">
                     <i class="fas fa-coins me-1"></i>
-                    <strong>Recent Tithes</strong>
+                    <strong>{{ autoTranslate('Recent Tithes') }}</strong>
                 </div>
                 <div class="card-body">
                     @if($recentTithes->count() > 0)
@@ -198,7 +198,15 @@
                                     </div>
                                 </div>
                                 <div class="flex-grow-1 ms-3">
-                                    <div class="fw-bold">{{ $tithe->member->full_name ?? 'Unknown' }}</div>
+                                    <div class="fw-bold">
+                                        @if($tithe->campus)
+                                            {{ $tithe->campus->name }}
+                                        @elseif($tithe->evangelismLeader && $tithe->evangelismLeader->getCampus())
+                                            {{ $tithe->evangelismLeader->getCampus()->name }}
+                                        @else
+                                            {{ $tithe->member->full_name ?? 'Unknown' }}
+                                        @endif
+                                    </div>
                                     <div class="small text-muted">{{ $tithe->tithe_date->format('M d, Y') }}</div>
                                 </div>
                                 <div class="text-end">
@@ -210,12 +218,12 @@
                     @else
                         <div class="text-center text-muted py-3">
                             <i class="fas fa-coins fa-2x mb-2"></i>
-                            <div>No recent tithes</div>
+                            <div>{{ autoTranslate('No recent tithes') }}</div>
                         </div>
                     @endif
                 </div>
                 <div class="card-footer">
-                    <a href="{{ route('finance.tithes') }}" class="btn btn-primary btn-sm">View All Tithes</a>
+                    <a href="{{ route('finance.tithes') }}" class="btn btn-primary btn-sm">{{ autoTranslate('View All Tithes') }}</a>
                 </div>
             </div>
         </div>
@@ -224,7 +232,7 @@
             <div class="card mb-4">
                 <div class="card-header bg-primary text-white">
                     <i class="fas fa-gift me-1"></i>
-                    <strong>Recent Offerings</strong>
+                    <strong>{{ autoTranslate('Recent Offerings') }}</strong>
                 </div>
                 <div class="card-body">
                     @if($recentOfferings->count() > 0)
@@ -248,12 +256,12 @@
                     @else
                         <div class="text-center text-muted py-3">
                             <i class="fas fa-gift fa-2x mb-2"></i>
-                            <div>No recent offerings</div>
+                            <div>{{ autoTranslate('No recent offerings') }}</div>
                         </div>
                     @endif
                 </div>
                 <div class="card-footer">
-                    <a href="{{ route('finance.offerings') }}" class="btn btn-success btn-sm">View All Offerings</a>
+                    <a href="{{ route('finance.offerings') }}" class="btn btn-success btn-sm">{{ autoTranslate('View All Offerings') }}</a>
                 </div>
             </div>
         </div>
@@ -262,7 +270,7 @@
             <div class="card mb-4">
                 <div class="card-header bg-primary text-white">
                     <i class="fas fa-heart me-1"></i>
-                    <strong>Recent Donations</strong>
+                    <strong>{{ autoTranslate('Recent Donations') }}</strong>
                 </div>
                 <div class="card-body">
                     @if($recentDonations->count() > 0)
@@ -286,12 +294,12 @@
                     @else
                         <div class="text-center text-muted py-3">
                             <i class="fas fa-heart fa-2x mb-2"></i>
-                            <div>No recent donations</div>
+                            <div>{{ autoTranslate('No recent donations') }}</div>
                         </div>
                     @endif
                 </div>
                 <div class="card-footer">
-                    <a href="{{ route('finance.donations') }}" class="btn btn-info btn-sm">View All Donations</a>
+                    <a href="{{ route('finance.donations') }}" class="btn btn-info btn-sm">{{ autoTranslate('View All Donations') }}</a>
                 </div>
             </div>
         </div>
@@ -303,7 +311,7 @@
             <div class="card mb-4">
                 <div class="card-header bg-primary text-white">
                     <i class="fas fa-wallet me-1"></i>
-                    <strong>Current Budgets</strong>
+                    <strong>{{ autoTranslate('Current Budgets') }}</strong>
                 </div>
                 <div class="card-body">
                     @if($currentBudgets->count() > 0)
@@ -326,12 +334,12 @@
                     @else
                         <div class="text-center text-muted py-3">
                             <i class="fas fa-wallet fa-2x mb-2"></i>
-                            <div>No active budgets</div>
+                            <div>{{ autoTranslate('No active budgets') }}</div>
                         </div>
                     @endif
                 </div>
                 <div class="card-footer">
-                    <a href="{{ route('finance.budgets') }}" class="btn btn-primary btn-sm">Manage Budgets</a>
+                    <a href="{{ route('finance.budgets') }}" class="btn btn-primary btn-sm">{{ autoTranslate('Manage Budgets') }}</a>
                 </div>
             </div>
         </div>
@@ -340,7 +348,7 @@
             <div class="card mb-4">
                 <div class="card-header bg-primary text-white">
                     <i class="fas fa-handshake me-1"></i>
-                    <strong>Pledge Status</strong>
+                    <strong>{{ autoTranslate('Pledge Status') }}</strong>
                 </div>
                 <div class="card-body">
                     @if($activePledges->count() > 0)
@@ -367,12 +375,12 @@
                     @else
                         <div class="text-center text-muted py-3">
                             <i class="fas fa-handshake fa-2x mb-2"></i>
-                            <div>No active pledges</div>
+                            <div>{{ autoTranslate('No active pledges') }}</div>
                         </div>
                     @endif
                 </div>
                 <div class="card-footer">
-                    <a href="{{ route('finance.pledges') }}" class="btn btn-primary btn-sm">Manage Pledges</a>
+                    <a href="{{ route('finance.pledges') }}" class="btn btn-primary btn-sm">{{ autoTranslate('Manage Pledges') }}</a>
                 </div>
             </div>
         </div>
@@ -384,7 +392,7 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="quickAddModalLabel">Quick Add Transaction</h5>
+                <h5 class="modal-title" id="quickAddModalLabel">{{ autoTranslate('Quick Add Transaction') }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -393,9 +401,9 @@
                         <div class="card h-100">
                             <div class="card-body text-center">
                                 <i class="fas fa-coins fa-3x text-primary mb-3"></i>
-                                <h5 class="card-title">Record Tithe</h5>
-                                <p class="card-text">Record a member's tithe payment</p>
-                                <a href="{{ route('finance.tithes') }}" class="btn btn-primary">Add Tithe</a>
+                                <h5 class="card-title">{{ autoTranslate('Record Tithe') }}</h5>
+                                <p class="card-text">{{ autoTranslate("Record a member's tithe payment") }}</p>
+                                <a href="{{ route('finance.tithes') }}" class="btn btn-primary">{{ autoTranslate('Add Tithe') }}</a>
                             </div>
                         </div>
                     </div>
@@ -403,9 +411,9 @@
                         <div class="card h-100">
                             <div class="card-body text-center">
                                 <i class="fas fa-gift fa-3x text-success mb-3"></i>
-                                <h5 class="card-title">Record Offering</h5>
-                                <p class="card-text">Record an offering or special gift</p>
-                                <a href="{{ route('finance.offerings') }}" class="btn btn-success">Add Offering</a>
+                                <h5 class="card-title">{{ autoTranslate('Record Offering') }}</h5>
+                                <p class="card-text">{{ autoTranslate('Record an offering or special gift') }}</p>
+                                <a href="{{ route('finance.offerings') }}" class="btn btn-success">{{ autoTranslate('Add Offering') }}</a>
                             </div>
                         </div>
                     </div>
@@ -415,9 +423,9 @@
                         <div class="card h-100">
                             <div class="card-body text-center">
                                 <i class="fas fa-heart fa-3x text-info mb-3"></i>
-                                <h5 class="card-title">Record Donation</h5>
-                                <p class="card-text">Record a donation or contribution</p>
-                                <a href="{{ route('finance.donations') }}" class="btn btn-info">Add Donation</a>
+                                <h5 class="card-title">{{ autoTranslate('Record Donation') }}</h5>
+                                <p class="card-text">{{ autoTranslate('Record a donation or contribution') }}</p>
+                                <a href="{{ route('finance.donations') }}" class="btn btn-info">{{ autoTranslate('Add Donation') }}</a>
                             </div>
                         </div>
                     </div>
@@ -425,9 +433,9 @@
                         <div class="card h-100">
                             <div class="card-body text-center">
                                 <i class="fas fa-handshake fa-3x text-warning mb-3"></i>
-                                <h5 class="card-title">Record Pledge</h5>
-                                <p class="card-text">Record a member's pledge commitment</p>
-                                <a href="{{ route('finance.pledges') }}" class="btn btn-warning">Add Pledge</a>
+                                <h5 class="card-title">{{ autoTranslate('Record Pledge') }}</h5>
+                                <p class="card-text">{{ autoTranslate("Record a member's pledge commitment") }}</p>
+                                <a href="{{ route('finance.pledges') }}" class="btn btn-warning">{{ autoTranslate('Add Pledge') }}</a>
                             </div>
                         </div>
                     </div>
@@ -450,7 +458,7 @@ document.addEventListener('DOMContentLoaded', function() {
         data: {
             labels: incomeTrendData.map(item => item.month),
             datasets: [{
-                label: 'Monthly Income',
+                label: '{{ autoTranslate('Monthly Income') }}',
                 data: incomeTrendData.map(item => item.income),
                 borderColor: 'rgb(75, 192, 192)',
                 backgroundColor: 'rgba(75, 192, 192, 0.2)',

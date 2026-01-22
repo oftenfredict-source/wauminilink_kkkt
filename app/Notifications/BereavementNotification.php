@@ -78,7 +78,7 @@ class BereavementNotification extends Notification implements ShouldQueue
                 return false;
             }
 
-            $churchName = SettingsService::get('church_name', 'AIC Moshi Kilimanjaro');
+            $churchName = SettingsService::get('church_name', 'KKKT Ushirika wa Longuo');
             $message = $this->buildSmsMessage($member, $churchName);
 
             $smsService = app(SmsService::class);

@@ -15,13 +15,20 @@ class Child extends Model
         'full_name',
         'gender',
         'date_of_birth',
+        'biometric_enroll_id',
         'parent_name',
         'parent_phone',
         'parent_relationship',
+        'baptism_status',
+        'baptism_date',
+        'baptism_location',
+        'baptized_by',
+        'baptism_certificate_number',
     ];
 
     protected $casts = [
         'date_of_birth' => 'date',
+        'baptism_date' => 'date',
     ];
 
     public function member()
@@ -190,6 +197,61 @@ class Child extends Model
     {
         $ageGroup = $this->getAgeGroup();
         return in_array($ageGroup, ['sunday_school', 'teenager']);
+    }
+
+    /**
+     * Generate a unique biometric enroll ID (2-3 digits: 10-999)
+     * This ID is used to register children (teenagers) on the biometric device
+     * 
+     * @return string Unique enroll ID between 10 and 999
+     */
+    public static function generateBiometricEnrollId()
+    {
+        $maxAttempts = 1000; // Prevent infinite loop
+        $attempts = 0;
+        
+        do {
+            // Generate random number between 10 and 999 (2-3 digits)
+            $enrollId = rand(10, 999);
+            $attempts++;
+            
+            if ($attempts >= $maxAttempts) {
+                // If we can't find a unique ID, try sequential search
+                // Check both members and children tables
+                for ($id = 10; $id <= 999; $id++) {
+                    $existsInMembers = \App\Models\Member::where('biometric_enroll_id', (string)$id)->exists();
+                    $existsInChildren = self::where('biometric_enroll_id', (string)$id)->exists();
+                    
+                    if (!$existsInMembers && !$existsInChildren) {
+                        return (string)$id;
+                    }
+                }
+                throw new \Exception('Cannot generate unique biometric enroll ID. All IDs (10-999) are taken.');
+            }
+            
+        } while (
+            \App\Models\Member::where('biometric_enroll_id', (string)$enrollId)->exists() ||
+            self::where('biometric_enroll_id', (string)$enrollId)->exists()
+        );
+        
+        return (string)$enrollId;
+    }
+
+    /**
+     * Boot method to auto-generate biometric enroll ID when child is created
+     * Only for teenagers (13-17) who should attend main service
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($child) {
+            // Auto-generate biometric enroll ID for teenagers who should record attendance
+            // Only generate if child is a teenager (13-17) who should attend main service
+            if (empty($child->biometric_enroll_id) && $child->shouldAttendMainService()) {
+                $child->biometric_enroll_id = self::generateBiometricEnrollId();
+            }
+        });
     }
 }
 

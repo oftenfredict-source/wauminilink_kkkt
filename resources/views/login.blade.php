@@ -632,8 +632,8 @@
     <!-- Left Side Background with Welcome Text -->
     <div class="login-left">
         <div class="login-left-content">
-            <h1>Welcome Back</h1>
-            <p>"For where two or three gather in my name, there am I with them."</p>
+            <h1>{{ autoTranslate('Welcome Back') }}</h1>
+            <p>"{{ autoTranslate('For where two or three gather in my name, there am I with them.') }}"</p>
             <div class="scripture-reference">Matthew 18:20</div>
         </div>
     </div>
@@ -644,7 +644,7 @@
         <form class="login-form" id="loginForm" method="POST" action="{{ route('login.post') }}">
             @csrf
             <img src="{{ asset('assets/images/waumini_link_logo.png') }}" alt="Waumini Link Logo" class="logo">
-            <h2>Login</h2>
+            <h2>{{ autoTranslate('Login') }}</h2>
 
             <!-- Display success message -->
             @if(session('success'))
@@ -685,26 +685,26 @@
 
             <div class="form-group">
                 <i class="fa-solid fa-envelope"></i>
-                <input type="text" class="form-control @error('email') is-invalid @enderror" id="email" name="email" placeholder="Email or Member ID" value="{{ old('email') }}" required>
+                <input type="text" class="form-control @error('email') is-invalid @enderror" id="email" name="email" placeholder="{{ autoTranslate('Email or Member ID') }}" value="{{ old('email') }}" required>
                 @error('email')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @else
-                    <div class="invalid-feedback">Please provide your email or member ID.</div>
-                    <div class="valid-feedback">Looks good!</div>
+                    <div class="invalid-feedback">{{ autoTranslate('Please provide your email or member ID.') }}</div>
+                    <div class="valid-feedback">{{ autoTranslate('Looks good!') }}</div>
                 @enderror
             </div>
 
             <div class="form-group">
                 <i class="fa-solid fa-lock"></i>
-                <input type="password" class="form-control @error('password') is-invalid @enderror" id="password" name="password" placeholder="Password" required>
+                <input type="password" class="form-control @error('password') is-invalid @enderror" id="password" name="password" placeholder="{{ autoTranslate('Password') }}" required>
                 <button type="button" class="password-toggle" id="passwordToggle">
                     <i class="fa-solid fa-eye"></i>
                 </button>
                 @error('password')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @else
-                    <div class="invalid-feedback">Please enter your password.</div>
-                    <div class="valid-feedback">Looks good!</div>
+                    <div class="invalid-feedback">{{ autoTranslate('Please enter your password.') }}</div>
+                    <div class="valid-feedback">{{ autoTranslate('Looks good!') }}</div>
                 @enderror
                 <div class="password-strength">
                     <div class="password-strength-bar" id="passwordStrengthBar"></div>
@@ -713,16 +713,16 @@
 
             <div class="form-group form-check">
                 <input type="checkbox" class="form-check-input" id="rememberMe" name="remember">
-                <label class="form-check-label" for="rememberMe">Remember me</label>
+                <label class="form-check-label" for="rememberMe">{{ autoTranslate('Remember me') }}</label>
             </div>
 
 
             <button type="submit" class="btn btn-login mt-3" id="loginButton">
-                <span class="btn-text">Login</span>
+                <span class="btn-text">{{ autoTranslate('Login') }}</span>
             </button>
 
             <div class="register-link">
-               <span>Forgot Password?</span> <a href="{{ route('password.request') }}" class="forgot-password">Click here</a>
+               <span>{{ autoTranslate('Forgot Password?') }}</span> <a href="{{ route('password.request') }}" class="forgot-password">{{ autoTranslate('Click here') }}</a>
             </div>
         </form>
     </div>

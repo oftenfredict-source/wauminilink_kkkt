@@ -9,12 +9,44 @@
                     <i class="fas fa-file-alt"></i>
                 </div>
                 <div>
-                    <h1 class="h5 mb-0 text-dark fw-semibold">All Reports Overview</h1>
-                    <p class="mb-0 small text-muted">Key activities and contributions across the system</p>
+                    <h1 class="h5 mb-0 text-dark fw-semibold">
+                        @if(isset($isChurchElder) && $isChurchElder && isset($selectedCommunity))
+                            {{ $selectedCommunity->name }} Reports Overview
+                        @else
+                            All Reports Overview
+                        @endif
+                    </h1>
+                    <p class="mb-0 small text-muted">
+                        @if(isset($isChurchElder) && $isChurchElder && isset($selectedCommunity))
+                            Key activities and contributions for {{ $selectedCommunity->name }}
+                        @else
+                            Key activities and contributions across the system
+                        @endif
+                    </p>
                 </div>
             </div>
-            <div>
+            <div class="d-flex gap-2 flex-wrap">
+                @if(isset($isChurchElder) && $isChurchElder && isset($communities) && $communities->count() > 1)
+                    <div class="dropdown">
+                        <button class="btn btn-outline-primary btn-sm dropdown-toggle" type="button" id="communityDropdown" data-bs-toggle="dropdown">
+                            <i class="fas fa-home me-1"></i>{{ $selectedCommunity->name ?? 'Select Community' }}
+                        </button>
+                        <ul class="dropdown-menu">
+                            @foreach($communities as $community)
+                                <li>
+                                    <a class="dropdown-item {{ isset($selectedCommunity) && $selectedCommunity->id == $community->id ? 'active' : '' }}" 
+                                       href="{{ route('reports.overview', ['community_id' => $community->id, 'start_date' => request('start_date'), 'end_date' => request('end_date')]) }}">
+                                        {{ $community->name }}
+                                    </a>
+                                </li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
                 <a href="{{ route('reports.index') }}" class="btn btn-primary btn-sm"><i class="fas fa-chart-pie me-1"></i>Financial Reports</a>
+                @if(isset($isChurchElder) && $isChurchElder && isset($selectedCommunity))
+                    <a href="{{ route('church-elder.reports', $selectedCommunity->id) }}" class="btn btn-success btn-sm"><i class="fas fa-chart-bar me-1"></i>Community Reports</a>
+                @endif
             </div>
         </div>
     </div>
@@ -50,19 +82,39 @@
                 <div class="card-body d-flex align-items-center justify-content-between">
                     <div>
                         <div class="text-xs text-uppercase fw-bold text-info">Total Giving (YTD)</div>
-                        <div class="h5 mb-0 fw-bold">TZS {{ number_format($totalGiving, 2) }}</div>
-                        <small class="text-muted">Tithes + Offerings + Donations</small>
+                        <div class="h5 mb-0 fw-bold">TZS {{ number_format($totalGiving + (isset($totalCommunityOfferings) ? $totalCommunityOfferings : 0), 2) }}</div>
+                        <small class="text-muted">
+                            @if(isset($isChurchElder) && $isChurchElder && isset($totalCommunityOfferings))
+                                Tithes + Offerings + Donations + Mid-Week
+                            @else
+                                Tithes + Offerings + Donations
+                            @endif
+                        </small>
                     </div>
                     <i class="fas fa-hand-holding-usd fa-2x text-info opacity-75"></i>
                 </div>
             </div>
         </div>
+        @if(isset($isChurchElder) && $isChurchElder && isset($totalCommunityOfferings))
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-xs text-uppercase fw-bold text-success">Mid-Week Offerings</div>
+                        <div class="h5 mb-0 fw-bold">TZS {{ number_format($totalCommunityOfferings, 0) }}</div>
+                        <small class="text-muted">{{ $communityOfferings->count() }} completed</small>
+                    </div>
+                    <i class="fas fa-calendar-week fa-2x text-success opacity-75"></i>
+                </div>
+            </div>
+        </div>
+        @endif
         <div class="col-12 col-md-6 col-xl-3">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body d-flex align-items-center justify-content-between">
                     <div>
                         <div class="text-xs text-uppercase fw-bold text-warning">Transactions (YTD)</div>
-                        <div class="h5 mb-0 fw-bold">{{ number_format($transactionsCount) }}</div>
+                        <div class="h5 mb-0 fw-bold">{{ number_format($transactionsCount + (isset($communityOfferings) ? $communityOfferings->count() : 0)) }}</div>
                         <small class="text-muted">Approved only</small>
                     </div>
                     <i class="fas fa-receipt fa-2x text-warning opacity-75"></i>

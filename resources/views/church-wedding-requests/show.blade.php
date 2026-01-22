@@ -1,0 +1,381 @@
+@extends('layouts.index')
+
+@php
+use Illuminate\Support\Facades\Storage;
+@endphp
+
+@section('content')
+<div class="container-fluid px-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h1 class="h3 mb-0"><i class="fas fa-rings-wedding me-2 text-primary"></i>Church Wedding Request Details</h1>
+                            <p class="text-muted mb-0">{{ $churchWeddingRequest->groom_full_name }} & {{ $churchWeddingRequest->bride_full_name }}</p>
+                        </div>
+                        <div>
+                            @if(auth()->user()->isEvangelismLeader())
+                                <a href="{{ route('evangelism-leader.church-wedding-requests.index') }}" class="btn btn-outline-primary">
+                                    <i class="fas fa-arrow-left me-1"></i> Back
+                                </a>
+                            @elseif(auth()->user()->isPastor() || auth()->user()->isAdmin())
+                                <a href="{{ route('pastor.church-wedding-requests.pending') }}" class="btn btn-outline-primary">
+                                    <i class="fas fa-arrow-left me-1"></i> Back
+                                </a>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8 mb-4">
+            <!-- Bride & Groom Information -->
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-users me-2"></i>Bride & Groom Information</h5>
+                </div>
+                <div class="card-body">
+                    <h6 class="mb-3">Groom's Information</h6>
+                    <div class="row">
+                        <div class="col-md-6 mb-2">
+                            <strong>Full Name:</strong><br>
+                            <span class="text-muted">{{ $churchWeddingRequest->groom_full_name }}</span>
+                        </div>
+                        @if($churchWeddingRequest->groom_date_of_birth)
+                        <div class="col-md-3 mb-2">
+                            <strong>Date of Birth:</strong><br>
+                            <span class="text-muted">{{ $churchWeddingRequest->groom_date_of_birth->format('F d, Y') }}</span>
+                        </div>
+                        @endif
+                        @if($churchWeddingRequest->groom_phone_number)
+                        <div class="col-md-3 mb-2">
+                            <strong>Phone:</strong><br>
+                            <span class="text-muted">{{ $churchWeddingRequest->groom_phone_number }}</span>
+                        </div>
+                        @endif
+                    </div>
+                    @if($churchWeddingRequest->groom_email)
+                    <div class="row">
+                        <div class="col-md-6 mb-2">
+                            <strong>Email:</strong><br>
+                            <span class="text-muted">{{ $churchWeddingRequest->groom_email }}</span>
+                        </div>
+                    </div>
+                    @endif
+
+                    <hr class="my-4">
+
+                    <h6 class="mb-3">Bride's Information</h6>
+                    <div class="row">
+                        <div class="col-md-6 mb-2">
+                            <strong>Full Name:</strong><br>
+                            <span class="text-muted">{{ $churchWeddingRequest->bride_full_name }}</span>
+                        </div>
+                        @if($churchWeddingRequest->bride_date_of_birth)
+                        <div class="col-md-3 mb-2">
+                            <strong>Date of Birth:</strong><br>
+                            <span class="text-muted">{{ $churchWeddingRequest->bride_date_of_birth->format('F d, Y') }}</span>
+                        </div>
+                        @endif
+                        @if($churchWeddingRequest->bride_phone_number)
+                        <div class="col-md-3 mb-2">
+                            <strong>Phone:</strong><br>
+                            <span class="text-muted">{{ $churchWeddingRequest->bride_phone_number }}</span>
+                        </div>
+                        @endif
+                    </div>
+                    @if($churchWeddingRequest->bride_email)
+                    <div class="row">
+                        <div class="col-md-6 mb-2">
+                            <strong>Email:</strong><br>
+                            <span class="text-muted">{{ $churchWeddingRequest->bride_email }}</span>
+                        </div>
+                    </div>
+                    @endif
+                    @if($churchWeddingRequest->churchBranch)
+                    <div class="row mt-2">
+                        <div class="col-md-6 mb-2">
+                            <strong>Church Branch:</strong><br>
+                            <span class="text-muted">{{ $churchWeddingRequest->churchBranch->name }}</span>
+                        </div>
+                    </div>
+                    @endif
+                </div>
+            </div>
+
+            <!-- Membership & Spiritual Information -->
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-praying-hands me-2"></i>Membership & Spiritual Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-2">
+                        <div class="col-md-6">
+                            <strong>Both baptized:</strong><br>
+                            <span class="badge bg-{{ $churchWeddingRequest->both_baptized ? 'success' : 'warning' }}">
+                                {{ $churchWeddingRequest->both_baptized ? 'Yes' : 'No' }}
+                            </span>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Both confirmed:</strong><br>
+                            <span class="badge bg-{{ $churchWeddingRequest->both_confirmed ? 'success' : 'warning' }}">
+                                {{ $churchWeddingRequest->both_confirmed ? 'Yes' : 'No' }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-md-6">
+                            <strong>Attended premarital counseling:</strong><br>
+                            <span class="badge bg-{{ $churchWeddingRequest->attended_premarital_counseling ? 'success' : 'warning' }}">
+                                {{ $churchWeddingRequest->attended_premarital_counseling ? 'Yes' : 'No' }}
+                            </span>
+                        </div>
+                    </div>
+                    @if($churchWeddingRequest->membership_duration)
+                    <div class="row">
+                        <div class="col-md-6 mb-2">
+                            <strong>Membership duration:</strong><br>
+                            <span class="text-muted">{{ $churchWeddingRequest->membership_duration }}</span>
+                        </div>
+                    </div>
+                    @endif
+                    @if($churchWeddingRequest->pastor_catechist_name)
+                    <div class="row">
+                        <div class="col-md-6 mb-2">
+                            <strong>Pastor / Catechist:</strong><br>
+                            <span class="text-muted">{{ $churchWeddingRequest->pastor_catechist_name }}</span>
+                        </div>
+                    </div>
+                    @endif
+                </div>
+            </div>
+
+            <!-- Wedding Details -->
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Wedding Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-2">
+                            <strong>Preferred Wedding Date:</strong><br>
+                            <span class="text-muted">{{ $churchWeddingRequest->preferred_wedding_date->format('F d, Y') }}</span>
+                        </div>
+                        @if($churchWeddingRequest->preferred_church)
+                        <div class="col-md-6 mb-2">
+                            <strong>Preferred Church:</strong><br>
+                            <span class="text-muted">{{ $churchWeddingRequest->preferred_church }}</span>
+                        </div>
+                        @endif
+                    </div>
+                    @if($churchWeddingRequest->expected_guests)
+                    <div class="row">
+                        <div class="col-md-6 mb-2">
+                            <strong>Expected Guests:</strong><br>
+                            <span class="text-muted">{{ $churchWeddingRequest->expected_guests }}</span>
+                        </div>
+                    </div>
+                    @endif
+                </div>
+            </div>
+
+            <!-- Documents -->
+            @if($churchWeddingRequest->groom_baptism_certificate_path || $churchWeddingRequest->bride_baptism_certificate_path || 
+                $churchWeddingRequest->groom_confirmation_certificate_path || $churchWeddingRequest->bride_confirmation_certificate_path ||
+                $churchWeddingRequest->groom_birth_certificate_path || $churchWeddingRequest->bride_birth_certificate_path ||
+                $churchWeddingRequest->marriage_notice_path)
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-file-upload me-2"></i>Uploaded Documents</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        @if($churchWeddingRequest->groom_baptism_certificate_path)
+                        <div class="col-md-6 mb-2">
+                            <strong>Groom's Baptism Certificate:</strong><br>
+                            <a href="{{ Storage::url($churchWeddingRequest->groom_baptism_certificate_path) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-download me-1"></i> View
+                            </a>
+                        </div>
+                        @endif
+                        @if($churchWeddingRequest->bride_baptism_certificate_path)
+                        <div class="col-md-6 mb-2">
+                            <strong>Bride's Baptism Certificate:</strong><br>
+                            <a href="{{ Storage::url($churchWeddingRequest->bride_baptism_certificate_path) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-download me-1"></i> View
+                            </a>
+                        </div>
+                        @endif
+                        @if($churchWeddingRequest->groom_confirmation_certificate_path)
+                        <div class="col-md-6 mb-2">
+                            <strong>Groom's Confirmation Certificate:</strong><br>
+                            <a href="{{ Storage::url($churchWeddingRequest->groom_confirmation_certificate_path) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-download me-1"></i> View
+                            </a>
+                        </div>
+                        @endif
+                        @if($churchWeddingRequest->bride_confirmation_certificate_path)
+                        <div class="col-md-6 mb-2">
+                            <strong>Bride's Confirmation Certificate:</strong><br>
+                            <a href="{{ Storage::url($churchWeddingRequest->bride_confirmation_certificate_path) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-download me-1"></i> View
+                            </a>
+                        </div>
+                        @endif
+                        @if($churchWeddingRequest->groom_birth_certificate_path)
+                        <div class="col-md-6 mb-2">
+                            <strong>Groom's Birth Certificate:</strong><br>
+                            <a href="{{ Storage::url($churchWeddingRequest->groom_birth_certificate_path) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-download me-1"></i> View
+                            </a>
+                        </div>
+                        @endif
+                        @if($churchWeddingRequest->bride_birth_certificate_path)
+                        <div class="col-md-6 mb-2">
+                            <strong>Bride's Birth Certificate:</strong><br>
+                            <a href="{{ Storage::url($churchWeddingRequest->bride_birth_certificate_path) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-download me-1"></i> View
+                            </a>
+                        </div>
+                        @endif
+                        @if($churchWeddingRequest->marriage_notice_path)
+                        <div class="col-md-6 mb-2">
+                            <strong>Marriage Notice:</strong><br>
+                            <a href="{{ Storage::url($churchWeddingRequest->marriage_notice_path) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-download me-1"></i> View
+                            </a>
+                        </div>
+                        @endif
+                    </div>
+                </div>
+            </div>
+            @endif
+        </div>
+
+        <!-- Sidebar - Status & Actions -->
+        <div class="col-md-4 mb-4">
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Request Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>Status:</strong><br>
+                        @if($churchWeddingRequest->status === 'pending')
+                            <span class="badge bg-warning fs-6">Pending</span>
+                        @elseif($churchWeddingRequest->status === 'approved')
+                            <span class="badge bg-success fs-6">Approved</span>
+                        @elseif($churchWeddingRequest->status === 'documents_required')
+                            <span class="badge bg-warning fs-6">Documents Required</span>
+                        @elseif($churchWeddingRequest->status === 'scheduled')
+                            <span class="badge bg-info fs-6">Scheduled</span>
+                        @elseif($churchWeddingRequest->status === 'rejected')
+                            <span class="badge bg-danger fs-6">Rejected</span>
+                        @elseif($churchWeddingRequest->status === 'completed')
+                            <span class="badge bg-dark fs-6">Completed</span>
+                        @endif
+                    </div>
+                    <div class="mb-3">
+                        <strong>Submitted:</strong><br>
+                        <span class="text-muted">{{ $churchWeddingRequest->submitted_at->format('F d, Y h:i A') }}</span>
+                    </div>
+                    @if($churchWeddingRequest->reviewed_at)
+                    <div class="mb-3">
+                        <strong>Reviewed:</strong><br>
+                        <span class="text-muted">{{ $churchWeddingRequest->reviewed_at->format('F d, Y h:i A') }}</span>
+                    </div>
+                    @endif
+                    @if($churchWeddingRequest->wedding_approval_date)
+                    <div class="mb-3">
+                        <strong>Wedding Approval Date:</strong><br>
+                        <span class="text-muted">{{ $churchWeddingRequest->wedding_approval_date->format('F d, Y') }}</span>
+                    </div>
+                    @endif
+                    @if($churchWeddingRequest->confirmed_wedding_date)
+                    <div class="mb-3">
+                        <strong>Confirmed Wedding Date:</strong><br>
+                        <span class="text-muted">{{ $churchWeddingRequest->confirmed_wedding_date->format('F d, Y') }}</span>
+                    </div>
+                    @endif
+                    @if($churchWeddingRequest->evangelismLeader)
+                    <div class="mb-3">
+                        <strong>Submitted by:</strong><br>
+                        <span class="text-muted">{{ $churchWeddingRequest->evangelismLeader->name }}</span>
+                    </div>
+                    @endif
+                </div>
+            </div>
+
+            @if(auth()->user()->isPastor() || auth()->user()->isAdmin())
+                @if($churchWeddingRequest->status === 'pending')
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="fas fa-gavel me-2"></i>Pastor Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Approve Form -->
+                        <form action="{{ route('pastor.church-wedding-requests.approve', $churchWeddingRequest->id) }}" method="POST" class="mb-3">
+                            @csrf
+                            <div class="mb-2">
+                                <label for="confirmed_wedding_date" class="form-label">Confirmed Wedding Date (optional)</label>
+                                <input type="date" class="form-control mb-2" id="confirmed_wedding_date" name="confirmed_wedding_date" 
+                                       min="{{ date('Y-m-d', strtotime('+1 day')) }}">
+                                <label for="pastor_comments_approve" class="form-label">Comments (optional)</label>
+                                <textarea class="form-control" id="pastor_comments_approve" name="pastor_comments" rows="3"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="fas fa-check me-1"></i> Approve Request
+                            </button>
+                        </form>
+
+                        <!-- Require Documents Form -->
+                        <form action="{{ route('pastor.church-wedding-requests.require-documents', $churchWeddingRequest->id) }}" method="POST" class="mb-3">
+                            @csrf
+                            <div class="mb-2">
+                                <label for="pastor_comments_documents" class="form-label">Comments <span class="text-danger">*</span></label>
+                                <textarea class="form-control" id="pastor_comments_documents" name="pastor_comments" rows="3" required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-warning w-100">
+                                <i class="fas fa-file-alt me-1"></i> Require Documents
+                            </button>
+                        </form>
+
+                        <!-- Reject Form -->
+                        <form action="{{ route('pastor.church-wedding-requests.reject', $churchWeddingRequest->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to reject this request?');">
+                            @csrf
+                            <div class="mb-2">
+                                <label for="pastor_comments_reject" class="form-label">Rejection Reason <span class="text-danger">*</span></label>
+                                <textarea class="form-control" id="pastor_comments_reject" name="pastor_comments" rows="3" required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-danger w-100">
+                                <i class="fas fa-times me-1"></i> Reject Request
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                @endif
+            @endif
+
+            @if($churchWeddingRequest->pastor_comments)
+            <div class="card border-0 shadow-sm mt-3">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-comment me-2"></i>Pastor Comments</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0">{{ $churchWeddingRequest->pastor_comments }}</p>
+                    @if($churchWeddingRequest->pastor)
+                        <small class="text-muted">By: {{ $churchWeddingRequest->pastor->name }} on {{ $churchWeddingRequest->reviewed_at->format('F d, Y h:i A') }}</small>
+                    @endif
+                </div>
+            </div>
+            @endif
+        </div>
+    </div>
+</div>
+@endsection
+

@@ -12,7 +12,7 @@
 					<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 gap-md-3">
 						<div class="d-flex align-items-center gap-2 gap-md-3">
 							<div class="dashboard-profile-img">
-								@if($pastor && $pastor->member->profile_picture)
+								@if($pastor && $pastor->member && $pastor->member->profile_picture)
 									<img src="{{ asset('storage/' . $pastor->member->profile_picture) }}" alt="Pastor Profile" class="rounded-circle border border-primary border-2" style="width:48px; height:48px; object-fit:cover;">
 								@else
 									<div class="rounded-circle d-flex align-items-center justify-content-center border border-primary border-2" style="width:48px; height:48px; background:rgba(0,123,255,.1);">
@@ -35,6 +35,54 @@
 			</div>
 		</div>
 	</div>
+
+    <!-- Bereavement Notifications -->
+    @php
+        $user = auth()->user();
+        $allUnreadNotifications = $user->unreadNotifications()->get();
+        $bereavementNotificationsFiltered = $allUnreadNotifications->filter(function($notification) {
+            return $notification->type === 'App\Notifications\BereavementNotification';
+        });
+    @endphp
+    
+    @if($bereavementNotificationsFiltered->count() > 0)
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="alert alert-info alert-dismissible fade show" role="alert" style="border-left: 4px solid #0dcaf0;">
+                <h6 class="alert-heading mb-3">
+                    <i class="fas fa-heart-broken me-2"></i>New Bereavement Events
+                </h6>
+                @foreach($bereavementNotificationsFiltered as $notification)
+                    @php
+                        $data = is_string($notification->data) ? json_decode($notification->data, true) : $notification->data;
+                    @endphp
+                    <div class="mb-3 pb-3 {{ !$loop->last ? 'border-bottom' : '' }}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <strong>🕊️ {{ $data['deceased_name'] ?? 'Bereavement Event' }}</strong>
+                                <p class="mb-1 mt-1">
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar me-1"></i>
+                                        Incident Date: {{ isset($data['incident_date']) ? \Carbon\Carbon::parse($data['incident_date'])->format('M j, Y') : 'N/A' }}
+                                    </small>
+                                </p>
+                                @if(isset($data['message']))
+                                <p class="mb-0 small">{{ $data['message'] }}</p>
+                                @endif
+                                @if(isset($data['bereavement_event_id']))
+                                <a href="{{ route('bereavement.show', $data['bereavement_event_id']) }}" class="btn btn-sm btn-outline-primary mt-2">
+                                    <i class="fas fa-eye me-1"></i>View Details
+                                </a>
+                                @endif
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" onclick="markNotificationAsRead('{{ $notification->id }}', event)"></button>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    </div>
+    @endif
 
     <div class="row">
         <div class="col-12">
@@ -406,6 +454,215 @@
                         </div>
                     </div>
                     @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tasks, Issues, and Reports Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-tasks me-2"></i>Tasks, Issues & Reports</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="nav nav-tabs mb-3" id="tasksIssuesTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="tasks-tab" data-bs-toggle="tab" data-bs-target="#tasks" type="button" role="tab">
+                                <i class="fas fa-tasks me-1"></i>Tasks 
+                                <span class="badge bg-primary ms-1">{{ $totalEvangelismTasks + $totalChurchElderTasks }}</span>
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="issues-tab" data-bs-toggle="tab" data-bs-target="#issues" type="button" role="tab">
+                                <i class="fas fa-exclamation-triangle me-1"></i>Issues 
+                                <span class="badge bg-danger ms-1">{{ $totalEvangelismIssues + $totalChurchElderIssues }}</span>
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="reports-tab" data-bs-toggle="tab" data-bs-target="#reports" type="button" role="tab">
+                                <i class="fas fa-file-alt me-1"></i>Reports 
+                                <span class="badge bg-info ms-1">{{ $totalEvangelismReports }}</span>
+                            </button>
+                        </li>
+                    </ul>
+                    
+                    <div class="tab-content" id="tasksIssuesTabsContent">
+                        <!-- Tasks Tab -->
+                        <div class="tab-pane fade show active" id="tasks" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <h6 class="text-primary mb-3"><i class="fas fa-user-tie me-1"></i>Evangelism Leader Tasks</h6>
+                                    @if($evangelismTasks->count() > 0)
+                                        <div class="list-group">
+                                            @foreach($evangelismTasks as $task)
+                                                <div class="list-group-item">
+                                                    <div class="d-flex justify-content-between align-items-start">
+                                                        <div class="flex-grow-1">
+                                                            <h6 class="mb-1">{{ $task->task_title }}</h6>
+                                                            <p class="mb-1 small text-muted">{{ Str::limit($task->description, 100) }}</p>
+                                                            <small class="text-muted">
+                                                                <i class="fas fa-user me-1"></i>{{ $task->evangelismLeader->name ?? 'N/A' }}
+                                                                @if($task->community)
+                                                                    | <i class="fas fa-map-marker-alt me-1"></i>{{ $task->community->name }}
+                                                                @endif
+                                                                | <i class="fas fa-calendar me-1"></i>{{ $task->task_date->format('M d, Y') }}
+                                                            </small>
+                                                        </div>
+                                                        <div>
+                                                            <span class="badge bg-{{ $task->status === 'completed' ? 'success' : ($task->status === 'in_progress' ? 'warning' : 'secondary') }}">
+                                                                {{ ucfirst(str_replace('_', ' ', $task->status)) }}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <p class="text-muted">No tasks from Evangelism Leaders</p>
+                                    @endif
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <h6 class="text-success mb-3"><i class="fas fa-church me-1"></i>Church Elder Tasks</h6>
+                                    @if($churchElderTasks->count() > 0)
+                                        <div class="list-group">
+                                            @foreach($churchElderTasks as $task)
+                                                <div class="list-group-item">
+                                                    <div class="d-flex justify-content-between align-items-start">
+                                                        <div class="flex-grow-1">
+                                                            <h6 class="mb-1">{{ $task->task_title }}</h6>
+                                                            <p class="mb-1 small text-muted">{{ Str::limit($task->description, 100) }}</p>
+                                                            <small class="text-muted">
+                                                                <i class="fas fa-user me-1"></i>{{ $task->churchElder->name ?? 'N/A' }}
+                                                                @if($task->community)
+                                                                    | <i class="fas fa-map-marker-alt me-1"></i>{{ $task->community->name }}
+                                                                @endif
+                                                                | <i class="fas fa-calendar me-1"></i>{{ $task->task_date->format('M d, Y') }}
+                                                            </small>
+                                                        </div>
+                                                        <div>
+                                                            <span class="badge bg-{{ $task->status === 'completed' ? 'success' : ($task->status === 'in_progress' ? 'warning' : 'secondary') }}">
+                                                                {{ ucfirst(str_replace('_', ' ', $task->status)) }}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <p class="text-muted">No tasks from Church Elders</p>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Issues Tab -->
+                        <div class="tab-pane fade" id="issues" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <h6 class="text-primary mb-3"><i class="fas fa-user-tie me-1"></i>Evangelism Leader Issues</h6>
+                                    @if($evangelismIssues->count() > 0)
+                                        <div class="list-group">
+                                            @foreach($evangelismIssues as $issue)
+                                                <div class="list-group-item">
+                                                    <div class="d-flex justify-content-between align-items-start">
+                                                        <div class="flex-grow-1">
+                                                            <h6 class="mb-1">{{ $issue->title }}</h6>
+                                                            <p class="mb-1 small text-muted">{{ Str::limit($issue->description, 100) }}</p>
+                                                            <small class="text-muted">
+                                                                <i class="fas fa-user me-1"></i>{{ $issue->evangelismLeader->name ?? 'N/A' }}
+                                                                @if($issue->community)
+                                                                    | <i class="fas fa-map-marker-alt me-1"></i>{{ $issue->community->name }}
+                                                                @endif
+                                                            </small>
+                                                        </div>
+                                                        <div>
+                                                            <span class="badge {{ $issue->priority_badge }} mb-1 d-block">{{ ucfirst($issue->priority) }}</span>
+                                                            <span class="badge {{ $issue->status_badge }}">{{ ucfirst(str_replace('_', ' ', $issue->status)) }}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <p class="text-muted">No open issues from Evangelism Leaders</p>
+                                    @endif
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <h6 class="text-success mb-3"><i class="fas fa-church me-1"></i>Church Elder Issues</h6>
+                                    @if($churchElderIssues->count() > 0)
+                                        <div class="list-group">
+                                            @foreach($churchElderIssues as $issue)
+                                                <div class="list-group-item">
+                                                    <div class="d-flex justify-content-between align-items-start">
+                                                        <div class="flex-grow-1">
+                                                            <h6 class="mb-1">{{ $issue->title }}</h6>
+                                                            <p class="mb-1 small text-muted">{{ Str::limit($issue->description, 100) }}</p>
+                                                            <small class="text-muted">
+                                                                <i class="fas fa-user me-1"></i>{{ $issue->churchElder->name ?? 'N/A' }}
+                                                                @if($issue->community)
+                                                                    | <i class="fas fa-map-marker-alt me-1"></i>{{ $issue->community->name }}
+                                                                @endif
+                                                            </small>
+                                                        </div>
+                                                        <div>
+                                                            <span class="badge {{ $issue->priority_badge }} mb-1 d-block">{{ ucfirst($issue->priority) }}</span>
+                                                            <span class="badge {{ $issue->status_badge }}">{{ ucfirst(str_replace('_', ' ', $issue->status)) }}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <p class="text-muted">No open issues from Church Elders</p>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Reports Tab -->
+                        <div class="tab-pane fade" id="reports" role="tabpanel">
+                            <h6 class="text-primary mb-3"><i class="fas fa-user-tie me-1"></i>Evangelism Leader Reports</h6>
+                            @if($evangelismReports->count() > 0)
+                                <div class="list-group">
+                                    @foreach($evangelismReports as $report)
+                                        <div class="list-group-item">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div class="flex-grow-1">
+                                                    <h6 class="mb-1">{{ $report->title }}</h6>
+                                                    <p class="mb-1 small text-muted">{{ Str::limit($report->content, 150) }}</p>
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-user me-1"></i>{{ $report->evangelismLeader->name ?? 'N/A' }}
+                                                        @if($report->community)
+                                                            | <i class="fas fa-map-marker-alt me-1"></i>{{ $report->community->name }}
+                                                        @endif
+                                                        @if($report->report_date)
+                                                            | <i class="fas fa-calendar me-1"></i>{{ $report->report_date->format('M d, Y') }}
+                                                        @endif
+                                                        @if($report->submitted_at)
+                                                            | <i class="fas fa-clock me-1"></i>{{ $report->submitted_at->format('M d, Y') }}
+                                                        @endif
+                                                    </small>
+                                                </div>
+                                                <div>
+                                                    @if($report->status)
+                                                        <span class="badge bg-{{ $report->status === 'reviewed' ? 'success' : 'warning' }}">
+                                                            {{ ucfirst($report->status) }}
+                                                        </span>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @else
+                                <p class="text-muted">No reports from Evangelism Leaders</p>
+                            @endif
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1228,7 +1485,133 @@
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Pastor dashboard loaded successfully');
+    
+    // Start real-time notification polling
+    startBereavementNotificationPolling();
 });
+
+// Track last check time and shown notification IDs
+let lastNotificationCheck = new Date().toISOString();
+let shownNotificationIds = new Set();
+
+// Real-time notification polling
+function startBereavementNotificationPolling() {
+    // Check for new notifications every 5 seconds
+    setInterval(function() {
+        checkForNewBereavementNotifications();
+    }, 5000);
+    
+    // Initial check after 2 seconds
+    setTimeout(function() {
+        checkForNewBereavementNotifications();
+    }, 2000);
+}
+
+// Check for new bereavement notifications
+function checkForNewBereavementNotifications() {
+    fetch(`/pastor/bereavement-notifications?last_check=${encodeURIComponent(lastNotificationCheck)}`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.notifications && data.notifications.length > 0) {
+            // Show toast for each new notification
+            data.notifications.forEach(function(notification) {
+                // Only show if we haven't shown this notification before
+                if (!shownNotificationIds.has(notification.id)) {
+                    shownNotificationIds.add(notification.id);
+                    showBereavementToast(notification);
+                }
+            });
+        }
+        
+        // Update last check time
+        if (data.timestamp) {
+            lastNotificationCheck = data.timestamp;
+        }
+    })
+    .catch(error => {
+        console.error('Error checking for bereavement notifications:', error);
+    });
+}
+
+// Show toast notification that auto-dismisses after 10 seconds
+function showBereavementToast(notification) {
+    const incidentDate = notification.incident_date 
+        ? new Date(notification.incident_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+        : 'N/A';
+    
+    Swal.fire({
+        icon: 'info',
+        title: '🕊️ New Bereavement Event',
+        html: `
+            <div style="text-align: left;">
+                <p style="margin-bottom: 8px;"><strong>${notification.deceased_name}</strong></p>
+                <p style="margin-bottom: 4px; font-size: 0.9em; color: #666;">
+                    <i class="fas fa-calendar me-1"></i>Incident Date: ${incidentDate}
+                </p>
+                <p style="margin-bottom: 4px; font-size: 0.9em; color: #666;">
+                    <i class="fas fa-church me-1"></i>${notification.campus_name}
+                </p>
+                <p style="margin-bottom: 0; font-size: 0.85em; color: #888;">
+                    ${notification.message}
+                </p>
+            </div>
+        `,
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: true,
+        confirmButtonText: 'View Details',
+        showCancelButton: false,
+        timer: 10000, // Auto-dismiss after 10 seconds
+        timerProgressBar: true,
+        didOpen: (toast) => {
+            toast.addEventListener('mouseenter', Swal.stopTimer);
+            toast.addEventListener('mouseleave', Swal.resumeTimer);
+        },
+        didClose: () => {
+            // Mark notification as read when toast is closed
+            markNotificationAsRead(notification.id);
+        }
+    }).then((result) => {
+        if (result.isConfirmed && notification.bereavement_event_id) {
+            // Redirect to bereavement event details
+            window.location.href = `/bereavement/${notification.bereavement_event_id}`;
+        }
+    });
+}
+
+// Mark notification as read
+function markNotificationAsRead(notificationId, event) {
+    if (event) {
+        event.preventDefault();
+    }
+    
+    fetch(`/member/notifications/${notificationId}/read`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            console.log('Notification marked as read');
+        } else {
+            console.error('Failed to mark notification as read:', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error marking notification as read:', error);
+    });
+}
 </script>
 @endsection
 

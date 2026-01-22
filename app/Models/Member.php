@@ -14,6 +14,8 @@ class Member extends Model
     protected $fillable = [
         'member_id',
         'biometric_enroll_id',
+        'campus_id',             // Campus association
+        'community_id',           // Community association
         'member_type',           // father, mother, independent
         'membership_type',       // permanent, temporary
         'full_name',
@@ -42,6 +44,7 @@ class Member extends Model
         'residence_house_number',
         'profile_picture',
         'marital_status',
+        'wedding_date',
         'spouse_full_name',
         'spouse_date_of_birth',
         'spouse_education_level',
@@ -59,6 +62,7 @@ class Member extends Model
     protected $casts = [
         'date_of_birth' => 'date',
         'spouse_date_of_birth' => 'date',
+        'wedding_date' => 'date',
     ];
 
     public function children()
@@ -138,27 +142,117 @@ class Member extends Model
         return $this->hasOne(User::class);
     }
 
+    // Campus relationship
+    public function campus()
+    {
+        return $this->belongsTo(Campus::class);
+    }
+
+    // Community relationship
+    public function community()
+    {
+        return $this->belongsTo(Community::class);
+    }
+
     /**
      * Generate a unique member ID
-     * Format: YYYY + random alphanumeric (5 chars) + -WL
-     * Example: 2025A3B7C-WL
+     * Format: YYYY + sequential (2 digits) + letter (1) + digits (2) + -WL
+     * Example: 202574G58-WL
      */
     public static function generateMemberId()
     {
         do {
             $year = date('Y');
-            $randomPart = '';
             
-            // Generate 5 random alphanumeric characters
-            $characters = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-            for ($i = 0; $i < 5; $i++) {
-                $randomPart .= $characters[rand(0, strlen($characters) - 1)];
+            // Get the highest sequential number for the current year
+            // Extract sequential numbers from existing member IDs for this year
+            $existingIds = self::where('member_id', 'LIKE', $year . '%')
+                ->whereNotNull('member_id')
+                ->pluck('member_id')
+                ->toArray();
+            
+            $sequential = 1; // Start from 01
+            if (!empty($existingIds)) {
+                $maxSequential = 0;
+                foreach ($existingIds as $id) {
+                    // Extract the 2-digit sequential number (positions 4-5 after year)
+                    // Format: YYYYXXL##-WL
+                    if (strlen($id) >= 6 && substr($id, 0, 4) == $year) {
+                        $seqPart = substr($id, 4, 2);
+                        if (is_numeric($seqPart)) {
+                            $seqNum = (int)$seqPart;
+                            if ($seqNum > $maxSequential) {
+                                $maxSequential = $seqNum;
+                            }
+                        }
+                    }
+                }
+                $sequential = $maxSequential + 1;
             }
             
-            $memberId = $year . $randomPart . '-WL';
+            // Ensure sequential is 2 digits (01-99)
+            if ($sequential > 99) {
+                $sequential = 1; // Reset to 01 if we exceed 99 (unlikely but safety check)
+            }
+            $sequentialPadded = str_pad($sequential, 2, '0', STR_PAD_LEFT);
+            
+            // Generate 1 random uppercase letter (A-Z)
+            $letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            $randomLetter = $letters[rand(0, strlen($letters) - 1)];
+            
+            // Generate 2 random digits (00-99)
+            $randomDigits = str_pad(rand(0, 99), 2, '0', STR_PAD_LEFT);
+            
+            $memberId = $year . $sequentialPadded . $randomLetter . $randomDigits . '-WL';
             
         } while (self::where('member_id', $memberId)->exists());
         
         return $memberId;
+    }
+
+    /**
+     * Generate a unique biometric enroll ID (2-3 digits: 10-999)
+     * This ID is used to register members on the biometric device
+     * 
+     * @return string Unique enroll ID between 10 and 999
+     */
+    public static function generateBiometricEnrollId()
+    {
+        $maxAttempts = 1000; // Prevent infinite loop
+        $attempts = 0;
+        
+        do {
+            // Generate random number between 10 and 999 (2-3 digits)
+            $enrollId = rand(10, 999);
+            $attempts++;
+            
+            if ($attempts >= $maxAttempts) {
+                // If we can't find a unique ID, try sequential search
+                for ($id = 10; $id <= 999; $id++) {
+                    if (!self::where('biometric_enroll_id', (string)$id)->exists()) {
+                        return (string)$id;
+                    }
+                }
+                throw new \Exception('Cannot generate unique biometric enroll ID. All IDs (10-999) are taken.');
+            }
+            
+        } while (self::where('biometric_enroll_id', (string)$enrollId)->exists());
+        
+        return (string)$enrollId;
+    }
+
+    /**
+     * Boot method to auto-generate biometric enroll ID when member is created
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($member) {
+            // Auto-generate biometric enroll ID if not provided
+            if (empty($member->biometric_enroll_id)) {
+                $member->biometric_enroll_id = self::generateBiometricEnrollId();
+            }
+        });
     }
 }

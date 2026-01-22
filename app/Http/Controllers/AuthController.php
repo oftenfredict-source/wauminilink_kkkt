@@ -19,18 +19,50 @@ use App\Services\SettingsService;
 
 class AuthController extends Controller
 {
+    // OTP Feature Flag - Set to false to disable OTP temporarily
+    private const ENABLE_OTP = false;
+    
     // Show login form
     public function showLogin()
     {
         // If user is already authenticated, redirect to dashboard
         if (Auth::check()) {
             $user = Auth::user();
+            $campus = $user->getCampus();
+            
+            // Check evangelism leader FIRST (before branch check) - they should always go to evangelism dashboard
+            if ($user->isEvangelismLeader()) {
+                return redirect()->route('evangelism-leader.dashboard');
+            }
+            
+            // Check church elder BEFORE branch check (users in branch can be elders)
+            if ($user->isChurchElder()) {
+                // Redirect to the first community they are assigned to, or a general dashboard
+                $community = $user->elderCommunities()->first();
+                if ($community) {
+                    return redirect()->route('church-elder.community.show', $community->id);
+                }
+                return redirect()->route('church-elder.dashboard');
+            }
+            
+            // Check if branch user
+            if ($campus && !$campus->is_main_campus) {
+                return redirect()->route('branch.dashboard');
+            }
+            
+            // Check if Usharika admin
+            if ($user->isUsharikaAdmin() || ($campus && $campus->is_main_campus && $user->isAdmin())) {
+                return redirect()->route('usharika.dashboard');
+            }
+            
+            // Default role-based redirects
             if ($user->isAdmin()) {
                 return redirect()->route('admin.dashboard');
             } elseif ($user->isPastor()) {
                 return redirect()->route('dashboard.pastor');
             } elseif ($user->isTreasurer()) {
                 return redirect()->route('finance.dashboard');
+
             } elseif ($user->isMember()) {
                 return redirect()->route('member.dashboard');
             } else {
@@ -57,16 +89,52 @@ class AuthController extends Controller
         $password = $request->input('password');
 
         try {
-            // Check if input is an email or member_id
-            // If it contains @, treat as email, otherwise treat as member_id
-            if (strpos($emailOrMemberId, '@') !== false) {
-                // It's an email
-                $user = \App\Models\User::where('email', $emailOrMemberId)->first();
-            } else {
-                // It's a member_id - find user by email field which stores member_id
-                $user = \App\Models\User::where('email', $emailOrMemberId)->first();
+        // Check if input is an email or member_id
+        // We now support logging in with EITHER:
+        // 1. The 'email' column (which stores real email for leaders, or member_id user for members)
+        // 2. The 'member_id' column (if input matches a member_id string)
+        
+        $user = null;
+        
+        if (strpos($emailOrMemberId, '@') !== false) {
+            // It looks like an email - check email column
+            $user = \App\Models\User::where('email', $emailOrMemberId)->first();
+        } else {
+            // It looks like a member ID or username
+            
+            // 1. Try finding by 'email' column (where we store member_id username for standard members)
+            $user = \App\Models\User::where('email', $emailOrMemberId)->first();
+            
+            // 2. If not found, try finding by 'member_id' column (if we have a numeric or string ID)
+            // Note: users table member_id is usually integer FK, but input might be string "2025-001"
+            // So we might need to find the Member first, then get the User?
+            // Actually, for now, let's stick to 'email' column as the primary identifier
+            // unless we want to support finding user by their Member's string ID?
+            
+            // If the user entered "2025-001", and we stored it in 'email' column, the above check works.
+            // If we stored "john@example.com" in 'email', but they typed "2025-001"...
+            // We need to find the user via the Member relationship.
+            
+            if (!$user) {
+                // Try to find a Member with this member_id string
+                $member = \App\Models\Member::where('member_id', $emailOrMemberId)->first();
+                if ($member) {
+                    // Find a user associated with this member
+                    // Warning: A member might have multiple users (Member Role + Leader Role)
+                    // We should prefer the 'member' role for this login method, or just pick the first?
+                    // If they type Member ID, they probably expect the Member account.
+                    $user = \App\Models\User::where('member_id', $member->id)
+                                ->where('role', 'member')
+                                ->first();
+                                
+                    // If no member role found, try any user for this member
+                    if (!$user) {
+                         $user = \App\Models\User::where('member_id', $member->id)->first();
+                    }
+                }
             }
-        } catch (\Illuminate\Database\QueryException $e) {
+        }
+    } catch (\Illuminate\Database\QueryException $e) {
             // Database connection error
             if (strpos($e->getMessage(), 'Connection refused') !== false || 
                 strpos($e->getMessage(), 'No connection could be made') !== false) {
@@ -138,33 +206,160 @@ class AuthController extends Controller
             if (Auth::attempt($credentials)) {
                 $user = Auth::user();
                 
-                // Generate and send OTP instead of logging in directly
-                $otp = $this->generateAndSendOtp($user, $emailOrMemberId, $request);
-                
-                if ($otp) {
-                    // Store user ID in session temporarily for OTP verification
-                    $request->session()->put('otp_user_id', $user->id);
-                    $request->session()->put('otp_email', $emailOrMemberId);
-                    // Reset resend attempts counter for new OTP session
-                    $request->session()->put('otp_resend_attempts', 0);
+                // Check if OTP is enabled
+                if (self::ENABLE_OTP) {
+                    // Generate and send OTP instead of logging in directly
+                    $otp = $this->generateAndSendOtp($user, $emailOrMemberId, $request);
                     
-                    // Logout the user (they'll be logged in after OTP verification)
-                    Auth::logout();
-                    
-                    // Redirect to OTP verification page
-                    return redirect()->route('login.otp.verify')
-                        ->with('info', 'An OTP has been sent to your phone number. Please enter it to complete login.');
+                    if ($otp) {
+                        // Store user ID in session temporarily for OTP verification
+                        $request->session()->put('otp_user_id', $user->id);
+                        $request->session()->put('otp_email', $emailOrMemberId);
+                        // Reset resend attempts counter for new OTP session
+                        $request->session()->put('otp_resend_attempts', 0);
+                        
+                        // Logout the user (they'll be logged in after OTP verification)
+                        Auth::logout();
+                        
+                        // Redirect to OTP verification page
+                        return redirect()->route('login.otp.verify')
+                            ->with('info', 'An OTP has been sent to your phone number. Please enter it to complete login.');
+                    } else {
+                        // If OTP sending failed, allow login but log the issue
+                        Auth::logout();
+                        \Log::warning('OTP generation failed, login blocked', [
+                            'user_id' => $user->id,
+                            'email' => $emailOrMemberId
+                        ]);
+                        
+                        return back()->withErrors([
+                            'email' => 'Unable to send OTP. Please contact administrator or try again later.',
+                        ])->withInput($request->only('email'));
+                    }
                 } else {
-                    // If OTP sending failed, allow login but log the issue
-                    Auth::logout();
-                    \Log::warning('OTP generation failed, login blocked', [
-                        'user_id' => $user->id,
-                        'email' => $emailOrMemberId
-                    ]);
+                    // OTP is disabled - proceed with direct login
+                    $request->session()->regenerate();
                     
-                    return back()->withErrors([
-                        'email' => 'Unable to send OTP. Please contact administrator or try again later.',
-                    ])->withInput($request->only('email'));
+                    // Update the session record with user_id
+                    try {
+                        $sessionId = $request->session()->getId();
+                        DB::table('sessions')
+                            ->updateOrInsert(
+                                ['id' => $sessionId],
+                                [
+                                    'user_id' => Auth::id(),
+                                    'ip_address' => $request->ip(),
+                                    'user_agent' => $request->userAgent(),
+                                    'last_activity' => time(),
+                                ]
+                            );
+                    } catch (\Exception $e) {
+                        // Silently continue if session table doesn't exist
+                    }
+                    
+                    // Log login activity
+                    try {
+                        \App\Models\ActivityLog::create([
+                            'user_id' => Auth::id(),
+                            'action' => 'login',
+                            'description' => 'User logged in (OTP disabled)',
+                            'ip_address' => $request->ip(),
+                            'user_agent' => $request->userAgent(),
+                            'route' => 'login',
+                            'method' => 'POST',
+                        ]);
+                    } catch (\Exception $e) {
+                        // Silently continue if table doesn't exist
+                    }
+                    
+                    // FIRST: Check if user has member_id but no active leadership positions → Member Portal
+                    if ($user->member_id && $user->member) {
+                        $activePositions = $user->member->activeLeadershipPositions()
+                            ->where('is_active', true)
+                            ->where(function($query) {
+                                $query->whereNull('end_date')
+                                      ->orWhere('end_date', '>=', now()->toDateString());
+                            })
+                            ->get();
+                        
+                        if ($activePositions->isEmpty()) {
+                            // No active positions → Member Portal
+                            return redirect()->route('member.dashboard')
+                                ->with('success', 'Login successful! Welcome.');
+                        }
+                    }
+                    
+                    // Check evangelism leader (before branch check) - they should always go to evangelism dashboard
+                    if ($user->isEvangelismLeader()) {
+                        return redirect()->route('evangelism-leader.dashboard')
+                            ->with('success', 'Login successful! Welcome Evangelism Leader.');
+                    }
+                    
+                    // Check church elder BEFORE branch check (users in branch can be elders)
+                    if ($user->isChurchElder()) {
+                        // Redirect to the first community they are assigned to, or a general dashboard
+                        $community = $user->elderCommunities()->first();
+                        if ($community) {
+                            return redirect()->route('church-elder.community.show', $community->id)
+                                ->with('success', 'Login successful! Welcome Church Elder.');
+                        }
+                        return redirect()->route('church-elder.dashboard')
+                            ->with('success', 'Login successful! Welcome Church Elder.');
+                    }
+                    
+                    // Check if user is branch user (only if they have active leadership positions)
+                    $campus = $user->getCampus();
+                    if ($campus && !$campus->is_main_campus) {
+                        // Only redirect to branch dashboard if they have active positions or are admin/secretary
+                        if ($user->isAdmin() || $user->isSecretary() || ($user->member_id && $user->member)) {
+                            $hasActivePositions = false;
+                            if ($user->member_id && $user->member) {
+                                $activePositions = $user->member->activeLeadershipPositions()
+                                    ->where('is_active', true)
+                                    ->where(function($query) {
+                                        $query->whereNull('end_date')
+                                              ->orWhere('end_date', '>=', now()->toDateString());
+                                    })
+                                    ->get();
+                                $hasActivePositions = $activePositions->isNotEmpty();
+                            }
+                            
+                            // Only show branch dashboard if they have active positions or are admin/secretary
+                            if ($hasActivePositions || $user->isAdmin() || $user->isSecretary()) {
+                                return redirect()->route('branch.dashboard')
+                                    ->with('success', 'Login successful! Welcome to ' . $campus->name . ' branch.');
+                            }
+                        }
+                    }
+                    
+                    // Check if Usharika admin
+                    if ($user->isUsharikaAdmin() || ($campus && $campus->is_main_campus && $user->isAdmin())) {
+                        return redirect()->route('usharika.dashboard')
+                            ->with('success', 'Login successful! Welcome to Usharika Dashboard.');
+                    }
+                    
+
+                    
+                    // Redirect based on role (for main campus users)
+                    if ($user->role === 'secretary') {
+                        return redirect()->route('dashboard.secretary')
+                            ->with('success', 'Login successful! Welcome back.');
+                    } elseif ($user->role === 'pastor') {
+                        return redirect()->route('dashboard.pastor')
+                            ->with('success', 'Login successful! Welcome Pastor.');
+                    } elseif ($user->role === 'admin') {
+                        return redirect()->route('admin.dashboard')
+                            ->with('success', 'Login successful! Welcome Admin.');
+                    } elseif ($user->role === 'treasurer') {
+                        return redirect()->route('finance.dashboard')
+                            ->with('success', 'Login successful! Welcome Treasurer.');
+                    } elseif ($user->role === 'member') {
+                        return redirect()->route('member.dashboard')
+                            ->with('success', 'Login successful! Welcome.');
+                    } else {
+                        Auth::logout();
+                        return back()->withErrors(['role' => 'Unauthorized role.']);
+                    }
                 }
             }
         } catch (\Illuminate\Database\QueryException $e) {
@@ -493,7 +688,81 @@ class AuthController extends Controller
             // Silently continue if table doesn't exist
         }
         
-        // Redirect based on role
+        // FIRST: Check if user has member_id but no active leadership positions → Member Portal
+        if ($user->member_id && $user->member) {
+            $activePositions = $user->member->activeLeadershipPositions()
+                ->where('is_active', true)
+                ->where(function($query) {
+                    $query->whereNull('end_date')
+                          ->orWhere('end_date', '>=', now()->toDateString());
+                })
+                ->get();
+            
+            if ($activePositions->isEmpty()) {
+                // No active positions → Member Portal
+                return redirect()->route('member.dashboard')
+                    ->with('success', 'Login successful! Welcome.');
+            }
+        }
+        
+        // Check evangelism leader (before branch check) - they should always go to evangelism dashboard
+        if ($user->isEvangelismLeader()) {
+            return redirect()->route('evangelism-leader.dashboard')
+                ->with('success', 'Login successful! Welcome Evangelism Leader.');
+        }
+        
+        // Check church elder BEFORE branch check (users in branch can be elders)
+        if ($user->isChurchElder()) {
+            // Redirect to the first community they are assigned to, or a general dashboard
+            $community = $user->elderCommunities()->first();
+            if ($community) {
+                return redirect()->route('church-elder.community.show', $community->id)
+                    ->with('success', 'Login successful! Welcome Church Elder.');
+            }
+            return redirect()->route('church-elder.dashboard')
+                ->with('success', 'Login successful! Welcome Church Elder.');
+        }
+        
+        // Check if user is branch user (only if they have active leadership positions)
+        $campus = $user->getCampus();
+        if ($campus && !$campus->is_main_campus) {
+            // Only redirect to branch dashboard if they have active positions or are admin/secretary
+            if ($user->isAdmin() || $user->isSecretary() || ($user->member_id && $user->member)) {
+                $hasActivePositions = false;
+                if ($user->member_id && $user->member) {
+                    $activePositions = $user->member->activeLeadershipPositions()
+                        ->where('is_active', true)
+                        ->where(function($query) {
+                            $query->whereNull('end_date')
+                                  ->orWhere('end_date', '>=', now()->toDateString());
+                        })
+                        ->get();
+                    $hasActivePositions = $activePositions->isNotEmpty();
+                }
+                
+                // Only show branch dashboard if they have active positions or are admin/secretary
+                if ($hasActivePositions || $user->isAdmin() || $user->isSecretary()) {
+                    return redirect()->route('branch.dashboard')
+                        ->with('success', 'Login successful! Welcome to ' . $campus->name . ' branch.');
+                }
+            }
+        }
+        
+        // Check if Usharika admin
+        if ($user->isUsharikaAdmin() || ($campus && $campus->is_main_campus && $user->isAdmin())) {
+            return redirect()->route('usharika.dashboard')
+                ->with('success', 'Login successful! Welcome to Usharika Dashboard.');
+        }
+        
+        // Check if Usharika admin
+        if ($user->isUsharikaAdmin() || ($campus && $campus->is_main_campus && $user->isAdmin())) {
+            return redirect()->route('usharika.dashboard')
+                ->with('success', 'Login successful! Welcome to Usharika Dashboard.');
+        }
+        
+
+        
+        // Redirect based on role (for main campus users)
         if ($user->role === 'secretary') {
             return redirect()->route('dashboard.secretary')
                 ->with('success', 'Login successful! Welcome back.');
@@ -600,6 +869,15 @@ class AuthController extends Controller
                 return redirect()->route('dashboard.pastor');
             } elseif ($user->isTreasurer()) {
                 return redirect()->route('finance.dashboard');
+            } elseif ($user->isEvangelismLeader()) {
+                return redirect()->route('evangelism-leader.dashboard');
+            } elseif ($user->isChurchElder()) {
+                // Redirect to the first community they are assigned to, or a general dashboard
+                $community = $user->elderCommunities()->first();
+                if ($community) {
+                    return redirect()->route('church-elder.community.show', $community->id);
+                }
+                return redirect()->route('church-elder.dashboard');
             } elseif ($user->isMember()) {
                 return redirect()->route('member.dashboard');
             } else {
@@ -770,6 +1048,15 @@ class AuthController extends Controller
                 return redirect()->route('dashboard.pastor');
             } elseif ($user->isTreasurer()) {
                 return redirect()->route('finance.dashboard');
+            } elseif ($user->isEvangelismLeader()) {
+                return redirect()->route('evangelism-leader.dashboard');
+            } elseif ($user->isChurchElder()) {
+                // Redirect to the first community they are assigned to, or a general dashboard
+                $community = $user->elderCommunities()->first();
+                if ($community) {
+                    return redirect()->route('church-elder.community.show', $community->id);
+                }
+                return redirect()->route('church-elder.dashboard');
             } elseif ($user->isMember()) {
                 return redirect()->route('member.dashboard');
             } else {

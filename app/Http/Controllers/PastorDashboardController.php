@@ -11,6 +11,11 @@ use App\Models\Pledge;
 use App\Models\PledgePayment;
 use App\Models\Member;
 use App\Models\Leader;
+use App\Models\EvangelismTask;
+use App\Models\EvangelismIssue;
+use App\Models\EvangelismReport;
+use App\Models\ChurchElderTask;
+use App\Models\ChurchElderIssue;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -229,9 +234,14 @@ class PastorDashboardController extends Controller
         $totalMembers = Member::count();
         
         // Get pastor information from leaders table
+        // Filter out leaders without valid member relationships
         $pastor = Leader::with('member')
             ->where('position', 'pastor')
             ->where('is_active', true)
+            ->get()
+            ->filter(function($leader) {
+                return $leader->member !== null;
+            })
             ->first();
         
         // Get pending amount (including pledge payments)
@@ -250,6 +260,61 @@ class PastorDashboardController extends Controller
             PledgePayment::where('approval_status', 'pending')
             ->whereDate('payment_date', $today)
             ->sum('amount');
+
+        // Get tasks from Evangelism Leaders and Church Elders
+        $evangelismTasks = EvangelismTask::with(['evangelismLeader', 'campus', 'community', 'member'])
+            ->orderBy('created_at', 'desc')
+            ->limit(10)
+            ->get();
+            
+        $churchElderTasks = ChurchElderTask::with(['churchElder', 'community', 'member'])
+            ->orderBy('created_at', 'desc')
+            ->limit(10)
+            ->get();
+
+        // Get issues from Evangelism Leaders and Church Elders
+        $evangelismIssues = EvangelismIssue::with(['evangelismLeader', 'campus', 'community'])
+            ->whereIn('status', ['open', 'in_progress'])
+            ->orderBy('priority', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->limit(10)
+            ->get();
+            
+        $churchElderIssues = ChurchElderIssue::with(['churchElder', 'community'])
+            ->whereIn('status', ['open', 'in_progress'])
+            ->orderBy('priority', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->limit(10)
+            ->get();
+
+        // Get reports from Evangelism Leaders
+        $evangelismReports = EvangelismReport::with(['evangelismLeader', 'campus', 'community'])
+            ->orderBy('created_at', 'desc')
+            ->limit(10)
+            ->get();
+
+        // Count totals
+        $totalEvangelismTasks = EvangelismTask::count();
+        $totalChurchElderTasks = ChurchElderTask::count();
+        $totalEvangelismIssues = EvangelismIssue::whereIn('status', ['open', 'in_progress'])->count();
+        $totalChurchElderIssues = ChurchElderIssue::whereIn('status', ['open', 'in_progress'])->count();
+        $totalEvangelismReports = EvangelismReport::count();
+
+        // Get unread bereavement notifications
+        $user = auth()->user();
+        $bereavementNotifications = $user->unreadNotifications()
+            ->where('type', 'App\Notifications\BereavementNotification')
+            ->orderBy('created_at', 'desc')
+            ->get();
+        
+        // Debug logging
+        \Log::info('Pastor dashboard - Fetching notifications', [
+            'user_id' => $user->id,
+            'user_role' => $user->role,
+            'notifications_count' => $bereavementNotifications->count(),
+            'all_unread_count' => $user->unreadNotifications()->count(),
+            'notification_types' => $user->unreadNotifications()->pluck('type')->unique()->toArray()
+        ]);
 
         return view('pastor.dashboard', compact(
             'pendingTithes',
@@ -270,7 +335,247 @@ class PastorDashboardController extends Controller
             'recentApprovals',
             'totalMembers',
             'pastor',
-            'today'
+            'today',
+            'evangelismTasks',
+            'churchElderTasks',
+            'evangelismIssues',
+            'churchElderIssues',
+            'evangelismReports',
+            'totalEvangelismTasks',
+            'totalChurchElderTasks',
+            'totalEvangelismIssues',
+            'totalChurchElderIssues',
+            'totalEvangelismReports',
+            'bereavementNotifications'
         ));
+    }
+
+    /**
+     * Get new bereavement notifications (for real-time polling)
+     */
+    public function getBereavementNotifications()
+    {
+        $this->checkPastorPermission();
+        
+        $user = auth()->user();
+        $lastCheck = request()->input('last_check', now()->subMinutes(5)->toDateTimeString());
+        
+        // Get unread bereavement notifications created after last check
+        $newNotifications = $user->unreadNotifications()
+            ->where('type', 'App\Notifications\BereavementNotification')
+            ->where('created_at', '>', $lastCheck)
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function($notification) {
+                $data = is_string($notification->data) ? json_decode($notification->data, true) : $notification->data;
+                return [
+                    'id' => $notification->id,
+                    'deceased_name' => $data['deceased_name'] ?? 'Bereavement Event',
+                    'incident_date' => $data['incident_date'] ?? null,
+                    'campus_name' => $data['campus_name'] ?? 'Unknown Campus',
+                    'message' => $data['message'] ?? 'A new bereavement event has been created.',
+                    'bereavement_event_id' => $data['bereavement_event_id'] ?? null,
+                    'created_at' => $notification->created_at->toDateTimeString(),
+                ];
+            });
+        
+        return response()->json([
+            'success' => true,
+            'notifications' => $newNotifications,
+            'count' => $newNotifications->count(),
+            'timestamp' => now()->toDateTimeString()
+        ]);
+    }
+
+    /**
+     * Display all tasks from Evangelism Leaders and Church Elders
+     */
+    public function allTasks()
+    {
+        $this->checkPastorPermission();
+        
+        $evangelismTasks = EvangelismTask::with(['evangelismLeader', 'campus', 'community', 'member'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(15, ['*'], 'evangelism_page');
+            
+        $churchElderTasks = ChurchElderTask::with(['churchElder', 'community', 'member'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(15, ['*'], 'elder_page');
+
+        return view('pastor.tasks.index', compact('evangelismTasks', 'churchElderTasks'));
+    }
+
+    /**
+     * Display all issues from Evangelism Leaders and Church Elders
+     */
+    public function allIssues()
+    {
+        $this->checkPastorPermission();
+        
+        $evangelismIssues = EvangelismIssue::with(['evangelismLeader', 'campus', 'community'])
+            ->orderBy('priority', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->paginate(15, ['*'], 'evangelism_page');
+            
+        $churchElderIssues = ChurchElderIssue::with(['churchElder', 'community'])
+            ->orderBy('priority', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->paginate(15, ['*'], 'elder_page');
+
+        return view('pastor.issues.index', compact('evangelismIssues', 'churchElderIssues'));
+    }
+
+    /**
+     * Display all reports from Evangelism Leaders
+     */
+    public function allReports()
+    {
+        $this->checkPastorPermission();
+        
+        $evangelismReports = EvangelismReport::with(['evangelismLeader', 'campus', 'community'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(15);
+
+        return view('pastor.reports.index', compact('evangelismReports'));
+    }
+
+    /**
+     * Show Evangelism Leader Task
+     */
+    public function showEvangelismTask(EvangelismTask $task)
+    {
+        $this->checkPastorPermission();
+        
+        $task->load(['evangelismLeader', 'campus', 'community', 'member', 'pastorCommenter']);
+
+        return view('pastor.tasks.show-evangelism', compact('task'));
+    }
+
+    /**
+     * Show Church Elder Task
+     */
+    public function showChurchElderTask(ChurchElderTask $task)
+    {
+        $this->checkPastorPermission();
+        
+        $task->load(['churchElder', 'community', 'member', 'pastorCommenter']);
+
+        return view('pastor.tasks.show-elder', compact('task'));
+    }
+
+    /**
+     * Comment on Evangelism Leader Task
+     */
+    public function commentEvangelismTask(Request $request, EvangelismTask $task)
+    {
+        $this->checkPastorPermission();
+        
+        $validated = $request->validate([
+            'pastor_comments' => 'required|string|min:10|max:2000',
+        ], [
+            'pastor_comments.required' => 'Please provide your comments or suggestions.',
+            'pastor_comments.min' => 'Comments must be at least 10 characters.',
+        ]);
+
+        $task->update([
+            'pastor_comments' => $validated['pastor_comments'],
+            'pastor_commented_by' => auth()->id(),
+            'pastor_commented_at' => now(),
+        ]);
+
+        return back()->with('success', 'Your comments have been added successfully.');
+    }
+
+    /**
+     * Comment on Church Elder Task
+     */
+    public function commentChurchElderTask(Request $request, ChurchElderTask $task)
+    {
+        $this->checkPastorPermission();
+        
+        $validated = $request->validate([
+            'pastor_comments' => 'required|string|min:10|max:2000',
+        ], [
+            'pastor_comments.required' => 'Please provide your comments or suggestions.',
+            'pastor_comments.min' => 'Comments must be at least 10 characters.',
+        ]);
+
+        $task->update([
+            'pastor_comments' => $validated['pastor_comments'],
+            'pastor_commented_by' => auth()->id(),
+            'pastor_commented_at' => now(),
+        ]);
+
+        return back()->with('success', 'Your comments have been added successfully.');
+    }
+
+    /**
+     * Show Evangelism Leader Issue
+     */
+    public function showEvangelismIssue(EvangelismIssue $issue)
+    {
+        $this->checkPastorPermission();
+        
+        $issue->load(['evangelismLeader', 'campus', 'community', 'pastorCommenter']);
+
+        return view('pastor.issues.show-evangelism', compact('issue'));
+    }
+
+    /**
+     * Show Church Elder Issue
+     */
+    public function showChurchElderIssue(ChurchElderIssue $issue)
+    {
+        $this->checkPastorPermission();
+        
+        $issue->load(['churchElder', 'community', 'pastorCommenter']);
+
+        return view('pastor.issues.show-elder', compact('issue'));
+    }
+
+    /**
+     * Comment on Evangelism Leader Issue
+     */
+    public function commentEvangelismIssue(Request $request, EvangelismIssue $issue)
+    {
+        $this->checkPastorPermission();
+        
+        $validated = $request->validate([
+            'pastor_comments' => 'required|string|min:10|max:2000',
+        ], [
+            'pastor_comments.required' => 'Please provide your comments or suggestions.',
+            'pastor_comments.min' => 'Comments must be at least 10 characters.',
+        ]);
+
+        $issue->update([
+            'pastor_comments' => $validated['pastor_comments'],
+            'pastor_commented_by' => auth()->id(),
+            'pastor_commented_at' => now(),
+        ]);
+
+        return back()->with('success', 'Your comments have been added successfully.');
+    }
+
+    /**
+     * Comment on Church Elder Issue
+     */
+    public function commentChurchElderIssue(Request $request, ChurchElderIssue $issue)
+    {
+        $this->checkPastorPermission();
+        
+        $validated = $request->validate([
+            'pastor_comments' => 'required|string|min:10|max:2000',
+        ], [
+            'pastor_comments.required' => 'Please provide your comments or suggestions.',
+            'pastor_comments.min' => 'Comments must be at least 10 characters.',
+        ]);
+
+        $issue->update([
+            'pastor_comments' => $validated['pastor_comments'],
+            'pastor_commented_by' => auth()->id(),
+            'pastor_commented_at' => now(),
+        ]);
+
+        return back()->with('success', 'Your comments have been added successfully.');
     }
 }

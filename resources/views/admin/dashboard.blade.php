@@ -286,8 +286,8 @@
                                 <i class="fas fa-shield-alt text-white"></i>
                             </div>
                             <div class="lh-sm">
-                                <h5 class="mb-0 fw-semibold" style="color: white !important;">Administrator Dashboard</h5>
-                                <small style="color: white !important;">System monitoring and management</small>
+                                <h5 class="mb-0 fw-semibold" style="color: white !important;">{{ autoTranslate('Administrator Dashboard') }}</h5>
+                                <small style="color: white !important;">{{ autoTranslate('System monitoring and management') }}</small>
                             </div>
                         </div>
                     </div>
@@ -303,7 +303,7 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Users</div>
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">{{ autoTranslate('Total Users') }}</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $stats['total_users'] }}</div>
                         </div>
                         <div class="col-auto">
@@ -319,7 +319,7 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Active Sessions</div>
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">{{ autoTranslate('Active Sessions') }}</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $stats['active_sessions'] }}</div>
                         </div>
                         <div class="col-auto">
@@ -335,7 +335,7 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Total Activities</div>
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">{{ autoTranslate('Total Activities') }}</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($stats['total_activities']) }}</div>
                         </div>
                         <div class="col-auto">
@@ -351,7 +351,7 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Today's Activities</div>
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">{{ autoTranslate("Today's Activities") }}</div>
                             <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $stats['today_activities'] }}</div>
                         </div>
                         <div class="col-auto">
@@ -368,18 +368,18 @@
         <div class="col-lg-8 mb-4">
             <div class="card shadow mb-4">
                 <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">Recent Activities</h6>
-                    <a href="{{ route('admin.activity-logs') }}" class="btn btn-sm btn-primary">View All</a>
+                    <h6 class="m-0 font-weight-bold text-primary">{{ autoTranslate('Recent Activities') }}</h6>
+                    <a href="{{ route('admin.activity-logs') }}" class="btn btn-sm btn-primary">{{ autoTranslate('View All') }}</a>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
                         <table class="table table-sm">
                             <thead>
                                 <tr>
-                                    <th>User</th>
-                                    <th>Action</th>
-                                    <th>Description</th>
-                                    <th>Time</th>
+                                    <th>{{ autoTranslate('User') }}</th>
+                                    <th>{{ autoTranslate('Action') }}</th>
+                                    <th>{{ autoTranslate('Description') }}</th>
+                                    <th>{{ autoTranslate('Time') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -414,7 +414,7 @@
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td colspan="4" class="text-center text-muted">No activities found</td>
+                                    <td colspan="4" class="text-center text-muted">{{ autoTranslate('No activities found') }}</td>
                                 </tr>
                                 @endforelse
                             </tbody>
@@ -428,8 +428,8 @@
         <div class="col-lg-4 mb-4">
             <div class="card shadow mb-4">
                 <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-primary">Active Sessions</h6>
-                    <a href="{{ route('admin.sessions') }}" class="btn btn-sm btn-primary">View All</a>
+                    <h6 class="m-0 font-weight-bold text-primary">{{ autoTranslate('Active Sessions') }}</h6>
+                    <a href="{{ route('admin.sessions') }}" class="btn btn-sm btn-primary">{{ autoTranslate('View All') }}</a>
                 </div>
                 <div class="card-body">
                     @forelse($activeSessions->take(5) as $session)
@@ -441,13 +441,13 @@
                                 <span class="badge badge-secondary" style="font-size: 0.75em;">{{ ucfirst($session->role) }}</span>
                             </div>
                             @if($session->is_current)
-                            <span class="badge badge-success">Current</span>
+                            <span class="badge badge-success">{{ autoTranslate('Current') }}</span>
                             @endif
                         </div>
                         <small class="text-muted">{{ $session->last_activity_formatted }}</small>
                     </div>
                     @empty
-                    <p class="text-muted text-center">No active sessions</p>
+                    <p class="text-muted text-center">{{ autoTranslate('No active sessions') }}</p>
                     @endforelse
                 </div>
             </div>
@@ -459,15 +459,15 @@
         <div class="col-lg-6 mb-4">
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Activity by Action (Last 7 Days)</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">{{ autoTranslate('Activity by Action (Last 7 Days)') }}</h6>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
                         <table class="table table-sm">
                             <thead>
                                 <tr>
-                                    <th>Action</th>
-                                    <th>Count</th>
+                                    <th>{{ autoTranslate('Action') }}</th>
+                                    <th>{{ autoTranslate('Count') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -491,15 +491,15 @@
         <div class="col-lg-6 mb-4">
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Top Active Users (Last 7 Days)</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">{{ autoTranslate('Top Active Users (Last 7 Days)') }}</h6>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
                         <table class="table table-sm">
                             <thead>
                                 <tr>
-                                    <th>User</th>
-                                    <th>Activities</th>
+                                    <th>{{ autoTranslate('User') }}</th>
+                                    <th>{{ autoTranslate('Activities') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -533,28 +533,28 @@
         <div class="col-12">
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Quick Links</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">{{ autoTranslate('Quick Links') }}</h6>
                 </div>
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-3 mb-2">
                             <a href="{{ route('admin.activity-logs') }}" class="btn btn-outline-primary btn-block">
-                                <i class="fas fa-list"></i> Activity Logs
+                                <i class="fas fa-list"></i> {{ autoTranslate('Activity Logs') }}
                             </a>
                         </div>
                         <div class="col-md-3 mb-2">
                             <a href="{{ route('admin.sessions') }}" class="btn btn-outline-primary btn-block">
-                                <i class="fas fa-user-check"></i> User Sessions
+                                <i class="fas fa-user-check"></i> {{ autoTranslate('User Sessions') }}
                             </a>
                         </div>
                         <div class="col-md-3 mb-2">
                             <a href="{{ route('admin.users') }}" class="btn btn-outline-primary btn-block">
-                                <i class="fas fa-users"></i> Manage Users
+                                <i class="fas fa-users"></i> {{ autoTranslate('Manage Users') }}
                             </a>
                         </div>
                         <div class="col-md-3 mb-2">
                             <a href="{{ route('admin.roles-permissions') }}" class="btn btn-outline-primary btn-block">
-                                <i class="fas fa-shield-alt"></i> Roles & Permissions
+                                <i class="fas fa-shield-alt"></i> {{ autoTranslate('Roles & Permissions') }}
                             </a>
                         </div>
                     </div>

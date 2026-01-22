@@ -17,7 +17,14 @@ class AnnouncementController extends Controller
      */
     public function index()
     {
-        $announcements = Announcement::orderBy('is_pinned', 'desc')
+        $today = \Carbon\Carbon::now()->toDateString();
+        
+        $announcements = Announcement::where(function($query) use ($today) {
+                // Show announcements that don't have an end_date or end_date is in the future
+                $query->whereNull('end_date')
+                      ->orWhere('end_date', '>', $today);
+            })
+            ->orderBy('is_pinned', 'desc')
             ->orderBy('created_at', 'desc')
             ->paginate(15);
 
@@ -221,7 +228,7 @@ class AnnouncementController extends Controller
             }
 
             // Get church name from settings
-            $churchName = SettingsService::get('church_name', 'AIC Moshi Kilimanjaro');
+            $churchName = SettingsService::get('church_name', 'KKKT Ushirika wa Longuo');
 
             // Build SMS message
             $message = $this->buildAnnouncementMessage($announcement, $churchName);

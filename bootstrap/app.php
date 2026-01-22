@@ -48,6 +48,14 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->appendToGroup('web', [
             \App\Http\Middleware\UpdateSessionUserId::class,
         ]);
+        
+        /**
+         * Add SetLocale middleware to set application locale from session
+         * This allows users to switch between English and Swahili
+         */
+        $middleware->appendToGroup('web', [
+            \App\Http\Middleware\SetLocale::class,
+        ]);
 
         /**
          * API middleware group (if any)
@@ -63,6 +71,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'treasurer' => \App\Http\Middleware\TreasurerMiddleware::class,
             'permission' => \App\Http\Middleware\CheckPermission::class,
+            'branch.access' => \App\Http\Middleware\BranchAccess::class,
         ]);
 
         /**

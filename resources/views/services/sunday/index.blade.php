@@ -197,13 +197,13 @@
 
 <div class="container-fluid px-4">
     <div class="d-flex flex-wrap align-items-center justify-content-between mt-4 mb-3 gap-2 page-header-mobile">
-        <h2 class="mb-0">Sunday Services</h2>
+        <h2 class="mb-0">{{ autoTranslate('Sunday Services') }}</h2>
         <div class="d-flex flex-wrap gap-2 btn-group-mobile">
             <a href="{{ route('services.sunday.export.csv', request()->query()) }}" class="btn btn-outline-success btn-sm">
-                <i class="fas fa-file-excel me-2"></i><span class="d-none d-sm-inline">Export </span>CSV
+                <i class="fas fa-file-excel me-2"></i><span class="d-none d-sm-inline">{{ autoTranslate('Export') }} </span>{{ autoTranslate('CSV') }}
             </a>
             <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addServiceModal">
-                <i class="fas fa-plus me-2"></i>Add Service
+                <i class="fas fa-plus me-2"></i>{{ autoTranslate('Add Service') }}
             </button>
         </div>
     </div>
@@ -215,7 +215,7 @@
             <div class="d-flex align-items-center justify-content-between">
                 <div class="d-flex align-items-center gap-2">
                     <i class="fas fa-filter text-primary"></i>
-                    <span class="fw-semibold">Filters</span>
+                    <span class="fw-semibold">{{ autoTranslate('Filters') }}</span>
                     @if(request('search') || request('from') || request('to'))
                         <span class="badge bg-primary rounded-pill" id="activeFiltersCount">{{ (request('search') ? 1 : 0) + (request('from') ? 1 : 0) + (request('to') ? 1 : 0) }}</span>
                     @endif
@@ -230,21 +230,21 @@
                 <!-- Search Field - Full Width on Mobile -->
                 <div class="col-12 col-md-4">
                     <label class="form-label small text-muted mb-1">
-                        <i class="fas fa-search me-1 text-primary"></i>Search
+                        <i class="fas fa-search me-1 text-primary"></i>{{ autoTranslate('Search') }}
                     </label>
-                    <input type="text" name="search" value="{{ request('search') }}" class="form-control form-control-sm" placeholder="Search theme, preacher, venue">
+                    <input type="text" name="search" value="{{ request('search') }}" class="form-control form-control-sm" placeholder="{{ autoTranslate('Search theme, preacher, venue') }}">
                 </div>
                 
                 <!-- Date Range - Side by Side on Mobile -->
                 <div class="col-6 col-md-3">
                     <label class="form-label small text-muted mb-1">
-                        <i class="fas fa-calendar-alt me-1 text-info"></i>From Date
+                        <i class="fas fa-calendar-alt me-1 text-info"></i>{{ autoTranslate('From Date') }}
                     </label>
                     <input type="date" name="from" value="{{ request('from') }}" class="form-control form-control-sm">
                 </div>
                 <div class="col-6 col-md-3">
                     <label class="form-label small text-muted mb-1">
-                        <i class="fas fa-calendar-check me-1 text-info"></i>To Date
+                        <i class="fas fa-calendar-check me-1 text-info"></i>{{ autoTranslate('To Date') }}
                     </label>
                     <input type="date" name="to" value="{{ request('to') }}" class="form-control form-control-sm">
                 </div>
@@ -254,8 +254,8 @@
                     <label class="form-label small text-muted mb-1 d-block">&nbsp;</label>
                     <button type="submit" class="btn btn-primary btn-sm w-100">
                         <i class="fas fa-filter me-1"></i>
-                        <span class="d-none d-sm-inline">Apply</span>
-                        <span class="d-sm-none">Filter</span>
+                        <span class="d-none d-sm-inline">{{ autoTranslate('Apply') }}</span>
+                        <span class="d-sm-none">{{ autoTranslate('Filter') }}</span>
                     </button>
                 </div>
             </div>
@@ -264,8 +264,8 @@
             <div class="d-flex gap-2 flex-wrap">
                 <a href="{{ route('services.sunday.index') }}" class="btn btn-outline-secondary btn-sm flex-fill flex-md-grow-0">
                     <i class="fas fa-redo me-1"></i>
-                    <span class="d-none d-sm-inline">Reset</span>
-                    <span class="d-sm-none">Clear</span>
+                    <span class="d-none d-sm-inline">{{ autoTranslate('Reset') }}</span>
+                    <span class="d-sm-none">{{ autoTranslate('Clear') }}</span>
                 </a>
             </div>
         </div>
@@ -278,12 +278,12 @@
                     <thead class="table-light">
                         <tr>
                             <th class="text-nowrap">#</th>
-                            <th>Date</th>
-                            <th>Theme</th>
-                            <th>Preacher</th>
-                            <th>Time</th>
-                            <th>Venue</th>
-                            <th class="text-end">Actions</th>
+                            <th>{{ autoTranslate('Date') }}</th>
+                            <th>{{ autoTranslate('Theme') }}</th>
+                            <th>{{ autoTranslate('Preacher') }}</th>
+                            <th>{{ autoTranslate('Time') }}</th>
+                            <th>{{ autoTranslate('Venue') }}</th>
+                            <th class="text-end">{{ autoTranslate('Actions') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -315,27 +315,27 @@
                                 <td>{{ $service->venue ?? '—' }}</td>
                                 <td class="text-end">
                                     <div class="btn-group btn-group-sm" role="group">
-                                        <button class="btn btn-outline-info" onclick="viewService({{ $service->id }})" title="View">
+                                        <button class="btn btn-outline-info" onclick="viewService({{ $service->id }})" title="{{ autoTranslate('View') }}">
                                             <i class="fas fa-eye"></i>
                                         </button>
-                                        <button class="btn btn-outline-primary" onclick="openEditService({{ $service->id }})" title="Edit">
+                                        <button class="btn btn-outline-primary" onclick="openEditService({{ $service->id }})" title="{{ autoTranslate('Edit') }}">
                                             <i class="fas fa-edit"></i>
                                         </button>
-                                        <button class="btn btn-outline-danger" onclick="confirmDeleteService({{ $service->id }})" title="Delete">
+                                        <button class="btn btn-outline-danger" onclick="confirmDeleteService({{ $service->id }})" title="{{ autoTranslate('Delete') }}">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </div>
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="7" class="text-center py-4">No services found.</td></tr>
+                            <tr><td colspan="7" class="text-center py-4">{{ autoTranslate('No services found.') }}</td></tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
         </div>
         <div class="card-footer d-flex justify-content-between align-items-center flex-wrap">
-            <div class="text-muted small mb-2 mb-md-0">Showing {{ $services->firstItem() }} to {{ $services->lastItem() }} of {{ $services->total() }} entries</div>
+            <div class="text-muted small mb-2 mb-md-0">{{ autoTranslate('Showing') }} {{ $services->firstItem() }} {{ autoTranslate('to') }} {{ $services->lastItem() }} {{ autoTranslate('of') }} {{ $services->total() }} {{ autoTranslate('entries') }}</div>
             <div>{{ $services->withQueryString()->links() }}</div>
         </div>
     </div>
@@ -346,60 +346,60 @@
     <div class="modal-dialog modal-md modal-dialog-scrollable">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
             <div class="modal-header text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
-                <h5 class="modal-title d-flex align-items-center gap-2"><i class="fas fa-church"></i><span>Add Sunday Service</span></h5>
+                <h5 class="modal-title d-flex align-items-center gap-2"><i class="fas fa-church"></i><span>{{ autoTranslate('Add Sunday Service') }}</span></h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body bg-light">
                 <form id="addServiceForm">
                     <div class="row g-3">
                         <div class="col-md-6 col-12">
-                            <label class="form-label">Service Theme</label>
-                            <input type="text" class="form-control" id="svc_theme" placeholder="Enter service theme">
+                            <label class="form-label">{{ autoTranslate('Service Theme') }}</label>
+                            <input type="text" class="form-control" id="svc_theme" placeholder="{{ autoTranslate('Enter service theme') }}">
                         </div>
                         <div class="col-md-6 col-12">
-                            <label class="form-label">Preacher</label>
-                            <input type="text" class="form-control" id="svc_preacher" placeholder="Enter preacher name">
+                            <label class="form-label">{{ autoTranslate('Preacher') }}</label>
+                            <input type="text" class="form-control" id="svc_preacher" placeholder="{{ autoTranslate('Enter preacher name') }}">
                         </div>
                         <div class="col-md-6 col-12">
-                            <label class="form-label">Venue</label>
-                            <input type="text" class="form-control" id="svc_venue" placeholder="Enter venue location">
+                            <label class="form-label">{{ autoTranslate('Venue') }}</label>
+                            <input type="text" class="form-control" id="svc_venue" placeholder="{{ autoTranslate('Enter venue location') }}">
                         </div>
                         <div class="col-md-6 col-12">
-                            <label class="form-label">Choir</label>
-                            <input type="text" class="form-control" id="svc_choir" placeholder="Enter choir name">
+                            <label class="form-label">{{ autoTranslate('Choir') }}</label>
+                            <input type="text" class="form-control" id="svc_choir" placeholder="{{ autoTranslate('Enter choir name') }}">
                         </div>
                         <div class="col-md-4 col-12">
-                            <label class="form-label">Service Date <span class="text-danger">*</span></label>
+                            <label class="form-label">{{ autoTranslate('Service Date') }} <span class="text-danger">*</span></label>
                             <input type="date" class="form-control" id="svc_date" required>
                         </div>
                         <div class="col-md-4 col-6">
-                            <label class="form-label">Start Time</label>
+                            <label class="form-label">{{ autoTranslate('Start Time') }}</label>
                             <input type="time" class="form-control" id="svc_start">
                         </div>
                         <div class="col-md-4 col-6">
-                            <label class="form-label">End Time</label>
+                            <label class="form-label">{{ autoTranslate('End Time') }}</label>
                             <input type="time" class="form-control" id="svc_end">
                         </div>
                         <div class="col-md-6 col-12">
-                            <label class="form-label">Attendance</label>
-                            <input type="number" min="0" class="form-control" id="svc_attendance" placeholder="Enter attendance count">
+                            <label class="form-label">{{ autoTranslate('Attendance') }}</label>
+                            <input type="number" min="0" class="form-control" id="svc_attendance" placeholder="{{ autoTranslate('Enter attendance count') }}">
                         </div>
                         <div class="col-md-6 col-12">
-                            <label class="form-label">Offerings (TZS)</label>
-                            <input type="number" min="0" step="0.01" class="form-control" id="svc_offerings" placeholder="Enter offerings amount">
+                            <label class="form-label">{{ autoTranslate('Offerings (TZS)') }}</label>
+                            <input type="number" min="0" step="0.01" class="form-control" id="svc_offerings" placeholder="{{ autoTranslate('Enter offerings amount') }}">
                         </div>
                         <div class="col-12">
-                            <label class="form-label">Scripture Readings</label>
-                            <textarea class="form-control" id="svc_readings" placeholder="Enter scripture readings..." rows="2"></textarea>
+                            <label class="form-label">{{ autoTranslate('Scripture Readings') }}</label>
+                            <textarea class="form-control" id="svc_readings" placeholder="{{ autoTranslate('Enter scripture readings...') }}" rows="2"></textarea>
                         </div>
                         <div class="col-12">
-                            <label class="form-label">Notes</label>
-                            <textarea class="form-control" id="svc_notes" placeholder="Enter additional notes..." rows="2"></textarea>
+                            <label class="form-label">{{ autoTranslate('Notes') }}</label>
+                            <textarea class="form-control" id="svc_notes" placeholder="{{ autoTranslate('Enter additional notes...') }}" rows="2"></textarea>
                         </div>
                     </div>
                     <div class="d-flex flex-column flex-sm-row justify-content-end gap-2 mt-3">
-                        <button type="button" class="btn btn-outline-danger" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Save Service</button>
+                        <button type="button" class="btn btn-outline-danger" data-bs-dismiss="modal">{{ autoTranslate('Cancel') }}</button>
+                        <button type="submit" class="btn btn-primary">{{ autoTranslate('Save Service') }}</button>
                     </div>
                 </form>
             </div>
@@ -413,18 +413,18 @@
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 18px; overflow: hidden;">
             <div class="modal-header text-white" style="background: linear-gradient(135deg, #1f2b6c 0%, #5b2a86 100%); border: none;">
-                <h5 class="modal-title d-flex align-items-center gap-2"><i class="fas fa-info-circle"></i><span>Service Details</span></h5>
+                <h5 class="modal-title d-flex align-items-center gap-2"><i class="fas fa-info-circle"></i><span>{{ autoTranslate('Service Details') }}</span></h5>
                 <button type="button" class="btn-close btn-close-white ms-2" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body bg-light" id="serviceDetailsBody">
-                <div class="text-center text-muted py-4">Loading...</div>
+                <div class="text-center text-muted py-4">{{ autoTranslate('Loading...') }}</div>
             </div>
             <div class="modal-footer d-flex justify-content-between align-items-center">
                 <div class="small">
                     <span class="me-1">Powered by</span>
                     <a href="https://emca.tech/#" target="_blank" rel="noopener" class="emca-link fw-semibold" style="color: #940000 !important;">EmCa Technologies</a>
                 </div>
-                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">{{ autoTranslate('Close') }}</button>
             </div>
         </div>
     </div>
@@ -435,7 +435,7 @@
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
             <div class="modal-header bg-white border-0">
-                <h6 class="modal-title d-flex align-items-center gap-2"><i class="fas fa-edit text-primary"></i><span>Edit Sunday Service</span></h6>
+                <h6 class="modal-title d-flex align-items-center gap-2"><i class="fas fa-edit text-primary"></i><span>{{ autoTranslate('Edit Sunday Service') }}</span></h6>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -443,53 +443,53 @@
                     <input type="hidden" id="edit_id">
                     <div class="row g-3">
                         <div class="col-md-4 col-12">
-                            <label class="form-label">Service Date</label>
+                            <label class="form-label">{{ autoTranslate('Service Date') }}</label>
                             <input type="date" class="form-control" id="edit_date" required>
                         </div>
                         <div class="col-md-4 col-6">
-                            <label class="form-label">Start Time</label>
+                            <label class="form-label">{{ autoTranslate('Start Time') }}</label>
                             <input type="time" class="form-control" id="edit_start">
                         </div>
                         <div class="col-md-4 col-6">
-                            <label class="form-label">End Time</label>
+                            <label class="form-label">{{ autoTranslate('End Time') }}</label>
                             <input type="time" class="form-control" id="edit_end">
                         </div>
                         <div class="col-md-6 col-12">
-                            <label class="form-label">Theme</label>
+                            <label class="form-label">{{ autoTranslate('Theme') }}</label>
                             <input type="text" class="form-control" id="edit_theme">
                         </div>
                         <div class="col-md-6 col-12">
-                            <label class="form-label">Preacher</label>
+                            <label class="form-label">{{ autoTranslate('Preacher') }}</label>
                             <input type="text" class="form-control" id="edit_preacher">
                         </div>
                         <div class="col-md-6 col-12">
-                            <label class="form-label">Venue</label>
+                            <label class="form-label">{{ autoTranslate('Venue') }}</label>
                             <input type="text" class="form-control" id="edit_venue">
                         </div>
                         <div class="col-md-3 col-6">
-                            <label class="form-label">Attendance</label>
+                            <label class="form-label">{{ autoTranslate('Attendance') }}</label>
                             <input type="number" min="0" class="form-control" id="edit_attendance">
                         </div>
                         <div class="col-md-3 col-6">
-                            <label class="form-label">Offerings (TZS)</label>
+                            <label class="form-label">{{ autoTranslate('Offerings (TZS)') }}</label>
                             <input type="number" min="0" step="0.01" class="form-control" id="edit_offerings">
                         </div>
                         <div class="col-12">
-                            <label class="form-label">Scripture Readings</label>
+                            <label class="form-label">{{ autoTranslate('Scripture Readings') }}</label>
                             <textarea class="form-control" id="edit_readings" rows="2"></textarea>
                         </div>
                         <div class="col-md-6 col-12">
-                            <label class="form-label">Choir</label>
+                            <label class="form-label">{{ autoTranslate('Choir') }}</label>
                             <input type="text" class="form-control" id="edit_choir">
                         </div>
                         <div class="col-12">
-                            <label class="form-label">Notes</label>
+                            <label class="form-label">{{ autoTranslate('Notes') }}</label>
                             <textarea class="form-control" id="edit_notes" rows="2"></textarea>
                         </div>
                     </div>
                     <div class="d-flex flex-column flex-sm-row justify-content-end gap-2 mt-3">
-                        <button type="button" class="btn btn-outline-danger" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Save</button>
+                        <button type="button" class="btn btn-outline-danger" data-bs-dismiss="modal">{{ autoTranslate('Cancel') }}</button>
+                        <button type="submit" class="btn btn-primary">{{ autoTranslate('Save') }}</button>
                     </div>
                 </form>
             </div>
@@ -505,28 +505,28 @@
             .then(s => {
                 const row = (label, value) => `<tr><td class="text-muted text-nowrap">${label}</td><td class="fw-semibold">${value || '—'}</td></tr>`;
                 const html = `
-                    <div class="small text-uppercase text-muted mt-2 mb-1">Overview</div>
+                    <div class="small text-uppercase text-muted mt-2 mb-1">{{ autoTranslate('Overview') }}</div>
                     <table class="table table-bordered table-striped align-middle interactive-table"><tbody>
-                        ${row('Service Date', (s.service_date || '').replaceAll('-', '/'))}
-                        ${row('Theme', s.theme)}
-                        ${row('Preacher', s.preacher)}
-                        ${row('Time', (s.start_time||'--:--') + ' - ' + (s.end_time||'--:--'))}
-                        ${row('Venue', s.venue)}
-                        ${row('Attendance', s.attendance_count)}
-                        ${row('Offerings (TZS)', s.offerings_amount)}
+                        ${row('{{ autoTranslate('Service Date') }}', (s.service_date || '').replaceAll('-', '/'))}
+                        ${row('{{ autoTranslate('Theme') }}', s.theme)}
+                        ${row('{{ autoTranslate('Preacher') }}', s.preacher)}
+                        ${row('{{ autoTranslate('Time') }}', (s.start_time||'--:--') + ' - ' + (s.end_time||'--:--'))}
+                        ${row('{{ autoTranslate('Venue') }}', s.venue)}
+                        ${row('{{ autoTranslate('Attendance') }}', s.attendance_count)}
+                        ${row('{{ autoTranslate('Offerings (TZS)') }}', s.offerings_amount)}
                     </tbody></table>
-                    <div class="small text-uppercase text-muted mt-3 mb-1">Details</div>
+                    <div class="small text-uppercase text-muted mt-3 mb-1">{{ autoTranslate('Details') }}</div>
                     <table class="table table-bordered table-striped align-middle interactive-table"><tbody>
-                        ${row('Scripture Readings', s.scripture_readings)}
-                        ${row('Choir', s.choir)}
-                        ${row('Notes', s.notes)}
+                        ${row('{{ autoTranslate('Scripture Readings') }}', s.scripture_readings)}
+                        ${row('{{ autoTranslate('Choir') }}', s.choir)}
+                        ${row('{{ autoTranslate('Notes') }}', s.notes)}
                     </tbody></table>
                 `;
                 document.getElementById('serviceDetailsBody').innerHTML = html;
                 new bootstrap.Modal(document.getElementById('serviceDetailsModal')).show();
             })
             .catch(() => {
-                document.getElementById('serviceDetailsBody').innerHTML = '<div class="text-danger">Failed to load details.</div>';
+                document.getElementById('serviceDetailsBody').innerHTML = '<div class="text-danger">{{ autoTranslate('Failed to load details.') }}</div>';
                 new bootstrap.Modal(document.getElementById('serviceDetailsModal')).show();
             });
     }
@@ -546,7 +546,6 @@
                 document.getElementById('edit_offerings').value = s.offerings_amount || '';
                 document.getElementById('edit_readings').value = s.scripture_readings || '';
                 document.getElementById('edit_choir').value = s.choir || '';
-                document.getElementById('edit_announcements').value = s.announcements || '';
                 document.getElementById('edit_notes').value = s.notes || '';
                 new bootstrap.Modal(document.getElementById('editServiceModal')).show();
             });
@@ -568,8 +567,8 @@
         fd.append('notes', document.getElementById('svc_notes').value);
         fetch(`{{ route('services.sunday.store') }}`, { method: 'POST', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') }, body: fd })
             .then(r => r.json())
-            .then(res => { if(res.success){ Swal.fire({ icon:'success', title:'Saved', timer:1200, showConfirmButton:false }).then(()=>location.reload()); } else { Swal.fire({ icon:'error', title:'Failed', text: res.message || 'Try again' }); } })
-            .catch(() => Swal.fire({ icon:'error', title:'Network error' }));
+            .then(res => { if(res.success){ Swal.fire({ icon:'success', title:'{{ autoTranslate('Saved') }}', timer:1200, showConfirmButton:false }).then(()=>location.reload()); } else { Swal.fire({ icon:'error', title:'{{ autoTranslate('Failed') }}', text: res.message || '{{ autoTranslate('Try again') }}' }); } })
+            .catch(() => Swal.fire({ icon:'error', title:'{{ autoTranslate('Network error') }}' }));
     });
 
     document.getElementById('editServiceForm').addEventListener('submit', function(e){
@@ -590,16 +589,16 @@
         fd.append('_method', 'PUT');
         fetch(`{{ url('/services/sunday') }}/${id}`, { method: 'POST', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') }, body: fd })
             .then(r => r.json())
-            .then(res => { if(res.success){ Swal.fire({ icon:'success', title:'Saved', timer:1200, showConfirmButton:false }).then(()=>location.reload()); } else { Swal.fire({ icon:'error', title:'Failed', text: res.message || 'Try again' }); } })
-            .catch(() => Swal.fire({ icon:'error', title:'Network error' }));
+            .then(res => { if(res.success){ Swal.fire({ icon:'success', title:'{{ autoTranslate('Saved') }}', timer:1200, showConfirmButton:false }).then(()=>location.reload()); } else { Swal.fire({ icon:'error', title:'{{ autoTranslate('Failed') }}', text: res.message || '{{ autoTranslate('Try again') }}' }); } })
+            .catch(() => Swal.fire({ icon:'error', title:'{{ autoTranslate('Network error') }}' }));
     });
 
     function confirmDeleteService(id){
-        Swal.fire({ title:'Delete service?', text:'This action cannot be undone.', icon:'warning', showCancelButton:true, confirmButtonText:'Yes, delete', cancelButtonText:'Cancel', confirmButtonColor:'#dc3545' })
+        Swal.fire({ title:'{{ autoTranslate('Delete service?') }}', text:'{{ autoTranslate('This action cannot be undone.') }}', icon:'warning', showCancelButton:true, confirmButtonText:'{{ autoTranslate('Yes, delete') }}', cancelButtonText:'{{ autoTranslate('Cancel') }}', confirmButtonColor:'#dc3545' })
         .then((result)=>{ if(result.isConfirmed){ fetch(`{{ url('/services/sunday') }}/${id}`, { method: 'DELETE', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') } })
             .then(r => r.json())
-            .then(res => { if(res.success){ document.getElementById(`row-${id}`)?.remove(); Swal.fire({ icon:'success', title:'Deleted', timer:1200, showConfirmButton:false }); } else { Swal.fire({ icon:'error', title:'Delete failed', text: res.message || 'Try again' }); } })
-            .catch(()=> Swal.fire({ icon:'error', title:'Error', text:'Request failed.' })); } });
+            .then(res => { if(res.success){ document.getElementById(`row-${id}`)?.remove(); Swal.fire({ icon:'success', title:'{{ autoTranslate('Deleted') }}', timer:1200, showConfirmButton:false }); } else { Swal.fire({ icon:'error', title:'{{ autoTranslate('Delete failed') }}', text: res.message || '{{ autoTranslate('Try again') }}' }); } })
+            .catch(()=> Swal.fire({ icon:'error', title:'{{ autoTranslate('Error') }}', text:'{{ autoTranslate('Request failed.') }}' })); } });
     }
     
     // Toggle Filters Function

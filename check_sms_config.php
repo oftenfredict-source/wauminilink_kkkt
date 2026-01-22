@@ -14,7 +14,7 @@ $apiUrl = \App\Services\SettingsService::get('sms_api_url');
 $apiKey = \App\Services\SettingsService::get('sms_api_key');
 $username = \App\Services\SettingsService::get('sms_username');
 $password = \App\Services\SettingsService::get('sms_password');
-$senderId = \App\Services\SettingsService::get('sms_sender_id', 'AIC Moshi Kilimanjaro');
+$senderId = \App\Services\SettingsService::get('sms_sender_id', 'KKKT Ushirika wa Longuo');
 
 echo "SMS Notifications Enabled: " . ($enabled ? "YES ✓" : "NO ✗") . "\n";
 echo "API URL: " . ($apiUrl ?: "NOT SET ✗") . "\n";

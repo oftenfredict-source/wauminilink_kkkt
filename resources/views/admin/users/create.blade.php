@@ -564,6 +564,41 @@
                             @enderror
                         </div>
                     </div>
+
+                    <!-- Campus/Branch Selection -->
+                    <div class="row mt-3">
+                        <div class="col-12 mb-3">
+                            <label for="campus_id" class="form-label">
+                                <i class="fas fa-building me-1"></i>Branch/Campus
+                            </label>
+                            <select class="form-select @error('campus_id') is-invalid @enderror" 
+                                    id="campus_id" 
+                                    name="campus_id">
+                                <option value="">-- Select Branch (Optional) --</option>
+                                @php
+                                    $campuses = \App\Models\Campus::where('is_active', true)
+                                        ->orderBy('is_main_campus', 'desc')
+                                        ->orderBy('name')
+                                        ->get();
+                                @endphp
+                                @foreach($campuses as $campus)
+                                    <option value="{{ $campus->id }}" {{ old('campus_id') == $campus->id ? 'selected' : '' }}>
+                                        {{ $campus->name }}
+                                        @if($campus->is_main_campus)
+                                            (Usharika)
+                                        @endif
+                                    </option>
+                                @endforeach
+                            </select>
+                            <small class="form-text text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Select the branch for this user. Leave blank for Usharika (main campus). Branch users will access Branch Dashboard.
+                            </small>
+                            @error('campus_id')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Admin Creation Section -->
@@ -622,6 +657,41 @@
                                 <strong>Note:</strong> Each user must have a unique phone number.
                             </small>
                             @error('phone_number')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <!-- Campus/Branch Selection for Admin -->
+                    <div class="row mt-3">
+                        <div class="col-12 mb-3">
+                            <label for="admin_campus_id" class="form-label">
+                                <i class="fas fa-building me-1"></i>Branch/Campus
+                            </label>
+                            <select class="form-select @error('campus_id') is-invalid @enderror" 
+                                    id="admin_campus_id" 
+                                    name="campus_id">
+                                <option value="">-- Select Branch (Optional) --</option>
+                                @php
+                                    $campuses = \App\Models\Campus::where('is_active', true)
+                                        ->orderBy('is_main_campus', 'desc')
+                                        ->orderBy('name')
+                                        ->get();
+                                @endphp
+                                @foreach($campuses as $campus)
+                                    <option value="{{ $campus->id }}" {{ old('campus_id') == $campus->id ? 'selected' : '' }}>
+                                        {{ $campus->name }}
+                                        @if($campus->is_main_campus)
+                                            (Usharika)
+                                        @endif
+                                    </option>
+                                @endforeach
+                            </select>
+                            <small class="form-text text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Select the branch for this admin. Leave blank for Usharika (main campus). Branch admins will access Branch Dashboard.
+                            </small>
+                            @error('campus_id')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>

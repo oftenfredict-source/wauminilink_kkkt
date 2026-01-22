@@ -15,14 +15,44 @@ use App\Models\DeletedMember;
 use App\Models\User;
 use App\Services\SmsService;
 use App\Services\SettingsService;
+use App\Services\ZKTecoService;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\DB;
 
 class MemberController extends Controller
 {
     public function create()
     {
-        return view('members.add-members');
+        // Check permission
+        if (!auth()->user()->hasPermission('members.create') && !auth()->user()->isAdmin()) {
+            abort(403, 'You do not have permission to add members.');
+        }
+
+        // Get campuses for selection - only active campuses
+        $query = \App\Models\Campus::where('is_active', true);
+
+        // If user has a campus, filter by it
+        if (auth()->check() && auth()->user()->campus_id) {
+            $userCampus = auth()->user()->campus;
+            if ($userCampus) {
+                if ($userCampus->is_main_campus) {
+                    // Main campus can see itself and all sub campuses
+                    $campusIds = [$userCampus->id];
+                    $campusIds = array_merge($campusIds, $userCampus->subCampuses->pluck('id')->toArray());
+                    $query->whereIn('id', $campusIds);
+                } else {
+                    // Sub campus can only see itself
+                    $query->where('id', $userCampus->id);
+                }
+            }
+        }
+
+        $campuses = $query->orderBy('is_main_campus', 'desc')
+            ->orderBy('name')
+            ->get();
+
+        return view('members.add-members', compact('campuses'));
     }
 
     public function nextId()
@@ -58,7 +88,7 @@ class MemberController extends Controller
             'email' => 'nullable|email|max:255',
             'phone_number' => ['required','string','max:20','regex:/^\+255[0-9]{9,15}$/', Rule::unique('members', 'phone_number')],
             'date_of_birth' => 'required|date|before:today',
-            'gender' => 'required|in:male,female',
+            'gender' => ['required', Rule::in(['male','female'])],
 
             'education_level' => ['nullable', Rule::in(['primary','secondary','high_level','certificate','diploma','bachelor_degree','masters','phd','professor','not_studied'])],
             'profession' => 'required|string|max:100',
@@ -201,7 +231,8 @@ class MemberController extends Controller
                     ], 422);
                 }
                 
-                $profilePicturePath = $file->store('members/profile-pictures', 'public');
+                // Save to storage/app/public/member/profile-pictures/ using Laravel Storage
+                $profilePicturePath = $file->store('member/profile-pictures', 'public');
             }
 
             // Handle spouse profile picture upload
@@ -227,18 +258,81 @@ class MemberController extends Controller
                     ], 422);
                 }
                 
-                $spouseProfilePicturePath = $file->store('members/profile-pictures', 'public');
+                // Save to storage/app/public/member/profile-pictures/ using Laravel Storage
+                $spouseProfilePicturePath = $file->store('member/profile-pictures', 'public');
             }
 
             // Generate unique member ID
             $memberId = Member::generateMemberId();
 
-            // Create member
+            // Validate that the user is allowed to add to this campus
+        if (auth()->check() && !auth()->user()->isAdmin()) {
+            $userCampus = auth()->user()->getCampus();
+            if ($userCampus) {
+                // If main campus, they can add to any sub-campus
+                if ($userCampus->is_main_campus) {
+                    $allowedIds = [$userCampus->id];
+                    $allowedIds = array_merge($allowedIds, $userCampus->subCampuses->pluck('id')->toArray());
+                    
+                    if (!in_array($request->campus_id, $allowedIds)) {
+                        return redirect()->back()->with('error', 'You are not authorized to add members to this branch.')->withInput();
+                    }
+                } 
+                // If not main campus, can ONLY add to their own campus
+                else if ($request->campus_id != $userCampus->id) {
+                    return redirect()->back()->with('error', 'You can only add members to your assigned branch.')->withInput();
+                }
+            }
+        }
+
+        // Create member
             \Log::info('=== CREATING MEMBER ===');
             \Log::info('Member ID to be created: ' . $memberId);
             
+            // Determine campus_id - CRITICAL: Ensure members go to correct branch
+            $userCampus = auth()->user()->getCampus();
+            $campusId = null;
+            
+            if ($userCampus && !$userCampus->is_main_campus) {
+                // Branch user - MUST register to their branch only
+                $campusId = $userCampus->id;
+                // Override any campus_id from request to prevent wrong branch assignment
+                \Log::info('Branch user registering member', [
+                    'user_campus_id' => $userCampus->id,
+                    'user_campus_name' => $userCampus->name,
+                    'requested_campus_id' => $request->campus_id,
+                    'final_campus_id' => $campusId
+                ]);
+            } elseif ($userCampus && $userCampus->is_main_campus && $request->filled('campus_id')) {
+                // Usharika admin - can select branch
+                $campusId = $request->campus_id;
+            } elseif ($userCampus && $userCampus->is_main_campus) {
+                // Usharika admin - default to main campus if not specified
+                $campusId = $userCampus->id;
+            } elseif (auth()->check() && auth()->user()->member && auth()->user()->member->campus_id) {
+                // Fallback: Use member's campus
+                $campusId = auth()->user()->member->campus_id;
+            } else {
+                // Final fallback: Get main campus
+                $mainCampus = \App\Models\Campus::where('is_main_campus', true)->first();
+                if ($mainCampus) {
+                    $campusId = $mainCampus->id;
+                }
+            }
+            
+            // Validation: Ensure campus_id is set
+            if (!$campusId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot determine branch. Please contact administrator.',
+                    'errors' => ['campus_id' => ['Branch assignment failed']]
+                ], 422);
+            }
+
             $memberData = [
                 'member_id' => $memberId,
+                'campus_id' => $campusId,
+                'community_id' => $request->community_id, // Community assignment
                 // biometric_enroll_id will be filled after successful device registration
                 'member_type' => $request->member_type,
                 'membership_type' => $request->membership_type,
@@ -268,6 +362,7 @@ class MemberController extends Controller
                 'residence_house_number' => $request->residence_house_number,
                 'profile_picture' => $profilePicturePath,
                 'marital_status' => $request->marital_status,
+                'wedding_date' => $request->wedding_date,
                 'spouse_full_name' => $request->spouse_full_name,
                 'spouse_date_of_birth' => $request->spouse_date_of_birth,
                 'spouse_education_level' => $request->spouse_education_level,
@@ -289,43 +384,8 @@ class MemberController extends Controller
             \Log::info('Created member ID: ' . $member->id);
             \Log::info('Created member data:', $member->toArray());
 
-            // Register member on biometric attendance device
-            try {
-                $biometricResponse = Http::timeout(5)->post(
-                    'http://192.168.100.100:8000/api/v1/users/register',
-                    [
-                        // Use internal numeric ID as enroll_id basis; device will return actual enroll_id
-                        'id' => (string) $member->id,
-                        'name' => $member->full_name,
-                    ]
-                );
-
-                if ($biometricResponse->successful()) {
-                    $biometricJson = $biometricResponse->json();
-
-                    \Log::info('Biometric registration response', [
-                        'member_id' => $member->id,
-                        'response' => $biometricJson,
-                    ]);
-
-                    if (!empty($biometricJson['data']['enroll_id'])) {
-                        $member->biometric_enroll_id = (string) $biometricJson['data']['enroll_id'];
-                        $member->save();
-                    }
-                } else {
-                    \Log::warning('Biometric registration HTTP error', [
-                        'member_id' => $member->id,
-                        'status' => $biometricResponse->status(),
-                        'body' => $biometricResponse->body(),
-                    ]);
-                }
-            } catch (\Throwable $e) {
-                \Log::error('Biometric registration failed', [
-                    'member_id' => $member->id,
-                    'error' => $e->getMessage(),
-                ]);
-                // Continue flow even if biometric registration fails
-            }
+            // NOTE: Biometric registration will happen AFTER spouse and children are created
+            // This ensures all family members are registered at once
 
             // Create User account for member
             try {
@@ -341,6 +401,7 @@ class MemberController extends Controller
                     'role' => 'member',
                     'member_id' => $member->id,
                     'phone_number' => $member->phone_number,
+                    'campus_id' => $member->campus_id, // Assign same campus as member
                 ]);
                 
                 \Log::info('User account created for member', [
@@ -380,10 +441,23 @@ class MemberController extends Controller
             }
 
             // Send welcome SMS (non-blocking best-effort) with diagnostic logging
+            $smsSent = false;
+            $smsError = null;
             try {
                 $smsEnabled = SettingsService::get('enable_sms_notifications', false);
-                if ($smsEnabled && !empty($member->phone_number)) {
-                    $churchName = SettingsService::get('church_name', 'AIC Moshi Kilimanjaro');
+                if (!$smsEnabled) {
+                    $smsError = 'SMS notifications are disabled in system settings';
+                    Log::info('Welcome SMS skipped: SMS notifications disabled', [
+                        'member_id' => $member->id,
+                        'phone' => $member->phone_number ?? 'N/A'
+                    ]);
+                } elseif (empty($member->phone_number)) {
+                    $smsError = 'Member has no phone number';
+                    Log::info('Welcome SMS skipped: No phone number', [
+                        'member_id' => $member->id
+                    ]);
+                } else {
+                    $churchName = SettingsService::get('church_name', 'KKKT Ushirika wa Longuo');
                     
                     // Get username and password for SMS
                     $username = $member->member_id;
@@ -396,18 +470,33 @@ class MemberController extends Controller
                     $message .= "Password: {$password}\n\n";
                     $message .= "Unaweza kupokea taarifa za ibada, matukio, na huduma kwa njia ya SMS. Karibu sana!";
                     
-                    $resp = app(SmsService::class)->sendDebug($member->phone_number, $message);
-                    \Log::info('Welcome SMS provider response', [
-                        'ok' => $resp['ok'] ?? null,
-                        'status' => $resp['status'] ?? null,
-                        'body' => $resp['body'] ?? null,
-                        'reason' => $resp['reason'] ?? null,
-                        'error' => $resp['error'] ?? null,
-                        'request' => $resp['request'] ?? null,
-                    ]);
+                    $smsService = app(SmsService::class);
+                    $resp = $smsService->sendDebug($member->phone_number, $message);
+                    $smsSent = $resp['ok'] ?? false;
+                    $smsError = $resp['reason'] ?? ($resp['error'] ?? null);
+                    
+                    if ($smsSent) {
+                        Log::info('Welcome SMS sent successfully', [
+                            'member_id' => $member->id,
+                            'phone' => $member->phone_number,
+                            'response' => $resp
+                        ]);
+                    } else {
+                        Log::warning('Welcome SMS failed', [
+                            'member_id' => $member->id,
+                            'phone' => $member->phone_number,
+                            'error' => $smsError,
+                            'response' => $resp
+                        ]);
+                    }
                 }
             } catch (\Throwable $e) {
-                \Log::warning('Welcome SMS failed', ['error' => $e->getMessage()]);
+                $smsError = $e->getMessage();
+                Log::error('Welcome SMS exception', [
+                    'member_id' => $member->id,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
             }
 
             // Create spouse as separate member if they are a church member
@@ -426,6 +515,7 @@ class MemberController extends Controller
                         'member_id' => Member::generateMemberId(),
                         'member_type' => 'independent', // Spouse is independent member
                         'membership_type' => 'permanent',
+                        'campus_id' => $member->campus_id, // Assign same campus as main member
                         'full_name' => $member->spouse_full_name,
                         'email' => $member->spouse_email,
                         'phone_number' => $member->spouse_phone_number,
@@ -449,6 +539,7 @@ class MemberController extends Controller
                         'residence_house_number' => $member->residence_house_number,
                         'profile_picture' => $spouseProfilePicturePath,
                         'marital_status' => 'married', // Spouse is also married
+                        'wedding_date' => $member->wedding_date, // Sync wedding date
                         'spouse_member_id' => $member->id, // Link to main member
                     ];
                     
@@ -478,6 +569,7 @@ class MemberController extends Controller
                             'role' => 'member',
                             'member_id' => $spouseMember->id,
                             'phone_number' => $spouseMember->phone_number,
+                            'campus_id' => $spouseMember->campus_id, // Assign same campus as spouse member
                         ]);
                         
                         \Log::info('User account created for spouse member', [
@@ -510,7 +602,7 @@ class MemberController extends Controller
                     !empty($member->spouse_phone_number) &&
                     $spouseMember) {
                     
-                    $churchName = SettingsService::get('church_name', 'AIC Moshi Kilimanjaro');
+                    $churchName = SettingsService::get('church_name', 'KKKT Ushirika wa Longuo');
                     
                     // Get username and password for spouse SMS
                     $spouseUsername = $spouseMember->member_id;
@@ -539,6 +631,171 @@ class MemberController extends Controller
                 \Log::warning('Spouse Welcome SMS failed', ['error' => $e->getMessage()]);
             }
 
+            // Automatically register member AND family (spouse + teenagers) to biometric device
+            // This happens AFTER spouse and children are created to ensure all are registered at once
+            try {
+                // Check if device connection is configured
+                $ip = config('zkteco.ip');
+                $port = config('zkteco.port');
+                $password = config('zkteco.password', 0);
+                
+                if ($ip && $port) {
+                    // Generate enroll ID if not already set (should be auto-generated by model boot, but double-check)
+                    if (empty($member->biometric_enroll_id)) {
+                        $enrollId = Member::generateBiometricEnrollId();
+                        $member->biometric_enroll_id = $enrollId;
+                        $member->save();
+                    }
+                    
+                    // Try to register to device (don't fail member creation if device is offline)
+                    try {
+                        $zktecoService = new ZKTecoService($ip, $port, $password);
+                        
+                        if ($zktecoService->connect()) {
+                            $enrollId = $member->biometric_enroll_id;
+                            
+                            // Validate enroll ID is in valid range
+                            $enrollIdInt = (int)$enrollId;
+                            if ($enrollIdInt >= 10 && $enrollIdInt <= 999) {
+                                \Log::info("=== REGISTERING FAMILY TO BIOMETRIC DEVICE ===");
+                                \Log::info("Main Member: {$member->full_name} (ID: {$enrollId})");
+                                
+                                // Register main member
+                                try {
+                                    $registered = $zktecoService->registerUser(
+                                        $enrollIdInt,
+                                        (string)$enrollId,
+                                        $member->full_name,
+                                        '',
+                                        0,
+                                        0
+                                    );
+                                    
+                                    if ($registered) {
+                                        \Log::info("✅ Main member '{$member->full_name}' registered to device (ID: {$enrollId})");
+                                    } else {
+                                        \Log::warning("Main member registration returned false, but continuing with family registration");
+                                    }
+                                } catch (\Exception $mainError) {
+                                    if (strpos($mainError->getMessage(), 'already exists') !== false) {
+                                        \Log::info("✅ Main member '{$member->full_name}' already on device");
+                                    } else {
+                                        \Log::warning("Main member registration error: " . $mainError->getMessage() . " - Continuing with family");
+                                    }
+                                }
+                                
+                                // Register spouse if they are a church member
+                                // Reload member to get spouse relationship (spouse was created after main member)
+                                $member->refresh();
+                                $member->load('spouseMember');
+                                
+                                if ($member->spouse_member_id) {
+                                    $spouse = $member->spouseMember;
+                                    if ($spouse) {
+                                        \Log::info("Registering spouse: {$spouse->full_name}");
+                                        
+                                        // Generate enroll ID for spouse if needed
+                                        if (!$spouse->biometric_enroll_id) {
+                                            $spouseEnrollId = Member::generateBiometricEnrollId();
+                                            $spouse->biometric_enroll_id = $spouseEnrollId;
+                                            $spouse->save();
+                                        } else {
+                                            $spouseEnrollId = $spouse->biometric_enroll_id;
+                                        }
+                                        
+                                        // Small delay
+                                        usleep(500000);
+                                        
+                                        try {
+                                            $spouseResult = $zktecoService->registerUser(
+                                                (int)$spouseEnrollId,
+                                                (string)$spouseEnrollId,
+                                                $spouse->full_name,
+                                                '',
+                                                0,
+                                                0
+                                            );
+                                            
+                                            if ($spouseResult) {
+                                                \Log::info("✅ Spouse '{$spouse->full_name}' registered to device (ID: {$spouseEnrollId})");
+                                            }
+                                        } catch (\Exception $spouseError) {
+                                            if (strpos($spouseError->getMessage(), 'already exists') !== false) {
+                                                \Log::info("✅ Spouse '{$spouse->full_name}' already on device");
+                                            } else {
+                                                \Log::warning("Spouse registration error: " . $spouseError->getMessage());
+                                            }
+                                        }
+                                    }
+                                }
+                                
+                                // Register teenager children (13-17)
+                                $member->load('children');
+                                $allChildren = $member->children()->whereNotNull('date_of_birth')->get();
+                                $teenagers = $allChildren->filter(function($child) {
+                                    return $child->shouldAttendMainService(); // Only teenagers (13-17)
+                                });
+                                
+                                \Log::info("Found {$teenagers->count()} teenagers to register");
+                                
+                                foreach ($teenagers as $teenager) {
+                                    \Log::info("Registering teenager: {$teenager->full_name} (age: {$teenager->getAge()})");
+                                    
+                                    // Generate enroll ID if needed
+                                    if (!$teenager->biometric_enroll_id) {
+                                        $teenEnrollId = \App\Models\Child::generateBiometricEnrollId();
+                                        $teenager->biometric_enroll_id = $teenEnrollId;
+                                        $teenager->save();
+                                    } else {
+                                        $teenEnrollId = $teenager->biometric_enroll_id;
+                                    }
+                                    
+                                    // Small delay
+                                    usleep(500000);
+                                    
+                                    try {
+                                        $teenResult = $zktecoService->registerUser(
+                                            (int)$teenEnrollId,
+                                            (string)$teenEnrollId,
+                                            $teenager->full_name,
+                                            '',
+                                            0,
+                                            0
+                                        );
+                                        
+                                        if ($teenResult) {
+                                            \Log::info("✅ Teenager '{$teenager->full_name}' registered to device (ID: {$teenEnrollId})");
+                                        }
+                                    } catch (\Exception $teenError) {
+                                        if (strpos($teenError->getMessage(), 'already exists') !== false) {
+                                            \Log::info("✅ Teenager '{$teenager->full_name}' already on device");
+                                        } else {
+                                            \Log::warning("Teenager registration error: " . $teenError->getMessage());
+                                        }
+                                    }
+                                }
+                                
+                                \Log::info("✅ Family registration complete for member '{$member->full_name}'");
+                            } else {
+                                \Log::warning("Member '{$member->full_name}' has invalid enroll ID: {$enrollId} (must be 10-999)");
+                            }
+                            
+                            $zktecoService->disconnect();
+                        } else {
+                            \Log::warning("Could not connect to biometric device to register member '{$member->full_name}'. Device may be offline.");
+                        }
+                    } catch (\Exception $deviceError) {
+                        // Don't fail member creation if device registration fails
+                        \Log::warning("Failed to register member '{$member->full_name}' to biometric device: " . $deviceError->getMessage());
+                    }
+                } else {
+                    \Log::info("Biometric device not configured. Member '{$member->full_name}' created without device registration.");
+                }
+            } catch (\Exception $e) {
+                // Don't fail member creation if biometric registration fails
+                \Log::warning("Biometric registration error for member '{$member->full_name}': " . $e->getMessage());
+            }
+
             // Get updated total members count
             $totalMembers = Member::count();
 
@@ -552,12 +809,13 @@ class MemberController extends Controller
             }
 
 
-            // Flash session data for SweetAlert popup
-            return redirect()->route('members.add')->with([
+            // Flash session data for SweetAlert popup and redirect to view the member
+            return redirect()->route('members.show', $member->id)->with([
                 'success' => 'Member registered successfully!',
                 'user_id' => $memberId,
                 'name' => $member->full_name,
                 'membership_type' => $member->membership_type,
+                'member_id' => $member->id,
             ]);
 
         } catch (\Exception $e) {
@@ -580,6 +838,25 @@ class MemberController extends Controller
 {
     $query = Member::query();
 
+    // Apply branch/campus filtering based on user's access
+    if (auth()->check() && !auth()->user()->isAdmin()) {
+        $userCampus = auth()->user()->getCampus();
+        if ($userCampus) {
+            if ($userCampus->is_main_campus) {
+                // Usharika (main campus) can see all branches including itself
+                $campusIds = [$userCampus->id];
+                $campusIds = array_merge($campusIds, $userCampus->subCampuses->pluck('id')->toArray());
+                $query->whereIn('campus_id', $campusIds);
+            } else {
+                // Branch users can only see their own branch members
+                $query->where('campus_id', $userCampus->id);
+            }
+        } elseif (auth()->user()->campus_id) {
+            // Fallback: if user has campus_id but getCampus() fails
+            $query->where('campus_id', auth()->user()->campus_id);
+        }
+    }
+
     // Search across key fields
     if ($request->filled('search')) {
         $search = $request->search;
@@ -589,6 +866,21 @@ class MemberController extends Controller
               ->orWhere('phone_number', 'like', "%{$search}%")
               ->orWhere('member_id', 'like', "%{$search}%");
         });
+    }
+
+    // Branch filter (for Usharika to filter by specific branch)
+    if ($request->filled('campus_id') && auth()->check() && auth()->user()->getCampus() && auth()->user()->getCampus()->is_main_campus) {
+        $query->where('campus_id', $request->campus_id);
+    }
+
+    // Membership type filter (permanent/temporary)
+    if ($request->filled('membership_type')) {
+        $query->where('membership_type', $request->membership_type);
+    } else {
+        // Default to permanent if no type specified
+        if (!$request->filled('type') && !$request->filled('archived')) {
+            $query->where('membership_type', 'permanent');
+        }
     }
 
     // Filters
@@ -611,28 +903,169 @@ class MemberController extends Controller
         $query->where('living_with_family', $request->living_with_family);
     }
 
-    // Distincts for filter dropdowns
-    $regions = Member::distinct()->pluck('region')->filter()->sort()->values();
-    $districts = Member::distinct()->pluck('district')->filter()->sort()->values();
-    $wards = Member::distinct()->pluck('ward')->filter()->sort()->values();
-    $tribes = Member::distinct()->pluck('tribe')->filter()->sort()->values();
+    // Get base query for distincts (respecting branch access)
+    $baseQuery = clone $query;
+    
+    // Distincts for filter dropdowns (filtered by branch access)
+    $regions = (clone $baseQuery)->distinct()->pluck('region')->filter()->sort()->values();
+    $districts = (clone $baseQuery)->distinct()->pluck('district')->filter()->sort()->values();
+    $wards = (clone $baseQuery)->distinct()->pluck('ward')->filter()->sort()->values();
+    $tribes = (clone $baseQuery)->distinct()->pluck('tribe')->filter()->sort()->values();
 
     $members = $query->orderBy('created_at', 'desc')->paginate(10);
     $members->appends($request->query());
 
-    // Fetch archived members from DeletedMember
-    $archivedMembers = \App\Models\DeletedMember::orderBy('deleted_at_actual', 'desc')->get();
+    // Fetch children (filtered by branch access through their parents)
+    $childrenQuery = \App\Models\Child::with('member');
+    if (auth()->check() && !auth()->user()->isAdmin()) {
+        $userCampus = auth()->user()->getCampus();
+        if ($userCampus && !$userCampus->is_main_campus) {
+            $childrenQuery->whereHas('member', function($q) use ($userCampus) {
+                $q->where('campus_id', $userCampus->id);
+            });
+        }
+    }
+    $children = $childrenQuery->orderBy('full_name', 'asc')->get();
 
-    // Fetch all children
-    $children = \App\Models\Child::with('member')
-        ->orderBy('full_name', 'asc')
-        ->get();
-
-    if ($request->wantsJson()) {
-        return response()->json($members);
+    // Get campuses for branch filter dropdown (for Usharika)
+    $campuses = null;
+    if (auth()->check() && auth()->user()->getCampus() && auth()->user()->getCampus()->is_main_campus) {
+        $campuses = \App\Models\Campus::where('is_active', true)
+            ->orderBy('is_main_campus', 'desc')
+            ->orderBy('name')
+            ->get();
     }
 
-    return view('members.view', compact('members', 'regions', 'districts', 'wards', 'tribes', 'archivedMembers', 'children'));
+    // Count members by type for tabs
+    $baseCountQuery = Member::query();
+    if (auth()->check() && !auth()->user()->isAdmin()) {
+        $userCampus = auth()->user()->getCampus();
+        if ($userCampus) {
+            if ($userCampus->is_main_campus) {
+                $campusIds = [$userCampus->id];
+                $campusIds = array_merge($campusIds, $userCampus->subCampuses->pluck('id')->toArray());
+                $baseCountQuery->whereIn('campus_id', $campusIds);
+            } else {
+                $baseCountQuery->where('campus_id', $userCampus->id);
+            }
+        } elseif (auth()->user()->campus_id) {
+            $baseCountQuery->where('campus_id', auth()->user()->campus_id);
+        }
+    }
+    
+    $permanentCount = (clone $baseCountQuery)->where('membership_type', 'permanent')->count();
+    $temporaryCount = (clone $baseCountQuery)->where('membership_type', 'temporary')->count();
+    $childrenCount = $children->count();
+
+    // Handle children view
+    if ($request->filled('type') && $request->type === 'children') {
+        $members = null; // Children will be shown instead
+    }
+
+
+    if ($request->wantsJson() || $request->has('wantsJson')) {
+        // For dropdown/select purposes, return simple array of members
+        $simpleMembers = Member::query();
+        
+        // Apply branch/campus filtering
+        if (auth()->check() && !auth()->user()->isAdmin()) {
+            $userCampus = auth()->user()->getCampus();
+            if ($userCampus) {
+                if ($userCampus->is_main_campus) {
+                    $campusIds = [$userCampus->id];
+                    $campusIds = array_merge($campusIds, $userCampus->subCampuses->pluck('id')->toArray());
+                    $simpleMembers->whereIn('campus_id', $campusIds);
+                } else {
+                    $simpleMembers->where('campus_id', $userCampus->id);
+                }
+            } elseif (auth()->user()->campus_id) {
+                $simpleMembers->where('campus_id', auth()->user()->campus_id);
+            }
+        }
+        
+        // Only return permanent and temporary members (not children)
+        // Load spouse relationship to show couples together
+        $simpleMembers->whereIn('membership_type', ['permanent', 'temporary'])
+            ->with(['spouseMember', 'mainMember'])
+            ->orderBy('full_name', 'asc')
+            ->select('id', 'full_name', 'member_id', 'phone_number', 'email', 'spouse_member_id', 'member_type');
+        
+        $members = $simpleMembers->get();
+        
+        // Format members to show couples together
+        $formattedMembers = [];
+        $processedIds = [];
+        
+        foreach ($members as $member) {
+            // Skip if already processed (as a spouse)
+            if (in_array($member->id, $processedIds)) {
+                continue;
+            }
+            
+            // Check if this member has a spouse who is also a church member
+            $spouse = null;
+            
+            // Method 1: Check if member has spouse_member_id and load the spouse
+            if ($member->spouse_member_id) {
+                $spouse = $members->firstWhere('id', $member->spouse_member_id);
+            }
+            
+            // Method 2: Check reverse - if another member has this member as spouse
+            if (!$spouse) {
+                $spouse = $members->firstWhere('spouse_member_id', $member->id);
+            }
+            
+            // Method 3: Try using the relationship (in case it's loaded)
+            if (!$spouse && $member->spouseMember) {
+                $spouse = $member->spouseMember;
+            }
+            
+            // If we found a spouse who is also a church member (not a child)
+            if ($spouse && $spouse->membership_type !== 'child' && $member->membership_type !== 'child') {
+                // Use the member with lower ID as main (for consistency)
+                if ($member->id < $spouse->id) {
+                    $mainMember = $member;
+                    $spouseMember = $spouse;
+                } else {
+                    $mainMember = $spouse;
+                    $spouseMember = $member;
+                }
+                
+                // Show as a couple: "John Doe & Jane Doe"
+                $formattedMembers[] = [
+                    'id' => $mainMember->id, // Use main member's ID
+                    'full_name' => $mainMember->full_name . ' & ' . $spouseMember->full_name,
+                    'member_id' => $mainMember->member_id,
+                    'phone_number' => $mainMember->phone_number,
+                    'email' => $mainMember->email,
+                    'is_couple' => true,
+                    'spouse_id' => $spouseMember->id,
+                    'spouse_name' => $spouseMember->full_name,
+                    'spouse_member_id' => $spouseMember->member_id
+                ];
+                
+                // Mark both as processed
+                $processedIds[] = $member->id;
+                $processedIds[] = $spouse->id;
+            } 
+            // Single member (not married or spouse not a church member)
+            else {
+                $formattedMembers[] = [
+                    'id' => $member->id,
+                    'full_name' => $member->full_name,
+                    'member_id' => $member->member_id,
+                    'phone_number' => $member->phone_number,
+                    'email' => $member->email,
+                    'is_couple' => false
+                ];
+                $processedIds[] = $member->id;
+            }
+        }
+        
+        return response()->json($formattedMembers);
+    }
+
+    return view('members.view', compact('members', 'regions', 'districts', 'wards', 'tribes', 'children', 'campuses', 'permanentCount', 'temporaryCount', 'childrenCount'));
 }
 
 public function view()
@@ -650,7 +1083,54 @@ public function show($id)
         \Log::info('SHOW_MEMBER_FOUND_REGULAR', ['id' => $id]);
         
         // Load the member with children and spouse relationship
-        $member->load(['children', 'spouseMember', 'mainMember']);
+        $member->load(['children', 'spouseMember', 'mainMember', 'campus', 'community']);
+        
+        // Get children - they belong to the main member (father/mother)
+        // Children are linked to the member who created them (father or mother)
+        // We need to show children on both father's and mother's pages
+        
+        $children = collect();
+        
+        // Collect children from multiple sources and merge them
+        // This ensures children appear on both parents' pages when they are married
+        
+        // 1. Get children directly linked to this member
+        if ($member->children->isNotEmpty()) {
+            $children = $children->merge($member->children);
+        }
+        
+        // 2. If this member is a spouse (has a mainMember), get children from the main member
+        if ($member->mainMember) {
+            $mainMember = $member->mainMember;
+            $mainMember->load('children');
+            if ($mainMember->children->isNotEmpty()) {
+                $children = $children->merge($mainMember->children);
+            }
+        }
+        
+        // 3. If this member has a spouse who is a church member, get children from the spouse
+        // (in case children were linked to spouse instead of main member)
+        if ($member->spouseMember) {
+            $spouse = $member->spouseMember;
+            $spouse->load('children');
+            if ($spouse->children->isNotEmpty()) {
+                $children = $children->merge($spouse->children);
+            }
+        }
+        
+        // 4. If spouse has a mainMember (spouse is also a spouse), get children from spouse's mainMember
+        if ($member->spouseMember) {
+            $spouse = $member->spouseMember;
+            if ($spouse->mainMember) {
+                $spouse->mainMember->load('children');
+                if ($spouse->mainMember->children->isNotEmpty()) {
+                    $children = $children->merge($spouse->mainMember->children);
+                }
+            }
+        }
+        
+        // Remove duplicates by ID (in case same child appears in multiple collections)
+        $children = $children->unique('id')->values();
         
         // If this member has a spouse member, add spouse details
         if ($member->spouseMember) {
@@ -692,116 +1172,215 @@ public function show($id)
             ];
         }
         
-        return response()->json($member);
+        // Debug: Log children count for troubleshooting
+        \Log::info('MEMBER_SHOW_CHILDREN', [
+            'member_id' => $member->id,
+            'member_name' => $member->full_name,
+            'member_type' => $member->member_type,
+            'has_spouse_member_id' => !empty($member->spouse_member_id),
+            'has_main_member' => !empty($member->mainMember),
+            'children_count' => $children->count(),
+            'member_children_count' => $member->children->count(),
+            'spouse_children_count' => $member->spouseMember ? $member->spouseMember->children->count() : 0,
+            'main_member_children_count' => $member->mainMember ? $member->mainMember->children->count() : 0,
+        ]);
+        
+        // If request wants JSON (AJAX request), return JSON
+        if (request()->wantsJson() || request()->ajax()) {
+            return response()->json($member);
+        }
+        
+        // Otherwise return view
+        return view('members.view-member', compact('member', 'children'));
     }
     
-    // If not found, try to find in archived members
-    $archivedMember = DeletedMember::where('member_id', (int)$id)->first();
-    \Log::info('SHOW_ARCHIVED_SEARCH', [
-        'id' => $id, 
-        'archived_found' => $archivedMember ? true : false,
-        'archived_id' => $archivedMember ? $archivedMember->id : null
-    ]);
-    
-    if ($archivedMember) {
-        // Return the archived member data with the snapshot
-        $memberData = $archivedMember->member_snapshot;
-        $memberData['archived'] = true;
-        $memberData['archive_reason'] = $archivedMember->reason;
-        $memberData['archived_at'] = $archivedMember->deleted_at_actual;
-        \Log::info('SHOW_ARCHIVED_SUCCESS', ['id' => $id]);
-        return response()->json($memberData);
-    }
-    
-    // If not found in either table, return 404
+    // If not found, return 404
     \Log::info('SHOW_MEMBER_NOT_FOUND', ['id' => $id]);
-    return response()->json(['error' => 'Member not found'], 404);
+    
+    if (request()->wantsJson() || request()->ajax()) {
+        return response()->json(['error' => 'Member not found'], 404);
+    }
+    
+    abort(404, 'Member not found');
+}
+
+public function edit($id)
+{
+    // Check permission
+    if (!auth()->user()->hasPermission('members.edit') && !auth()->user()->isAdmin()) {
+        abort(403, 'You do not have permission to edit members.');
+    }
+
+    $member = Member::findOrFail($id);
+    $member->load(['children', 'campus', 'community']);
+
+    // Get campuses for selection - only active campuses
+    $query = \App\Models\Campus::where('is_active', true);
+
+    // If user has a campus, filter by it
+    if (auth()->check()) {
+        $userCampus = auth()->user()->getCampus();
+        if ($userCampus && !auth()->user()->isAdmin()) {
+            if ($userCampus->is_main_campus) {
+                // Main campus can see itself and all sub campuses
+                $campusIds = [$userCampus->id];
+                $campusIds = array_merge($campusIds, $userCampus->subCampuses->pluck('id')->toArray());
+                $query->whereIn('id', $campusIds);
+            } else {
+                // Sub campus can only see itself
+                $query->where('id', $userCampus->id);
+            }
+        }
+    }
+
+    $campuses = $query->orderBy('is_main_campus', 'desc')->orderBy('name', 'asc')->get();
+
+    // Get communities for the member's campus
+    $communities = \App\Models\Community::where('campus_id', $member->campus_id)->orderBy('name', 'asc')->get();
+
+    return view('members.edit', compact('member', 'campuses', 'communities'));
 }
 
 public function update(Request $request, Member $member)
 {
+    // Check permission
+    if (!auth()->user()->hasPermission('members.edit') && !auth()->user()->isAdmin()) {
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(['success' => false, 'message' => 'You do not have permission to edit members.'], 403);
+        }
+        abort(403, 'You do not have permission to edit members.');
+    }
+
     $rules = [
-        'full_name' => 'sometimes|required|string|max:255',
-        'email' => 'sometimes|nullable|email|max:255',
-        'phone_number' => 'sometimes|required|string|max:20',
-        'membership_type' => 'sometimes|required|in:permanent,temporary',
-        'date_of_birth' => 'sometimes|required|date|before:today',
-        'gender' => 'sometimes|required|in:male,female',
+        'full_name' => 'required|string|max:255',
+        'email' => 'nullable|email|max:255',
+        'phone_number' => 'required|string|max:20',
+        'membership_type' => 'required|in:permanent,temporary',
+        'date_of_birth' => 'required|date|before:today',
+        'gender' => 'required|in:male,female',
         'nida_number' => 'nullable|string|max:20',
-        'tribe' => 'sometimes|required|string|max:100',
+        'tribe' => 'required|string|max:100',
         'other_tribe' => 'nullable|required_if:tribe,Other|string|max:100',
-        'region' => 'sometimes|required|string|max:100',
-        'district' => 'sometimes|required|string|max:100',
-        'ward' => 'sometimes|required|string|max:100',
-        'street' => 'sometimes|required|string|max:255',
-        'address' => 'sometimes|required|string',
-        'living_with_family' => 'sometimes|required|in:yes,no',
-        'family_relationship' => 'nullable|required_if:living_with_family,yes|string|max:100',
+        'region' => 'required|string|max:100',
+        'district' => 'required|string|max:100',
+        'ward' => 'required|string|max:100',
+        'street' => 'required|string|max:255',
+        'address' => 'required|string',
+        'campus_id' => 'required|exists:campuses,id',
+        'community_id' => 'nullable|exists:communities,id',
+        'marital_status' => 'nullable|in:single,married,divorced,widowed,separated',
+        'wedding_date' => 'nullable|date|before:today',
     ];
 
     $validated = $request->validate($rules);
+    
+    // Check if wedding_date is being updated
+    $oldWeddingDate = $member->wedding_date ? $member->wedding_date->format('Y-m-d') : null;
+    $newWeddingDate = $validated['wedding_date'] ?? null;
+    $weddingDateUpdated = $oldWeddingDate !== $newWeddingDate;
+    
     $member->update($validated);
-    return response()->json(['success' => true, 'message' => 'Member updated successfully', 'member' => $member]);
+    
+    // Sync wedding date to spouse if it was updated
+    if ($weddingDateUpdated) {
+        // If this member has a spouse (spouse is a church member)
+        if ($member->spouse_member_id) {
+            $spouseMember = Member::find($member->spouse_member_id);
+            if ($spouseMember) {
+                $spouseMember->update(['wedding_date' => $newWeddingDate]);
+                \Log::info('Wedding date synced to spouse member', [
+                    'member_id' => $member->id,
+                    'spouse_member_id' => $spouseMember->id,
+                    'wedding_date' => $newWeddingDate
+                ]);
+            }
+        }
+        
+        // If this member is a spouse (has a main member)
+        $mainMember = Member::where('spouse_member_id', $member->id)->first();
+        if ($mainMember) {
+            $mainMember->update(['wedding_date' => $newWeddingDate]);
+            \Log::info('Wedding date synced to main member', [
+                'member_id' => $member->id,
+                'main_member_id' => $mainMember->id,
+                'wedding_date' => $newWeddingDate
+            ]);
+        }
+    }
+    
+    if ($request->wantsJson() || $request->ajax()) {
+        return response()->json(['success' => true, 'message' => 'Member updated successfully', 'member' => $member]);
+    }
+    
+    return redirect()->route('members.show', $member->id)
+        ->with('success', 'Member updated successfully');
 }
 
 public function destroy(Member $member)
 {
+    // Check permission first
+    if (!auth()->user()->hasPermission('members.delete') && !auth()->user()->isAdmin()) {
+        \Log::warning('DELETE_MEMBER_PERMISSION_DENIED', [
+            'user_id' => auth()->id(),
+            'member_id' => $member->id
+        ]);
+        
+        if (request()->wantsJson() || request()->ajax() || request()->header('X-Requested-With') === 'XMLHttpRequest') {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to delete members.'
+            ], 403);
+        }
+        abort(403, 'You do not have permission to delete members.');
+    }
+    
     try {
-        \Log::info('ARCHIVE_MEMBER_ATTEMPT', [
-            'member_id' => $member->id,
-            'member_id_string' => $member->member_id,
-            'full_name' => $member->full_name,
-            'request_method' => request()->method(),
-            'request_url' => request()->url(),
-            'request_headers' => request()->headers->all(),
-            'route_name' => request()->route()->getName(),
-            'route_parameters' => request()->route()->parameters()
+        // Store member info before deletion
+        $memberId = $member->id;
+        $memberIdString = $member->member_id;
+        $fullName = $member->full_name;
+        
+        \Log::info('DELETE_MEMBER_ATTEMPT', [
+            'member_id' => $memberId,
+            'member_id_string' => $memberIdString,
+            'full_name' => $fullName,
+            'user_id' => auth()->id()
         ]);
 
         // Get the reason from request body
-        $reason = request()->input('reason', 'Member archived via delete action - all financial records preserved');
+        $reason = request()->input('reason', 'Member deleted by user');
         
-        // Instead of deleting, archive the member to preserve all financial records
-        DeletedMember::create([
-            'member_id' => $member->id,
-            'member_snapshot' => $member->toArray(),
-            'reason' => $reason,
-            'deleted_at_actual' => now(),
-        ]);
-
-        \Log::info('ARCHIVE_MEMBER_SUCCESS', [
-            'member_id' => $member->id,
-            'full_name' => $member->full_name
-        ]);
-
-        // Remove from active members (but keep all financial records intact)
+        // Delete the member directly (no archiving)
         $member->delete();
 
         \Log::info('DELETE_MEMBER_SUCCESS', [
-            'member_id' => $member->id,
-            'member_id_string' => $member->member_id
+            'member_id' => $memberId,
+            'member_id_string' => $memberIdString,
+            'full_name' => $fullName
         ]);
 
-        if (request()->wantsJson() || request()->ajax()) {
+        if (request()->wantsJson() || request()->ajax() || request()->header('X-Requested-With') === 'XMLHttpRequest') {
             return response()->json([
                 'success' => true,
-                'message' => 'Member has been moved to archived status. All financial records (tithes, offerings, donations, pledges) have been preserved and remain intact.',
-                'member_id' => $member->id,
-                'action' => 'archived'
+                'message' => 'Member has been deleted successfully.',
+                'member_id' => $memberId,
+                'action' => 'deleted'
             ]);
         }
         
-        return redirect()->route('members.view')
-            ->with('success', 'Member has been moved to archived status. All financial records have been preserved.');
+        return redirect()->route('members.index')
+            ->with('success', 'Member has been deleted successfully.');
 
     } catch (\Exception $e) {
         \Log::error('DELETE_MEMBER_FAILED', [
-            'member_id' => $member->id,
+            'member_id' => $member->id ?? 'unknown',
             'error' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
             'trace' => $e->getTraceAsString()
         ]);
 
-        if (request()->wantsJson() || request()->ajax()) {
+        if (request()->wantsJson() || request()->ajax() || request()->header('X-Requested-With') === 'XMLHttpRequest') {
             return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while deleting the member: ' . $e->getMessage(),
@@ -809,200 +1388,8 @@ public function destroy(Member $member)
             ], 500);
         }
         
-        return redirect()->route('members.view')
+        return redirect()->route('members.index')
             ->with('error', 'An error occurred while deleting the member: ' . $e->getMessage());
-    }
-}
-
-public function archive(Request $request, Member $member)
-{
-    \Log::info('ARCHIVE_ATTEMPT', [
-        'member_id' => $member->id,
-        'membership_type' => $member->membership_type,
-        'full_name' => $member->full_name,
-        'request_data' => $request->all()
-    ]);
-
-    $validated = $request->validate([
-        'reason' => 'required|string|max:500',
-    ]);
-
-    DeletedMember::create([
-        'member_id' => $member->id,
-        'member_snapshot' => $member->toArray(),
-        'reason' => $validated['reason'],
-        'deleted_at_actual' => now(),
-    ]);
-
-    \Log::info('ARCHIVE_SUCCESS', [
-        'member_id' => $member->id,
-        'membership_type' => $member->membership_type
-    ]);
-
-    $member->delete();
-
-    // If AJAX, return JSON; else redirect to archived tab
-    if ($request->wantsJson() || $request->ajax()) {
-        return response()->json(['success' => true, 'message' => 'Member archived successfully']);
-    }
-    return redirect()->route('members.view', ['tab' => 'archived'])
-        ->with('success', 'Member archived successfully');
-}
-
-/**
- * Permanently delete an archived member
- */
-public function destroyArchived(Request $request, $memberId)
-{
-    try {
-        \Log::info('DELETE_ARCHIVED_MEMBER_ATTEMPT', [
-            'member_id' => $memberId,
-            'request_method' => request()->method(),
-            'request_url' => request()->url(),
-            'request_headers' => request()->headers->all()
-        ]);
-
-        // Find the archived member
-        $archivedMember = DeletedMember::where('member_id', $memberId)->first();
-        
-        if (!$archivedMember) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Archived member not found'
-            ], 404);
-        }
-
-        // Check if there are any related financial records
-        $hasTithes = \App\Models\Tithe::where('member_id', $memberId)->count() > 0;
-        $hasOfferings = \App\Models\Offering::where('member_id', $memberId)->count() > 0;
-        $hasDonations = \App\Models\Donation::where('member_id', $memberId)->count() > 0;
-        $hasPledges = \App\Models\Pledge::where('member_id', $memberId)->count() > 0;
-
-        if ($hasTithes || $hasOfferings || $hasDonations || $hasPledges) {
-            \Log::warning('DELETE_ARCHIVED_MEMBER_BLOCKED', [
-                'member_id' => $memberId,
-                'has_tithes' => $hasTithes,
-                'has_offerings' => $hasOfferings,
-                'has_donations' => $hasDonations,
-                'has_pledges' => $hasPledges
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Cannot permanently delete archived member. Member has associated financial records (tithes, offerings, donations, or pledges).',
-                'error_type' => 'has_related_data'
-            ], 422);
-        }
-
-        // Delete the archived member record
-        $archivedMember->delete();
-
-        \Log::info('DELETE_ARCHIVED_MEMBER_SUCCESS', [
-            'member_id' => $memberId
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Archived member permanently deleted successfully'
-        ]);
-
-    } catch (\Exception $e) {
-        \Log::error('DELETE_ARCHIVED_MEMBER_FAILED', [
-            'member_id' => $memberId,
-            'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString()
-        ]);
-
-        return response()->json([
-            'success' => false,
-            'message' => 'An error occurred while deleting the archived member: ' . $e->getMessage(),
-            'error_type' => 'exception'
-        ], 500);
-    }
-}
-
-/**
- * Restore an archived member back to active status
- */
-public function restore(Request $request, $memberId)
-{
-    try {
-        \Log::info('RESTORE_MEMBER_ATTEMPT', [
-            'member_id' => $memberId,
-            'request_method' => request()->method(),
-            'request_url' => request()->url()
-        ]);
-
-        // Find the archived member
-        $archivedMember = DeletedMember::where('member_id', $memberId)->first();
-        
-        if (!$archivedMember) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Archived member not found'
-            ], 404);
-        }
-
-        // Check if member already exists (shouldn't happen, but safety check)
-        // Check by database ID first, then by member_id string
-        $existingById = Member::find($memberId);
-        $memberIdString = $archivedMember->member_snapshot['member_id'] ?? null;
-        $existingByMemberId = $memberIdString ? Member::where('member_id', $memberIdString)->first() : null;
-        
-        if ($existingById || $existingByMemberId) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Member already exists in active members list. Please refresh the page.'
-            ], 422);
-        }
-
-        // Get the snapshot data
-        $snapshot = $archivedMember->member_snapshot;
-        
-        // Remove fields that shouldn't be restored directly
-        unset($snapshot['id'], $snapshot['created_at'], $snapshot['updated_at'], $snapshot['deleted_at']);
-        
-        // Create the member from snapshot
-        $member = Member::create($snapshot);
-
-        \Log::info('RESTORE_MEMBER_SUCCESS', [
-            'member_id' => $memberId,
-            'restored_id' => $member->id,
-            'full_name' => $member->full_name
-        ]);
-
-        // Delete the archived member record
-        $archivedMember->delete();
-
-        if ($request->wantsJson() || $request->ajax()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Member has been restored successfully. All financial records remain intact.',
-                'member_id' => $member->id,
-                'member' => $member
-            ]);
-        }
-
-        return redirect()->route('members.view')
-            ->with('success', 'Member has been restored successfully.');
-
-    } catch (\Exception $e) {
-        \Log::error('RESTORE_MEMBER_FAILED', [
-            'member_id' => $memberId,
-            'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString()
-        ]);
-
-        if ($request->wantsJson() || $request->ajax()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'An error occurred while restoring the member: ' . $e->getMessage(),
-                'error_type' => 'exception'
-            ], 500);
-        }
-
-        return redirect()->route('members.view')
-            ->with('error', 'An error occurred while restoring the member: ' . $e->getMessage());
     }
 }
 
@@ -1072,6 +1459,11 @@ public function storeChild(Request $request)
         'parent_name' => 'nullable|string|max:255',
         'parent_phone' => 'nullable|string|max:255',
         'parent_relationship' => 'nullable|string|max:255',
+        'baptism_status' => 'nullable|in:baptized,not_baptized',
+        'baptism_date' => 'nullable|date',
+        'baptism_location' => 'nullable|string|max:255',
+        'baptized_by' => 'nullable|string|max:255',
+        'baptism_certificate_number' => 'nullable|string|max:255',
     ]);
 
     // Ensure either member_id or parent_name is provided
@@ -1115,6 +1507,21 @@ public function storeChild(Request $request)
             $childData['parent_relationship'] = null;
         }
 
+        // Add baptism fields if provided
+        if ($request->filled('baptism_status')) {
+            $childData['baptism_status'] = $request->baptism_status;
+            $childData['baptism_date'] = $request->filled('baptism_date') ? $request->baptism_date : null;
+            $childData['baptism_location'] = $request->filled('baptism_location') ? $request->baptism_location : null;
+            $childData['baptized_by'] = $request->filled('baptized_by') ? $request->baptized_by : null;
+            $childData['baptism_certificate_number'] = $request->filled('baptism_certificate_number') ? $request->baptism_certificate_number : null;
+        } else {
+            $childData['baptism_status'] = null;
+            $childData['baptism_date'] = null;
+            $childData['baptism_location'] = null;
+            $childData['baptized_by'] = null;
+            $childData['baptism_certificate_number'] = null;
+        }
+
         $child = Child::create($childData);
 
         return response()->json([
@@ -1141,12 +1548,177 @@ public function storeChild(Request $request)
     }
 }
 
+/**
+ * Show a single child (for editing)
+ */
+public function showChild(\App\Models\Child $child)
+{
+    return response()->json($child);
+}
+
+/**
+ * Update a child
+ */
+public function updateChild(Request $request, \App\Models\Child $child)
+{
+    // Check permission
+    if (!auth()->user()->hasPermission('members.edit') && !auth()->user()->isAdmin()) {
+        if (request()->wantsJson() || request()->ajax() || request()->header('X-Requested-With') === 'XMLHttpRequest') {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to edit children.'
+            ], 403);
+        }
+        abort(403, 'You do not have permission to edit children.');
+    }
+
+    $request->validate([
+        'full_name' => 'required|string|max:255',
+        'gender' => 'required|in:male,female',
+        'date_of_birth' => 'required|date',
+        'baptism_status' => 'nullable|in:baptized,not_baptized',
+        'baptism_date' => 'nullable|date',
+        'baptism_location' => 'nullable|string|max:255',
+        'baptized_by' => 'nullable|string|max:255',
+        'baptism_certificate_number' => 'nullable|string|max:255',
+    ]);
+
+    try {
+        $childData = [
+            'full_name' => $request->full_name,
+            'gender' => $request->gender,
+            'date_of_birth' => $request->date_of_birth,
+        ];
+
+        // Update baptism fields
+        if ($request->filled('baptism_status')) {
+            $childData['baptism_status'] = $request->baptism_status;
+            $childData['baptism_date'] = $request->filled('baptism_date') ? $request->baptism_date : null;
+            $childData['baptism_location'] = $request->filled('baptism_location') ? $request->baptism_location : null;
+            $childData['baptized_by'] = $request->filled('baptized_by') ? $request->baptized_by : null;
+            $childData['baptism_certificate_number'] = $request->filled('baptism_certificate_number') ? $request->baptism_certificate_number : null;
+        } else {
+            // If baptism status is not provided, clear all baptism fields
+            $childData['baptism_status'] = null;
+            $childData['baptism_date'] = null;
+            $childData['baptism_location'] = null;
+            $childData['baptized_by'] = null;
+            $childData['baptism_certificate_number'] = null;
+        }
+
+        $child->update($childData);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Child updated successfully.',
+            'child' => $child->fresh()
+        ]);
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Validation failed',
+            'errors' => $e->errors()
+        ], 422);
+    } catch (\Exception $e) {
+        Log::error('Error updating child: ' . $e->getMessage(), [
+            'exception' => $e,
+            'trace' => $e->getTraceAsString(),
+            'request_data' => $request->all()
+        ]);
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to update child: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Delete a child
+ */
+public function destroyChild(\App\Models\Child $child)
+{
+    // Check permission
+    if (!auth()->user()->hasPermission('members.delete') && !auth()->user()->isAdmin()) {
+        \Log::warning('DELETE_CHILD_PERMISSION_DENIED', [
+            'user_id' => auth()->id(),
+            'child_id' => $child->id
+        ]);
+        
+        if (request()->wantsJson() || request()->ajax() || request()->header('X-Requested-With') === 'XMLHttpRequest') {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to delete children.'
+            ], 403);
+        }
+        abort(403, 'You do not have permission to delete children.');
+    }
+    
+    try {
+        // Store child info before deletion
+        $childId = $child->id;
+        $childName = $child->full_name;
+        
+        \Log::info('DELETE_CHILD_ATTEMPT', [
+            'child_id' => $childId,
+            'child_name' => $childName,
+            'user_id' => auth()->id()
+        ]);
+
+        // Delete the child
+        $child->delete();
+
+        \Log::info('DELETE_CHILD_SUCCESS', [
+            'child_id' => $childId,
+            'child_name' => $childName
+        ]);
+
+        if (request()->wantsJson() || request()->ajax() || request()->header('X-Requested-With') === 'XMLHttpRequest') {
+            return response()->json([
+                'success' => true,
+                'message' => 'Child has been deleted successfully.',
+                'child_id' => $childId,
+                'action' => 'deleted'
+            ]);
+        }
+        
+        return redirect()->route('members.index')
+            ->with('success', 'Child has been deleted successfully.');
+
+    } catch (\Exception $e) {
+        \Log::error('DELETE_CHILD_FAILED', [
+            'error' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'trace' => $e->getTraceAsString()
+        ]);
+
+        if (request()->wantsJson() || request()->ajax() || request()->header('X-Requested-With') === 'XMLHttpRequest') {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while deleting the child: ' . $e->getMessage(),
+                'error_type' => 'exception'
+            ], 500);
+        }
+        
+        return redirect()->route('members.index')
+            ->with('error', 'An error occurred while deleting the child: ' . $e->getMessage());
+    }
+}
+
     /**
      * Reset member password - Admin only
      * Generates a new password and optionally sends it via SMS
      */
-    public function resetPassword(Request $request, Member $member)
+    public function resetPassword(Request $request, $id)
     {
+        // Log the request for debugging
+        Log::info('Password reset request received', [
+            'member_id' => $id,
+            'user_id' => auth()->id(),
+            'url' => $request->fullUrl(),
+            'method' => $request->method()
+        ]);
+
         // Check if user is admin
         if (!auth()->user()->isAdmin()) {
             return response()->json([
@@ -1156,6 +1728,20 @@ public function storeChild(Request $request)
         }
 
         try {
+            // Find the member - try by ID first, then by member_id
+            $member = Member::find($id);
+            if (!$member) {
+                // Try finding by member_id if ID doesn't work
+                $member = Member::where('member_id', $id)->first();
+            }
+            
+            if (!$member) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Member not found with ID: ' . $id
+                ], 404);
+            }
+            
             // Find user account for this member
             $user = User::where('member_id', $member->id)->first();
             
@@ -1170,8 +1756,53 @@ public function storeChild(Request $request)
             $newPassword = $this->generateSecurePassword();
             
             // Update password
-            $user->password = Hash::make($newPassword);
-            $user->save();
+            // IMPORTANT: User model has 'password' => 'hashed' cast which can cause issues
+            // Use DB::table() to directly update the password field, bypassing model casts
+            $hashedPassword = Hash::make($newPassword);
+            
+            // Direct database update to bypass the 'hashed' cast
+            DB::table('users')
+                ->where('id', $user->id)
+                ->update(['password' => $hashedPassword]);
+            
+            // Refresh the model to get the latest data
+            $user->refresh();
+            
+            // Verify the password was saved correctly by checking against database
+            $dbPassword = DB::table('users')->where('id', $user->id)->value('password');
+            $passwordVerified = Hash::check($newPassword, $dbPassword);
+            
+            if (!$passwordVerified) {
+                Log::error('Password verification failed after reset', [
+                    'user_id' => $user->id,
+                    'member_id' => $member->id,
+                    'email' => $user->email,
+                    'db_password_length' => strlen($dbPassword ?? ''),
+                    'new_password' => $newPassword
+                ]);
+                
+                // Try one more time with a fresh hash
+                $hashedPassword2 = Hash::make($newPassword);
+                DB::table('users')
+                    ->where('id', $user->id)
+                    ->update(['password' => $hashedPassword2]);
+                
+                $user->refresh();
+                $dbPassword2 = DB::table('users')->where('id', $user->id)->value('password');
+                $passwordVerified2 = Hash::check($newPassword, $dbPassword2);
+                
+                Log::info('Password reset retry', [
+                    'user_id' => $user->id,
+                    'password_verified' => $passwordVerified2
+                ]);
+            } else {
+                Log::info('Password reset and verified successfully', [
+                    'user_id' => $user->id,
+                    'member_id' => $member->id,
+                    'email' => $user->email,
+                    'password_verified' => true
+                ]);
+            }
 
             // Log the password reset
             Log::info('Member password reset by admin', [
@@ -1184,30 +1815,74 @@ public function storeChild(Request $request)
 
             // Send SMS with new password if phone number exists
             $smsSent = false;
+            $smsError = null;
             if (!empty($member->phone_number)) {
+                try {
+                    // Check if SMS notifications are enabled
+                    $smsEnabled = \App\Services\SettingsService::get('enable_sms_notifications', false);
+                    if (!$smsEnabled) {
+                        $smsError = 'SMS notifications are disabled in system settings';
+                        Log::info('Password reset SMS skipped: SMS notifications disabled', [
+                            'member_id' => $member->id,
+                            'phone' => $member->phone_number
+                        ]);
+                    } else {
                 $smsService = app(SmsService::class);
                 $message = "Shalom {$member->full_name}, nenosiri lako jipya la akaunti yako ni: {$newPassword}. Tafadhali badilisha nenosiri baada ya kuingia. Mungu akubariki.";
                 
-                $smsSent = $smsService->send($member->phone_number, $message);
+                        // Use sendDebug to get detailed response
+                        $smsResult = $smsService->sendDebug($member->phone_number, $message);
+                        $smsSent = $smsResult['ok'] ?? false;
+                        $smsError = $smsResult['reason'] ?? ($smsResult['error'] ?? null);
                 
                 if ($smsSent) {
-                    Log::info('Password reset SMS sent', [
+                            Log::info('Password reset SMS sent successfully', [
                         'member_id' => $member->id,
-                        'phone' => $member->phone_number
+                                'phone' => $member->phone_number,
+                                'response' => $smsResult
                     ]);
                 } else {
                     Log::warning('Password reset SMS failed', [
                         'member_id' => $member->id,
-                        'phone' => $member->phone_number
+                                'phone' => $member->phone_number,
+                                'error' => $smsError,
+                                'response' => $smsResult
+                            ]);
+                        }
+                    }
+                } catch (\Exception $e) {
+                    $smsError = $e->getMessage();
+                    Log::error('Failed to send password reset SMS: ' . $e->getMessage(), [
+                        'member_id' => $member->id,
+                        'phone' => $member->phone_number,
+                        'exception' => $e
                     ]);
                 }
+            } else {
+                $smsError = 'No phone number found for this member';
+                Log::info('Password reset SMS skipped: No phone number', [
+                    'member_id' => $member->id
+                ]);
+            }
+
+            // Build success message
+            $message = 'Password reset successfully.';
+            if ($smsSent) {
+                $message .= ' New password has been sent via SMS.';
+            } else {
+                $message .= ' New password: ' . $newPassword . ' (SMS not sent';
+                if ($smsError) {
+                    $message .= ': ' . $smsError;
+                }
+                $message .= ').';
             }
 
             return response()->json([
                 'success' => true,
-                'message' => 'Password reset successfully.',
+                'message' => $message,
                 'password' => $newPassword, // Return password so admin can see/copy it
                 'sms_sent' => $smsSent,
+                'sms_error' => $smsError,
                 'member_name' => $member->full_name,
                 'phone_number' => $member->phone_number
             ]);

@@ -9,6 +9,8 @@ use App\Models\Pledge;
 use App\Models\Budget;
 use App\Models\Expense;
 use App\Models\Member;
+use App\Models\Community;
+use App\Models\CommunityOffering;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -17,23 +19,62 @@ class ReportController extends Controller
 {
     /**
      * System-wide reports overview: members and finance at a glance
+     * For Church Elders: shows community-specific reports
      */
     public function overview(Request $request)
     {
+        $user = auth()->user();
         $startDate = $request->get('start_date', Carbon::now()->startOfYear());
         $endDate = $request->get('end_date', Carbon::now()->endOfYear());
 
         $start = Carbon::parse($startDate);
         $end = Carbon::parse($endDate);
 
-        // Members
-        $totalMembers = Member::count();
-        $newMembers30d = Member::where('created_at', '>=', Carbon::now()->subDays(30))->count();
+        // Check if user is a church elder and get their communities
+        $isChurchElder = $user->isChurchElder();
+        $communities = $isChurchElder ? $user->elderCommunities() : collect();
+        $communityIds = $communities->pluck('id')->toArray();
+        $selectedCommunity = null;
+        
+        // If community_id is provided, use it (for church elders)
+        if ($request->has('community_id') && $isChurchElder) {
+            $selectedCommunity = Community::find($request->community_id);
+            if ($selectedCommunity && $communities->contains('id', $selectedCommunity->id)) {
+                $communityIds = [$selectedCommunity->id];
+            } else {
+                $selectedCommunity = $communities->first();
+                $communityIds = $selectedCommunity ? [$selectedCommunity->id] : [];
+            }
+        } elseif ($isChurchElder && $communities->isNotEmpty()) {
+            $selectedCommunity = $communities->first();
+            $communityIds = [$selectedCommunity->id];
+        }
 
-        // Contributions (approved only where applicable)
+        // Members - filter by community if church elder
+        $membersQuery = Member::query();
+        if ($isChurchElder && !empty($communityIds)) {
+            $membersQuery->whereIn('community_id', $communityIds);
+        }
+        $totalMembers = $membersQuery->count();
+        $newMembers30d = (clone $membersQuery)->where('created_at', '>=', Carbon::now()->subDays(30))->count();
+
+        // Contributions (approved only where applicable) - filter by community if church elder
         $tithes = Tithe::whereBetween('tithe_date', [$start, $end])->where('approval_status', 'approved');
         $offerings = Offering::whereBetween('offering_date', [$start, $end])->where('approval_status', 'approved');
         $donations = Donation::whereBetween('donation_date', [$start, $end])->where('approval_status', 'approved');
+        
+        // Filter by community members if church elder
+        if ($isChurchElder && !empty($communityIds)) {
+            $tithes->whereHas('member', function($query) use ($communityIds) {
+                $query->whereIn('community_id', $communityIds);
+            });
+            $offerings->whereHas('member', function($query) use ($communityIds) {
+                $query->whereIn('community_id', $communityIds);
+            });
+            $donations->whereHas('member', function($query) use ($communityIds) {
+                $query->whereIn('community_id', $communityIds);
+            });
+        }
 
         $totalTithes = (clone $tithes)->sum('amount');
         $totalOfferings = (clone $offerings)->sum('amount');
@@ -103,17 +144,31 @@ class ReportController extends Controller
             return $b['total_amount'] <=> $a['total_amount'];
         });
 
-        // Top contributors (by total giving)
-        $topContributors = Member::select('members.id', 'members.full_name',
+        // Top contributors (by total giving) - filter by community if church elder
+        $topContributorsQuery = Member::select('members.id', 'members.full_name',
                 DB::raw('(
                     COALESCE((SELECT SUM(amount) FROM tithes WHERE tithes.member_id = members.id AND tithes.approval_status = "approved" AND tithes.tithe_date BETWEEN "' . $start->format('Y-m-d') . '" AND "' . $end->format('Y-m-d') . '"), 0)
                     + COALESCE((SELECT SUM(amount) FROM offerings WHERE offerings.member_id = members.id AND offerings.approval_status = "approved" AND offerings.offering_date BETWEEN "' . $start->format('Y-m-d') . '" AND "' . $end->format('Y-m-d') . '"), 0)
                     + COALESCE((SELECT SUM(amount) FROM donations WHERE donations.member_id = members.id AND donations.approval_status = "approved" AND donations.donation_date BETWEEN "' . $start->format('Y-m-d') . '" AND "' . $end->format('Y-m-d') . '"), 0)
                 ) as total_giving')
-            )
-            ->orderByDesc('total_giving')
-            ->limit(10)
-            ->get();
+            );
+        
+        if ($isChurchElder && !empty($communityIds)) {
+            $topContributorsQuery->whereIn('community_id', $communityIds);
+        }
+        
+        $topContributors = $topContributorsQuery->orderByDesc('total_giving')->limit(10)->get();
+
+        // Get community offerings (mid-week) if church elder
+        $communityOfferings = collect();
+        $totalCommunityOfferings = 0;
+        if ($isChurchElder && !empty($communityIds)) {
+            $communityOfferings = CommunityOffering::whereIn('community_id', $communityIds)
+                ->whereBetween('offering_date', [$start, $end])
+                ->where('status', 'completed')
+                ->get();
+            $totalCommunityOfferings = $communityOfferings->sum('amount');
+        }
 
         return view('reports.overview', compact(
             'totalMembers',
@@ -128,7 +183,12 @@ class ReportController extends Controller
             'combinedByType',
             'topContributors',
             'start',
-            'end'
+            'end',
+            'isChurchElder',
+            'selectedCommunity',
+            'communities',
+            'communityOfferings',
+            'totalCommunityOfferings'
         ));
     }
     /**
@@ -2294,7 +2354,7 @@ class ReportController extends Controller
         
         // Church information (used in member receipt header)
         $churchInfo = [
-            'name'    => 'AIC Moshi Kilimanjaro',
+            'name'    => 'KKKT Ushirika wa Longuo',
             'address' => 'P.O. Box 8765, Moshi, Kilimanjaro, Tanzania',
             'phone'   => '+255 756 330 509',
             'email'   => 'info@wauminilink.org',

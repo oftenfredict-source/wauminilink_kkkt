@@ -35,11 +35,18 @@
 function archiveMember(id){
   const reason = prompt('Please enter a reason for archiving this member:');
   if(!reason) return;
+  
+  // Get fresh CSRF token from meta tag
+  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || 
+                   document.querySelector('input[name="_token"]')?.value || 
+                   '{{ csrf_token() }}';
+  
   fetch(`{{ url('/members') }}/${id}/archive`, {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
-      'X-CSRF-TOKEN': '{{ csrf_token() }}'
+      'X-CSRF-TOKEN': csrfToken,
+      'Accept': 'application/json'
     },
     body: JSON.stringify({ reason })
   }).then(r=>r.json()).then(res=>{

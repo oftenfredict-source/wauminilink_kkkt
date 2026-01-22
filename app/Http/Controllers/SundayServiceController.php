@@ -167,6 +167,12 @@ class SundayServiceController extends Controller
 
     public function update(Request $request, SundayService $sundayService)
     {
+        // Convert empty strings to null for time fields to avoid validation errors
+        $request->merge([
+            'start_time' => $request->input('start_time') === '' ? null : $request->input('start_time'),
+            'end_time' => $request->input('end_time') === '' ? null : $request->input('end_time'),
+        ]);
+        
         $validated = $request->validate([
             'service_date' => 'sometimes|required|date',
             'service_type' => 'sometimes|required|string|max:255',

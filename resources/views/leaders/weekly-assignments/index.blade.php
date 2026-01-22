@@ -134,7 +134,7 @@
     <div class="card border-0 shadow-sm mb-3 actions-card">
         <div class="card-header bg-white border-bottom p-2 px-3 d-flex align-items-center justify-content-between actions-header" onclick="toggleActions()">
             <div class="d-flex align-items-center gap-2">
-                <h1 class="mb-0 mt-2" style="font-size: 1.5rem;">Weekly Assignments</h1>
+                <h1 class="mb-0 mt-2" style="font-size: 1.5rem;">{{ autoTranslate('Weekly Assignments') }}</h1>
             </div>
             <div class="d-flex align-items-center gap-2">
                 <i class="fas fa-chevron-down text-muted d-md-none" id="actionsToggleIcon"></i>
@@ -144,14 +144,14 @@
             <div class="d-flex flex-wrap gap-2">
                 <a href="{{ route('leaders.index') }}" class="btn btn-outline-secondary btn-sm">
                     <i class="fas fa-arrow-left me-1"></i>
-                    <span class="d-none d-sm-inline">Back to Leaders</span>
-                    <span class="d-sm-none">Back</span>
+                    <span class="d-none d-sm-inline">{{ autoTranslate('Back to Leaders') }}</span>
+                    <span class="d-sm-none">{{ autoTranslate('Back') }}</span>
                 </a>
                 @if(auth()->user()->canManageLeadership())
                     <a href="{{ route('weekly-assignments.create') }}" class="btn btn-primary btn-sm">
                         <i class="fas fa-plus me-1"></i>
-                        <span class="d-none d-sm-inline">New Assignment</span>
-                        <span class="d-sm-none">New</span>
+                        <span class="d-none d-sm-inline">{{ autoTranslate('New Assignment') }}</span>
+                        <span class="d-sm-none">{{ autoTranslate('New') }}</span>
                     </a>
                 @endif
             </div>
@@ -165,7 +165,7 @@
             <div class="d-flex align-items-center justify-content-between">
                 <div class="d-flex align-items-center gap-2">
                     <i class="fas fa-filter text-primary"></i>
-                    <span class="fw-semibold">Filters</span>
+                    <span class="fw-semibold">{{ autoTranslate('Filters') }}</span>
                     @if(request('position') || request('status') || request('from') || request('to'))
                         <span class="badge bg-primary rounded-pill" id="activeFiltersCount">{{ (request('position') ? 1 : 0) + (request('status') && request('status') != 'active' ? 1 : 0) + (request('from') ? 1 : 0) + (request('to') ? 1 : 0) }}</span>
                     @endif
@@ -178,30 +178,30 @@
         <div class="card-body p-3" id="filterBody">
             <div class="row g-2 mb-3">
                 <div class="col-6 col-md-3">
-                    <label class="form-label small text-muted mb-1">Position</label>
+                    <label class="form-label small text-muted mb-1">{{ autoTranslate('Position') }}</label>
                     <select name="position" class="form-select form-select-sm">
-                        <option value="">All Positions</option>
+                        <option value="">{{ autoTranslate('All Positions') }}</option>
                         @foreach($positions as $key => $label)
                             <option value="{{ $key }}" {{ request('position') == $key ? 'selected' : '' }}>{{ $label }}</option>
                         @endforeach
                     </select>
                 </div>
                 <div class="col-6 col-md-3">
-                    <label class="form-label small text-muted mb-1">Status</label>
+                    <label class="form-label small text-muted mb-1">{{ autoTranslate('Status') }}</label>
                     <select name="status" class="form-select form-select-sm">
-                        <option value="all" {{ request('status') == 'all' ? 'selected' : '' }}>All Assignments</option>
-                        <option value="active" {{ request('status') == 'active' || !request('status') ? 'selected' : '' }}>Active Only</option>
-                        <option value="current" {{ request('status') == 'current' ? 'selected' : '' }}>Current Week</option>
-                        <option value="past" {{ request('status') == 'past' ? 'selected' : '' }}>Past</option>
-                        <option value="upcoming" {{ request('status') == 'upcoming' ? 'selected' : '' }}>Upcoming</option>
+                        <option value="all" {{ request('status') == 'all' ? 'selected' : '' }}>{{ autoTranslate('All Assignments') }}</option>
+                        <option value="active" {{ request('status') == 'active' || !request('status') ? 'selected' : '' }}>{{ autoTranslate('Active Only') }}</option>
+                        <option value="current" {{ request('status') == 'current' ? 'selected' : '' }}>{{ autoTranslate('Current Week') }}</option>
+                        <option value="past" {{ request('status') == 'past' ? 'selected' : '' }}>{{ autoTranslate('Past') }}</option>
+                        <option value="upcoming" {{ request('status') == 'upcoming' ? 'selected' : '' }}>{{ autoTranslate('Upcoming') }}</option>
                     </select>
                 </div>
                 <div class="col-6 col-md-3">
-                    <label class="form-label small text-muted mb-1">From Date</label>
+                    <label class="form-label small text-muted mb-1">{{ autoTranslate('From Date') }}</label>
                     <input type="date" name="from" value="{{ request('from') }}" class="form-control form-control-sm">
                 </div>
                 <div class="col-6 col-md-3">
-                    <label class="form-label small text-muted mb-1">To Date</label>
+                    <label class="form-label small text-muted mb-1">{{ autoTranslate('To Date') }}</label>
                     <input type="date" name="to" value="{{ request('to') }}" class="form-control form-control-sm">
                 </div>
             </div>
@@ -209,10 +209,10 @@
             <!-- Action Buttons - Compact -->
             <div class="d-flex gap-2">
                 <button type="submit" class="btn btn-primary btn-sm flex-fill">
-                    <i class="fas fa-filter me-1"></i>Apply
+                    <i class="fas fa-filter me-1"></i>{{ autoTranslate('Apply') }}
                 </button>
                 <a href="{{ route('weekly-assignments.index') }}" class="btn btn-outline-secondary btn-sm">
-                    <i class="fas fa-redo me-1"></i>Reset
+                    <i class="fas fa-redo me-1"></i>{{ autoTranslate('Reset') }}
                 </a>
             </div>
         </div>
@@ -225,13 +225,13 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th>Week</th>
-                            <th>Leader</th>
-                            <th>Position</th>
-                            <th>Duties</th>
-                            <th>Status</th>
-                            <th>Assigned By</th>
-                            <th class="text-end">Actions</th>
+                            <th>{{ autoTranslate('Week') }}</th>
+                            <th>{{ autoTranslate('Leader') }}</th>
+                            <th>{{ autoTranslate('Position') }}</th>
+                            <th>{{ autoTranslate('Duties') }}</th>
+                            <th>{{ autoTranslate('Status') }}</th>
+                            <th>{{ autoTranslate('Assigned By') }}</th>
+                            <th class="text-end">{{ autoTranslate('Actions') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -262,14 +262,14 @@
                                             $isFuture = $assignment->week_start_date > $today;
                                         @endphp
                                         @if($isCurrent)
-                                            <span class="badge bg-success">Current</span>
+                                            <span class="badge bg-success">{{ autoTranslate('Current') }}</span>
                                         @elseif($isPast)
-                                            <span class="badge bg-secondary">Past</span>
+                                            <span class="badge bg-secondary">{{ autoTranslate('Past') }}</span>
                                         @else
-                                            <span class="badge bg-info">Upcoming</span>
+                                            <span class="badge bg-info">{{ autoTranslate('Upcoming') }}</span>
                                         @endif
                                     @else
-                                        <span class="badge bg-danger">Inactive</span>
+                                        <span class="badge bg-danger">{{ autoTranslate('Inactive') }}</span>
                                     @endif
                                 </td>
                                 <td>
@@ -277,17 +277,17 @@
                                 </td>
                                 <td class="text-end">
                                     <div class="btn-group btn-group-sm">
-                                        <a href="{{ route('weekly-assignments.show', $assignment) }}" class="btn btn-outline-info" title="View">
+                                        <a href="{{ route('weekly-assignments.show', $assignment) }}" class="btn btn-outline-info" title="{{ autoTranslate('View') }}">
                                             <i class="fas fa-eye"></i>
                                         </a>
                                         @if(auth()->user()->canManageLeadership())
-                                            <a href="{{ route('weekly-assignments.edit', $assignment) }}" class="btn btn-outline-primary" title="Edit">
+                                            <a href="{{ route('weekly-assignments.edit', $assignment) }}" class="btn btn-outline-primary" title="{{ autoTranslate('Edit') }}">
                                                 <i class="fas fa-edit"></i>
                                             </a>
                                             <form action="{{ route('weekly-assignments.destroy', $assignment) }}" method="POST" class="d-inline delete-assignment-form" data-assignment-id="{{ $assignment->id }}">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="btn btn-outline-danger" title="Delete">
+                                                <button type="submit" class="btn btn-outline-danger" title="{{ autoTranslate('Delete') }}">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
                                             </form>
@@ -300,10 +300,10 @@
                                 <td colspan="7" class="text-center py-4">
                                     <div class="text-muted">
                                         <i class="fas fa-calendar-times fa-3x mb-3"></i>
-                                        <p>No weekly assignments found.</p>
+                                        <p>{{ autoTranslate('No weekly assignments found.') }}</p>
                                         @if(auth()->user()->canManageLeadership())
                                             <a href="{{ route('weekly-assignments.create') }}" class="btn btn-primary">
-                                                <i class="fas fa-plus me-2"></i>Create First Assignment
+                                                <i class="fas fa-plus me-2"></i>{{ autoTranslate('Create First Assignment') }}
                                             </a>
                                         @endif
                                     </div>
@@ -442,7 +442,7 @@ document.addEventListener('DOMContentLoaded', function() {
     @if(session('success'))
         Swal.fire({
             icon: 'success',
-            title: 'Success!',
+            title: '{{ autoTranslate('Success!') }}',
             text: '{{ session('success') }}',
             timer: 3000,
             showConfirmButton: false
@@ -455,20 +455,20 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             
             Swal.fire({
-                title: 'Delete Assignment?',
-                text: 'This action cannot be undone. Are you sure you want to delete this weekly assignment?',
+                title: '{{ autoTranslate('Delete Assignment?') }}',
+                text: '{{ autoTranslate('This action cannot be undone. Are you sure you want to delete this weekly assignment?') }}',
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonText: 'Yes, delete it',
-                cancelButtonText: 'Cancel',
+                confirmButtonText: '{{ autoTranslate('Yes, delete it') }}',
+                cancelButtonText: '{{ autoTranslate('Cancel') }}',
                 confirmButtonColor: '#dc3545',
                 cancelButtonColor: '#6c757d'
             }).then((result) => {
                 if (result.isConfirmed) {
                     // Show loading
                     Swal.fire({
-                        title: 'Deleting...',
-                        text: 'Please wait',
+                        title: '{{ autoTranslate('Deleting...') }}',
+                        text: '{{ autoTranslate('Please wait') }}',
                         allowOutsideClick: false,
                         didOpen: () => {
                             Swal.showLoading();

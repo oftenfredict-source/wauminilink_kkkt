@@ -117,18 +117,18 @@
                     <!-- Card Footer with Actions -->
                     <div class="card-footer member-footer">
                         <div class="btn-group w-100" role="group">
-                            <button class="btn btn-outline-info btn-sm action-btn" onclick="viewDetails({{ $member->id }})" title="View Details">
+                            <button class="btn btn-outline-info btn-sm action-btn" onclick="window.viewDetails && window.viewDetails({{ $member->id }}) || console.error('viewDetails not available')" title="View Details">
                                 <i class="fas fa-eye me-1"></i>View
                             </button>
-                            <button class="btn btn-outline-primary btn-sm action-btn" onclick="openEdit({{ $member->id }})" title="Edit Member">
+                            <button class="btn btn-outline-primary btn-sm action-btn" onclick="window.openEdit && window.openEdit({{ $member->id }}) || console.error('openEdit not available')" title="Edit Member">
                                 <i class="fas fa-edit me-1"></i>Edit
                             </button>
                             @if(auth()->user()->isAdmin())
-                                <button class="btn btn-outline-success btn-sm action-btn" onclick="resetPassword({{ $member->id }})" title="Reset Password">
+                                <button class="btn btn-outline-success btn-sm action-btn" onclick="window.resetPassword && window.resetPassword({{ $member->id }}) || console.error('resetPassword not available')" title="Reset Password">
                                     <i class="fas fa-key me-1"></i>Reset
                                 </button>
                             @endif
-                            <button class="btn btn-outline-warning btn-sm action-btn" onclick="confirmDelete({{ $member->id }})" title="Archive Member">
+                            <button class="btn btn-outline-warning btn-sm action-btn" onclick="window.confirmDelete && window.confirmDelete({{ $member->id }}) || console.error('confirmDelete not available')" title="Archive Member">
                                 <i class="fas fa-archive me-1"></i>Archive
                             </button>
                         </div>
@@ -234,20 +234,40 @@
                     
                     <!-- Card Footer with Actions -->
                     <div class="card-footer member-footer">
-                        <div class="btn-group w-100" role="group">
-                            <button class="btn btn-outline-info btn-sm action-btn" onclick="viewDetails({{ $member->id }})" title="View Details">
-                                <i class="fas fa-eye me-1"></i>View
+                        <div class="action-buttons-wrapper card-actions">
+                            <button type="button" 
+                                    class="action-btn action-btn-view" 
+                                    onclick="if(window.viewDetails){window.viewDetails({{ $member->id }});}else{console.error('viewDetails not available');alert('View function not available. Please refresh the page.');}"
+                                    title="View Details"
+                                    data-member-id="{{ $member->id }}">
+                                <i class="fas fa-eye"></i>
+                                <span class="action-tooltip">View</span>
                             </button>
-                            <button class="btn btn-outline-primary btn-sm action-btn" onclick="openEdit({{ $member->id }})" title="Edit Member">
-                                <i class="fas fa-edit me-1"></i>Edit
+                            <button type="button" 
+                                    class="action-btn action-btn-edit" 
+                                    onclick="if(window.openEdit){window.openEdit({{ $member->id }});}else{console.error('openEdit not available');alert('Edit function not available. Please refresh the page.');}"
+                                    title="Edit Member"
+                                    data-member-id="{{ $member->id }}">
+                                <i class="fas fa-edit"></i>
+                                <span class="action-tooltip">Edit</span>
                             </button>
                             @if(auth()->user()->isAdmin())
-                                <button class="btn btn-outline-success btn-sm action-btn" onclick="resetPassword({{ $member->id }})" title="Reset Password">
-                                    <i class="fas fa-key me-1"></i>Reset
+                                <button type="button" 
+                                        class="action-btn action-btn-reset" 
+                                        onclick="if(window.resetPassword){window.resetPassword({{ $member->id }});}else{console.error('resetPassword not available');alert('Reset password function not available. Please refresh the page.');}"
+                                        title="Reset Password"
+                                        data-member-id="{{ $member->id }}">
+                                    <i class="fas fa-key"></i>
+                                    <span class="action-tooltip">Reset</span>
                                 </button>
                             @endif
-                            <button class="btn btn-outline-warning btn-sm action-btn" onclick="confirmDelete({{ $member->id }})" title="Archive Member">
-                                <i class="fas fa-archive me-1"></i>Archive
+                            <button type="button" 
+                                    class="action-btn action-btn-archive" 
+                                    onclick="if(window.confirmDelete){window.confirmDelete({{ $member->id }});}else{console.error('confirmDelete not available');alert('Archive function not available. Please refresh the page.');}"
+                                    title="Archive Member"
+                                    data-member-id="{{ $member->id }}">
+                                <i class="fas fa-archive"></i>
+                                <span class="action-tooltip">Archive</span>
                             </button>
                         </div>
                     </div>
@@ -337,12 +357,22 @@
                     
                     <!-- Card Footer with Actions -->
                     <div class="card-footer member-footer">
-                        <div class="btn-group w-100" role="group">
-                            <button class="btn btn-outline-info btn-sm action-btn" onclick="viewDetails({{ $member->member_id }})" title="View Details">
-                                <i class="fas fa-eye me-1"></i>View
+                        <div class="action-buttons-wrapper card-actions">
+                            <button type="button" 
+                                    class="action-btn action-btn-view" 
+                                    onclick="if(window.viewDetails){window.viewDetails({{ $member->member_id }});}else{console.error('viewDetails not available');alert('View function not available. Please refresh the page.');}"
+                                    title="View Details"
+                                    data-member-id="{{ $member->member_id }}">
+                                <i class="fas fa-eye"></i>
+                                <span class="action-tooltip">View</span>
                             </button>
-                            <button class="btn btn-outline-success btn-sm action-btn" onclick="restoreMember({{ $member->member_id }})" title="Restore Member">
-                                <i class="fas fa-undo me-1"></i>Restore
+                            <button type="button" 
+                                    class="action-btn action-btn-restore" 
+                                    onclick="if(window.restoreMember){window.restoreMember({{ $member->member_id }});}else{console.error('restoreMember not available');alert('Restore function not available. Please refresh the page.');}"
+                                    title="Restore Member"
+                                    data-member-id="{{ $member->member_id }}">
+                                <i class="fas fa-undo"></i>
+                                <span class="action-tooltip">Restore</span>
                             </button>
                         </div>
                     </div>
@@ -515,27 +545,14 @@
     border-top: 1px solid #dee2e6;
 }
 
-.action-btn {
-    border-radius: 6px !important;
-    font-weight: 600;
-    font-size: 0.75rem;
-    padding: 0.4rem 0.6rem !important;
-    transition: all 0.3s ease;
-    border-width: 2px !important;
-    margin: 0 1px;
+/* Card Actions - Use same modern design as table */
+.card-actions {
+    justify-content: center;
+    flex-wrap: wrap;
 }
 
-.action-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-.action-btn:first-child {
-    margin-left: 0;
-}
-
-.action-btn:last-child {
-    margin-right: 0;
+.card-actions .action-btn {
+    flex: 0 0 auto;
 }
 
 /* View Toggle Styles */

@@ -11,6 +11,7 @@ class Leader extends Model
 
     protected $fillable = [
         'member_id',
+        'campus_id',
         'position',
         'position_title',
         'description',
@@ -31,6 +32,18 @@ class Leader extends Model
     public function member()
     {
         return $this->belongsTo(Member::class);
+    }
+
+    // Relationship to Campus
+    public function campus()
+    {
+        return $this->belongsTo(Campus::class);
+    }
+
+    // Relationship to Communities (as church elder)
+    public function communities()
+    {
+        return $this->hasMany(Community::class, 'church_elder_id')->withTrashed();
     }
 
     // Relationship to Weekly Assignments

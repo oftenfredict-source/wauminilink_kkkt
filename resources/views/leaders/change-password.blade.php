@@ -285,6 +285,8 @@
                                     $dashboardRoute = 'dashboard.pastor';
                                 } elseif (auth()->user()->isTreasurer()) {
                                     $dashboardRoute = 'finance.dashboard';
+                                } elseif (auth()->user()->isEvangelismLeader()) {
+                                    $dashboardRoute = 'evangelism-leader.dashboard';
                                 } elseif (auth()->user()->isAdmin()) {
                                     $dashboardRoute = 'admin.dashboard';
                                 }

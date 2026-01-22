@@ -8,7 +8,7 @@
                         <input type="checkbox" id="selectAllTithes" onchange="toggleAllTithes()">
                     </th>
                 @endif
-                <th>Member</th>
+                <th>Branch</th>
                 <th>Amount</th>
                 <th>Date</th>
                 <th>Payment Method</th>
@@ -27,11 +27,18 @@
                     </td>
                 @endif
                 <td>
-                    @if($record->member)
-                        <strong>{{ $record->member->full_name }}</strong>
-                        <br><small class="text-muted">{{ $record->member->member_id }}</small>
+                    @if($record->campus)
+                        <strong>{{ $record->campus->name }}</strong>
+                        @if($record->campus->code)
+                            <br><small class="text-muted">{{ $record->campus->code }}</small>
+                        @endif
+                    @elseif($record->evangelismLeader && $record->evangelismLeader->getCampus())
+                        <strong>{{ $record->evangelismLeader->getCampus()->name }}</strong>
+                        @if($record->evangelismLeader->getCampus()->code)
+                            <br><small class="text-muted">{{ $record->evangelismLeader->getCampus()->code }}</small>
+                        @endif
                     @else
-                        <span class="text-muted">No Member</span>
+                        <span class="text-muted">N/A</span>
                     @endif
                 </td>
                 <td>

@@ -35,8 +35,9 @@ class MemberDashboardController extends Controller
     {
         $user = Auth::user();
         
-        // Ensure user is a member
-        if (!$user->isMember() || !$user->member_id) {
+        // Allow access if user has a member_id (includes members, church elders, evangelism leaders, etc.)
+        // Church elders and other leadership roles are also members and should access their member portal
+        if (!$user->member_id) {
             Auth::logout();
             return redirect()->route('login')->withErrors(['role' => 'Unauthorized access.']);
         }
@@ -221,7 +222,8 @@ class MemberDashboardController extends Controller
     {
         $user = Auth::user();
         
-        if (!$user->isMember() || !$user->member_id) {
+        // Allow access if user has a member_id (includes members, church elders, evangelism leaders, etc.)
+        if (!$user->member_id) {
             return redirect()->route('member.dashboard')->withErrors(['error' => 'Unauthorized access.']);
         }
 
@@ -237,7 +239,8 @@ class MemberDashboardController extends Controller
     {
         $user = Auth::user();
         
-        if (!$user->isMember() || !$user->member_id) {
+        // Allow access if user has a member_id (includes members, church elders, evangelism leaders, etc.)
+        if (!$user->member_id) {
             return redirect()->route('member.dashboard')->withErrors(['error' => 'Unauthorized access.']);
         }
 
@@ -268,7 +271,8 @@ class MemberDashboardController extends Controller
     {
         $user = Auth::user();
         
-        if (!$user->isMember() || !$user->member_id) {
+        // Allow access if user has a member_id (includes members, church elders, evangelism leaders, etc.)
+        if (!$user->member_id) {
             return redirect()->route('member.dashboard')->withErrors(['error' => 'Unauthorized access.']);
         }
 
@@ -358,23 +362,56 @@ class MemberDashboardController extends Controller
     {
         $user = Auth::user();
         
-        // Ensure user is a member
-        if (!$user->isMember() || !$user->member_id) {
+        // Allow access if user has a member_id (includes members, church elders, evangelism leaders, etc.)
+        if (!$user->member_id) {
             return redirect()->route('member.dashboard')->withErrors(['error' => 'Unauthorized access.']);
         }
 
         $member = $user->member;
         
+        // Get member's campus and community
+        $memberCampusId = $member->campus_id;
+        $memberCommunityId = $member->community_id;
+        
         // Get all active leaders with their member information
-        $leaders = Leader::with('member')
+        $allLeaders = Leader::with(['member', 'communities'])
             ->where('is_active', true)
             ->where(function($query) {
                 $query->whereNull('end_date')
                       ->orWhere('end_date', '>=', now()->toDateString());
             })
-            ->orderBy('position')
-            ->orderBy('appointment_date', 'desc')
             ->get();
+        
+        // Filter leaders based on position and member's location
+        $leaders = $allLeaders->filter(function($leader) use ($memberCampusId, $memberCommunityId) {
+            // Always show Pastor and Assistant Pastor
+            if (in_array($leader->position, ['pastor', 'assistant_pastor'])) {
+                return true;
+            }
+            
+            // Always show Secretary and Assistant Secretary
+            if (in_array($leader->position, ['secretary', 'assistant_secretary'])) {
+                return true;
+            }
+            
+            // For Evangelism Leaders: Only show if from same campus/branch
+            if ($leader->position === 'evangelism_leader') {
+                return $leader->campus_id == $memberCampusId;
+            }
+            
+            // For Church Elders: Only show if assigned to member's community
+            if ($leader->position === 'elder') {
+                if (!$memberCommunityId) {
+                    return false; // Member has no community, so don't show any church elders
+                }
+                // Check if this leader is assigned to the member's community
+                // The communities relationship returns communities where this leader is the church_elder_id
+                return $leader->communities->contains('id', $memberCommunityId);
+            }
+            
+            // For other positions, show all (or you can add more specific filtering)
+            return true;
+        })->values(); // Reset keys after filtering
 
         // Get current member's leadership positions
         $memberPositions = $member->activeLeadershipPositions()
@@ -397,12 +434,22 @@ class MemberDashboardController extends Controller
     {
         $user = Auth::user();
         
-        if (!$user->isMember() || !$user->member_id) {
+        if (!$user) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
-        $member = $user->member;
-        $notification = $member->notifications()->where('id', $notificationId)->first();
+        // Check if notification belongs to user (either through member or directly)
+        $notification = null;
+        
+        if ($user->member_id && $user->member) {
+            // Try to find notification through member
+            $notification = $user->member->notifications()->where('id', $notificationId)->first();
+        }
+        
+        // If not found through member, try user notifications directly (for pastors, admins, etc.)
+        if (!$notification) {
+            $notification = $user->notifications()->where('id', $notificationId)->first();
+        }
 
         if ($notification) {
             $notification->markAsRead();
@@ -419,7 +466,8 @@ class MemberDashboardController extends Controller
     {
         $user = Auth::user();
         
-        if (!$user->isMember() || !$user->member_id) {
+        // Allow access if user has a member_id (includes members, church elders, evangelism leaders, etc.)
+        if (!$user->member_id) {
             return redirect()->route('member.dashboard')->withErrors(['error' => 'Unauthorized access.']);
         }
 
@@ -433,7 +481,8 @@ class MemberDashboardController extends Controller
     {
         $user = Auth::user();
         
-        if (!$user->isMember() || !$user->member_id) {
+        // Allow access if user has a member_id (includes members, church elders, evangelism leaders, etc.)
+        if (!$user->member_id) {
             return redirect()->route('member.dashboard')->withErrors(['error' => 'Unauthorized access.']);
         }
 
@@ -476,7 +525,8 @@ class MemberDashboardController extends Controller
     {
         $user = Auth::user();
         
-        if (!$user->isMember() || !$user->member_id) {
+        // Allow access if user has a member_id (includes members, church elders, evangelism leaders, etc.)
+        if (!$user->member_id) {
             return redirect()->route('member.dashboard')->withErrors(['error' => 'Unauthorized access.']);
         }
 
@@ -492,7 +542,8 @@ class MemberDashboardController extends Controller
     {
         $user = Auth::user();
         
-        if (!$user->isMember() || !$user->member_id) {
+        // Allow access if user has a member_id (includes members, church elders, evangelism leaders, etc.)
+        if (!$user->member_id) {
             return redirect()->route('member.dashboard')->withErrors(['error' => 'Unauthorized access.']);
         }
 
@@ -521,13 +572,23 @@ class MemberDashboardController extends Controller
         if ($request->hasFile('profile_picture')) {
             $file = $request->file('profile_picture');
             
-            // Delete old profile picture if exists
-            if ($member->profile_picture && Storage::disk('public')->exists($member->profile_picture)) {
-                Storage::disk('public')->delete($member->profile_picture);
+            // Delete old profile picture if exists (handle both old public path and storage path)
+            if ($member->profile_picture) {
+                // Check if it's an old public path (assets/images/...)
+                if (strpos($member->profile_picture, 'assets/images/') === 0) {
+                    $oldPath = public_path($member->profile_picture);
+                    if (file_exists($oldPath)) {
+                        unlink($oldPath);
+                    }
+                }
+                // Check if it's a storage path (member/profile-pictures/...)
+                if (Storage::disk('public')->exists($member->profile_picture)) {
+                    Storage::disk('public')->delete($member->profile_picture);
+                }
             }
             
-            // Store new profile picture
-            $profilePicturePath = $file->store('members/profile-pictures', 'public');
+            // Save to storage/app/public/member/profile-pictures/ using Laravel Storage
+            $profilePicturePath = $file->store('member/profile-pictures', 'public');
             $member->profile_picture = $profilePicturePath;
             $updated = true;
         }

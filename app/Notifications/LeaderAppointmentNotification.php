@@ -44,7 +44,7 @@ class LeaderAppointmentNotification extends Notification implements ShouldQueue
      */
     public function toMail(object $notifiable): MailMessage
     {
-        $churchName = \App\Services\SettingsService::get('church_name', 'AIC Moshi Kilimanjaro');
+        $churchName = \App\Services\SettingsService::get('church_name', 'KKKT Ushirika wa Longuo');
         
         return (new MailMessage)
             ->subject('Hongera! Umechaguliwa kuwa Kiongozi')
@@ -63,7 +63,7 @@ class LeaderAppointmentNotification extends Notification implements ShouldQueue
      */
     public function toArray(object $notifiable): array
     {
-        $churchName = \App\Services\SettingsService::get('church_name', 'AIC Moshi Kilimanjaro');
+        $churchName = \App\Services\SettingsService::get('church_name', 'KKKT Ushirika wa Longuo');
         
         return [
             'leader_id' => $this->leader->id,

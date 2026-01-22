@@ -172,6 +172,13 @@
                                                 <span class="badge bg-warning text-dark ms-2 px-2 py-1">{{ $pendingPledgePayments->count() }}</span>
                                             </button>
                                         </li>
+                                        <li class="nav-item" role="presentation">
+                                            <button class="nav-link rounded-pill me-2 mb-3 px-3 py-2" id="community-offerings-tab" data-bs-toggle="tab" data-bs-target="#community-offerings" type="button" role="tab">
+                                                <i class="fas fa-money-bill-wave me-2"></i>
+                                                <span class="fw-bold">Community Offerings</span>
+                                                <span class="badge bg-warning text-dark ms-2 px-2 py-1">{{ $pendingCommunityOfferings->count() }}</span>
+                                            </button>
+                                        </li>
                                     </ul>
                                 </div>
                                 <div class="card-body">
@@ -204,6 +211,11 @@
                                         <!-- Pledge Payments Tab -->
                                         <div class="tab-pane fade" id="pledge-payments" role="tabpanel">
                                             @include('finance.approval.partials.pledge-payments-table', ['pendingPledgePayments' => $pendingPledgePayments, 'canApprove' => $canApprove])
+                                        </div>
+                                        
+                                        <!-- Community Offerings Tab -->
+                                        <div class="tab-pane fade" id="community-offerings" role="tabpanel">
+                                            @include('finance.approval.partials.community-offerings-table', ['records' => $pendingCommunityOfferings, 'canApprove' => $canApprove])
                                         </div>
                                     </div>
                                 </div>

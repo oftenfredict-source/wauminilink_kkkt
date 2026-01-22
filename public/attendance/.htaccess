@@ -1,0 +1,7 @@
+# Redirect all requests in this directory to Laravel
+# This prevents Apache from serving this directory directly
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    # Route everything to Laravel's main index.php
+    RewriteRule ^(.*)$ /index.php [L]
+</IfModule>

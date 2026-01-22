@@ -23,6 +23,7 @@ class BereavementEvent extends Model
         'notes',
         'fund_usage',
         'created_by',
+        'community_id',
         'closed_at',
     ];
 
@@ -42,6 +43,11 @@ class BereavementEvent extends Model
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function community()
+    {
+        return $this->belongsTo(Community::class);
     }
 
     // Scopes
@@ -97,7 +103,7 @@ class BereavementEvent extends Model
     {
         $sum = $this->contributions()
             ->where('has_contributed', true)
-            ->sum('amount');
+            ->sum('contribution_amount');
         return $sum ?? 0;
     }
 

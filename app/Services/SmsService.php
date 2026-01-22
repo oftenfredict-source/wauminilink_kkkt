@@ -379,7 +379,7 @@ class SmsService
             }
 
             $apiUrl = SettingsService::get('sms_api_url');
-            $senderId = SettingsService::get('sms_sender_id', 'AIC Moshi Kilimanjaro');
+            $senderId = SettingsService::get('sms_sender_id', 'KKKT Ushirika wa Longuo');
             $apiKey = SettingsService::get('sms_api_key');
             $username = SettingsService::get('sms_username');
             $password = SettingsService::get('sms_password');
@@ -407,18 +407,109 @@ class SmsService
 
             // If username/password are provided, use GET with query params (messaging-service.co.tz pattern)
             if (!empty($username) && !empty($password)) {
-                $query = [
+                // Build URL with query parameters (matching the exact API format)
+                // http_build_query automatically URL encodes all values (password: Emca@#12 becomes Emca@%2312)
+                $queryParams = http_build_query([
                     'username' => $username,
-                    'password' => $password,
+                    'password' => $password, // Automatically URL encoded by http_build_query
                     'from' => $senderId,
                     'to' => $normalizedPhone,
-                    'text' => $message,
+                    'text' => $message, // Automatically URL encoded by http_build_query
+                ]);
+                
+                // Construct full URL
+                $fullUrl = $apiUrl . '?' . $queryParams;
+                
+                // Use cURL directly to match the exact API format
+                $ch = curl_init();
+                curl_setopt_array($ch, [
+                    CURLOPT_URL => $fullUrl,
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_ENCODING => '',
+                    CURLOPT_MAXREDIRS => 10,
+                    CURLOPT_TIMEOUT => 15,
+                    CURLOPT_FOLLOWLOCATION => true,
+                    CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                    CURLOPT_CUSTOMREQUEST => 'GET',
+                ]);
+                
+                $responseBody = curl_exec($ch);
+                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                $curlError = curl_error($ch);
+                curl_close($ch);
+                
+                if ($curlError) {
+                    Log::error('SMS cURL error', [
+                        'error' => $curlError,
+                        'to' => $toPhoneE164
+                    ]);
+                    return $debug
+                        ? ['ok' => false, 'error' => 'cURL Error: ' . $curlError, 'request' => ['url' => $fullUrl]]
+                        : ['ok' => false];
+                }
+                
+                $requestMeta = [
+                    'method' => 'GET',
+                    'url' => $fullUrl,
+                    'query_params' => [
+                        'username' => $username,
+                        'password' => '***', // Hide password in logs
+                        'from' => $senderId,
+                        'to' => $normalizedPhone,
+                        'text' => $message
+                    ]
                 ];
-
-                $response = Http::timeout(15)
-                    ->acceptJson()
-                    ->get($apiUrl, $query);
-                $requestMeta = ['method' => 'GET', 'url' => $apiUrl, 'query' => $query];
+                
+                // Check if request was successful (HTTP 200-299)
+                if ($httpCode >= 200 && $httpCode < 300) {
+                    // Parse response to check for rejection
+                    $responseData = json_decode($responseBody, true);
+                    $isRejected = false;
+                    $rejectionReason = null;
+                    
+                    // Check if message was rejected by provider
+                    if (isset($responseData['messages']) && is_array($responseData['messages'])) {
+                        foreach ($responseData['messages'] as $msg) {
+                            if (isset($msg['status'])) {
+                                $status = $msg['status'];
+                                // Check for rejection statuses
+                                if (isset($status['groupName']) && 
+                                    (stripos($status['groupName'], 'REJECTED') !== false || 
+                                     stripos($status['groupName'], 'FAILED') !== false ||
+                                     stripos($status['groupName'], 'ERROR') !== false)) {
+                                    $isRejected = true;
+                                    $rejectionReason = $status['description'] ?? $status['name'] ?? 'Message rejected by provider';
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    
+                    if ($isRejected) {
+                        Log::error('SMS rejected by provider', [
+                            'to' => $toPhoneE164,
+                            'reason' => $rejectionReason,
+                            'response' => $responseBody
+                        ]);
+                        return $debug
+                            ? ['ok' => false, 'status' => $httpCode, 'body' => $responseBody, 'reason' => $rejectionReason, 'request' => $requestMeta]
+                            : ['ok' => false, 'reason' => $rejectionReason];
+                    }
+                    
+                    Log::info('SMS sent successfully', ['to' => $toPhoneE164]);
+                    return $debug
+                        ? ['ok' => true, 'status' => $httpCode, 'body' => $responseBody, 'request' => $requestMeta]
+                        : ['ok' => true];
+                } else {
+                    // HTTP error
+                    Log::error('SMS send failed', [
+                        'status' => $httpCode,
+                        'body' => $responseBody,
+                    ]);
+                    return $debug
+                        ? ['ok' => false, 'status' => $httpCode, 'body' => $responseBody, 'request' => $requestMeta]
+                        : ['ok' => false];
+                }
             } else {
                 // Default: Bearer POST with JSON
                 $payload = [
@@ -432,58 +523,58 @@ class SmsService
                     'Accept' => 'application/json',
                 ])->timeout(15)->post($apiUrl, $payload);
                 $requestMeta = ['method' => 'POST', 'url' => $apiUrl, 'payload' => $payload];
-            }
-
-            if ($response->successful()) {
-                // Check response body for rejection status
-                $responseBody = $response->body();
-                $responseData = json_decode($responseBody, true);
                 
-                // Check if message was rejected by provider
-                $isRejected = false;
-                $rejectionReason = null;
-                
-                if (isset($responseData['messages']) && is_array($responseData['messages'])) {
-                    foreach ($responseData['messages'] as $msg) {
-                        if (isset($msg['status'])) {
-                            $status = $msg['status'];
-                            // Check for rejection statuses
-                            if (isset($status['groupName']) && 
-                                (stripos($status['groupName'], 'REJECTED') !== false || 
-                                 stripos($status['groupName'], 'FAILED') !== false ||
-                                 stripos($status['groupName'], 'ERROR') !== false)) {
-                                $isRejected = true;
-                                $rejectionReason = $status['description'] ?? $status['name'] ?? 'Message rejected by provider';
-                                break;
+                if ($response->successful()) {
+                    // Check response body for rejection status
+                    $responseBody = $response->body();
+                    $responseData = json_decode($responseBody, true);
+                    
+                    // Check if message was rejected by provider
+                    $isRejected = false;
+                    $rejectionReason = null;
+                    
+                    if (isset($responseData['messages']) && is_array($responseData['messages'])) {
+                        foreach ($responseData['messages'] as $msg) {
+                            if (isset($msg['status'])) {
+                                $status = $msg['status'];
+                                // Check for rejection statuses
+                                if (isset($status['groupName']) && 
+                                    (stripos($status['groupName'], 'REJECTED') !== false || 
+                                     stripos($status['groupName'], 'FAILED') !== false ||
+                                     stripos($status['groupName'], 'ERROR') !== false)) {
+                                    $isRejected = true;
+                                    $rejectionReason = $status['description'] ?? $status['name'] ?? 'Message rejected by provider';
+                                    break;
+                                }
                             }
                         }
                     }
-                }
-                
-                if ($isRejected) {
-                    Log::error('SMS rejected by provider', [
-                        'to' => $toPhoneE164,
-                        'reason' => $rejectionReason,
-                        'response' => $responseBody
-                    ]);
+                    
+                    if ($isRejected) {
+                        Log::error('SMS rejected by provider', [
+                            'to' => $toPhoneE164,
+                            'reason' => $rejectionReason,
+                            'response' => $responseBody
+                        ]);
+                        return $debug
+                            ? ['ok' => false, 'status' => $response->status(), 'body' => $responseBody, 'reason' => $rejectionReason, 'request' => $requestMeta]
+                            : ['ok' => false, 'reason' => $rejectionReason];
+                    }
+                    
+                    Log::info('SMS sent successfully', ['to' => $toPhoneE164]);
                     return $debug
-                        ? ['ok' => false, 'status' => $response->status(), 'body' => $responseBody, 'reason' => $rejectionReason, 'request' => $requestMeta]
-                        : ['ok' => false, 'reason' => $rejectionReason];
+                        ? ['ok' => true, 'status' => $response->status(), 'body' => $responseBody, 'request' => $requestMeta]
+                        : ['ok' => true];
                 }
-                
-                Log::info('SMS sent successfully', ['to' => $toPhoneE164]);
-                return $debug
-                    ? ['ok' => true, 'status' => $response->status(), 'body' => $responseBody, 'request' => $requestMeta]
-                    : ['ok' => true];
-            }
 
-            Log::error('SMS send failed', [
-                'status' => $response->status(),
-                'body' => $response->body(),
-            ]);
-            return $debug
-                ? ['ok' => false, 'status' => $response->status(), 'body' => $response->body(), 'request' => $requestMeta]
-                : ['ok' => false];
+                Log::error('SMS send failed', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
+                return $debug
+                    ? ['ok' => false, 'status' => $response->status(), 'body' => $response->body(), 'request' => $requestMeta]
+                    : ['ok' => false];
+            }
         } catch (\Throwable $e) {
             Log::error('SMS send exception: ' . $e->getMessage());
             return $debug ? ['ok' => false, 'error' => $e->getMessage()] : ['ok' => false];

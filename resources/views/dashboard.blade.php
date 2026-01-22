@@ -1,7 +1,7 @@
 @extends('layouts.index')
 
 @section('content')
-<div class="container-fluid px-4 pt-0">
+<div class="container-fluid pt-0">
     <!-- Enhanced Dashboard Header -->
     <div class="row mb-0 mt-0">
         <div class="col-12">
@@ -30,7 +30,7 @@
                                 <span class="position-absolute bottom-0 end-0 bg-success border border-white border-2 rounded-circle" 
                                       style="width: 14px; height: 14px;"></span>
                             </div>
-                            <div class="lh-sm">
+                            <div class="lh-sm flex-grow-1" style="min-width: 0;">
                                 @php
                                     $hour = (int)date('H');
                                     $greeting = $hour < 12 ? 'Good Morning' : ($hour < 17 ? 'Good Afternoon' : 'Good Evening');
@@ -41,15 +41,16 @@
                                         $userName = $user->name;
                                     }
                                 @endphp
-                                <h5 class="mb-0 fw-semibold text-dark">
-                                    {{ $greeting }}, {{ $userName }}
+                                <h5 class="mb-1 fw-semibold text-dark" style="word-wrap: break-word; line-height: 1.3;">
+                                    {{ autoTranslate($greeting) }},<br class="d-md-none">
+                                    <span class="d-inline">{{ $userName }}</span>
                                 </h5>
-                                <small class="text-muted">
+                                <small class="text-muted d-block" style="word-wrap: break-word;">
                                     <i class="fas fa-briefcase me-1 text-primary"></i>
                                     @if(isset($secretary) && $secretary->position_display)
                                         {{ $secretary->position_display }}
                                     @else
-                                        Secretary Dashboard
+                                        {{ autoTranslate('Secretary Dashboard') }}
                                     @endif
                                 </small>
                             </div>
@@ -65,6 +66,16 @@
         #layoutSidenav_content main {
             padding-top: 0 !important;
         }
+        
+        /* Desktop padding */
+        @media (min-width: 769px) {
+            .container-fluid {
+                padding-left: 1.5rem !important;
+                padding-right: 1.5rem !important;
+                padding-top: 0 !important;
+            }
+        }
+        
         .container-fluid {
             padding-top: 0 !important;
         }
@@ -101,17 +112,40 @@
 
         /* Mobile Responsive Styles */
         @media (max-width: 768px) {
+            /* Prevent horizontal scrolling */
+            html, body {
+                overflow-x: hidden !important;
+                max-width: 100vw !important;
+            }
+            
+            /* CRITICAL: Remove sidebar padding on mobile - this fixes the left gap issue */
+            #layoutSidenav_content {
+                padding-left: 0 !important;
+                margin-left: 0 !important;
+                width: 100% !important;
+                max-width: 100vw !important;
+            }
+            
             /* Reduce gap between topbar and content on mobile */
             #layoutSidenav_content main {
                 padding-top: 0 !important;
                 margin-top: -0.25rem !important;
+                padding-left: 0 !important;
+                margin-left: 0 !important;
+                width: 100% !important;
             }
-            /* Container padding adjustment */
+            
+            /* Container padding adjustment - remove left padding and margin */
             .container-fluid {
-                padding-left: 10px !important;
-                padding-right: 10px !important;
+                padding-left: 15px !important;
+                padding-right: 15px !important;
                 padding-top: 0 !important;
                 margin-top: -0.25rem !important;
+                margin-left: 0 !important;
+                margin-right: 0 !important;
+                max-width: 100% !important;
+                width: 100% !important;
+                overflow-x: hidden !important;
             }
             .row.mb-0.mt-0 {
                 margin-top: -0.15rem !important;
@@ -129,19 +163,37 @@
                 gap: 12px !important;
             }
             
-            /* Keep profile and text on same line */
+            /* Keep profile and text on same line but allow wrapping */
             .dashboard-header .d-flex.align-items-center.gap-2 {
                 flex-direction: row !important;
                 flex-wrap: nowrap !important;
+                align-items: flex-start !important;
+            }
+            
+            .dashboard-header .d-flex.align-items-center.gap-2 .lh-sm {
+                flex: 1 1 auto !important;
+                min-width: 0 !important;
             }
             
             
             .dashboard-header h5 {
                 font-size: 1.1rem !important;
+                white-space: normal !important;
+                word-wrap: break-word !important;
+                line-height: 1.3 !important;
             }
             
             .dashboard-header small {
                 font-size: 0.8rem !important;
+                white-space: normal !important;
+                word-wrap: break-word !important;
+                display: block !important;
+            }
+            
+            .dashboard-header .lh-sm {
+                min-width: 0 !important;
+                flex: 1 1 auto !important;
+                overflow: hidden !important;
             }
             
             .dashboard-profile-img img,
@@ -249,14 +301,31 @@
         }
         
         @media (max-width: 576px) {
+            /* CRITICAL: Ensure no sidebar padding on extra small mobile */
+            #layoutSidenav_content {
+                padding-left: 0 !important;
+                margin-left: 0 !important;
+                width: 100% !important;
+                max-width: 100vw !important;
+            }
+            
             /* Further reduce gap on extra small mobile */
             #layoutSidenav_content main {
                 padding-top: 0 !important;
                 margin-top: -0.35rem !important;
+                padding-left: 0 !important;
+                margin-left: 0 !important;
+                width: 100% !important;
             }
+            
             .container-fluid {
                 padding-top: 0 !important;
                 margin-top: -0.35rem !important;
+                padding-left: 12px !important;
+                padding-right: 12px !important;
+                margin-left: 0 !important;
+                margin-right: 0 !important;
+                width: 100% !important;
             }
             .row.mb-0.mt-0 {
                 margin-top: -0.25rem !important;
@@ -293,14 +362,151 @@
             }
             
             .dashboard-header h5 {
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
+                white-space: normal !important;
+                overflow: visible !important;
+                text-overflow: clip !important;
+                max-width: 100% !important;
+                word-wrap: break-word !important;
+                line-height: 1.3 !important;
+            }
+            
+            .dashboard-header small {
+                white-space: normal !important;
+                word-wrap: break-word !important;
+                display: block !important;
             }
             
             .container-fluid {
+                padding-left: 12px !important;
+                padding-right: 12px !important;
+                margin-left: 0 !important;
+                margin-right: 0 !important;
+                max-width: 100% !important;
+                width: 100% !important;
+                overflow-x: hidden !important;
+            }
+            
+            /* Ensure all rows don't overflow and align left */
+            .row {
+                margin-left: 0 !important;
+                margin-right: 0 !important;
+                max-width: 100% !important;
+                width: 100% !important;
+            }
+            
+            /* Ensure columns align properly */
+            .row > [class*="col-"] {
                 padding-left: 8px !important;
                 padding-right: 8px !important;
+                margin-left: 0 !important;
+                margin-right: 0 !important;
+            }
+            
+            .row > [class*="col-"] {
+                padding-left: 8px !important;
+                padding-right: 8px !important;
+                max-width: 100% !important;
+            }
+            
+            /* Make statistics cards stack properly */
+            .col-xl-3.col-md-6.col-12 {
+                flex: 0 0 100% !important;
+                max-width: 100% !important;
+            }
+            
+            /* Fix quick actions buttons */
+            .col-md-3.col-12 {
+                flex: 0 0 100% !important;
+                max-width: 100% !important;
+                margin-bottom: 10px !important;
+            }
+            
+            /* Make demographics cards stack */
+            .col-lg-3.col-md-6.col-12 {
+                flex: 0 0 100% !important;
+                max-width: 100% !important;
+            }
+            
+            /* Fix table responsiveness */
+            .table-responsive {
+                display: block !important;
+                width: 100% !important;
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch !important;
+                margin-bottom: 1rem !important;
+            }
+            
+            .table-responsive table {
+                white-space: nowrap !important;
+            }
+            
+            .table-responsive table td,
+            .table-responsive table th {
+                padding: 8px 6px !important;
+                font-size: 0.85rem !important;
+            }
+            
+            .table-responsive table td strong {
+                font-size: 0.9rem !important;
+            }
+            
+            .table-responsive table .btn {
+                padding: 4px 8px !important;
+                font-size: 0.8rem !important;
+            }
+            
+            /* Fix accordion buttons on mobile */
+            .accordion-button {
+                font-size: 0.85rem !important;
+                padding: 10px 12px !important;
+                white-space: normal !important;
+            }
+            
+            .accordion-button .badge {
+                font-size: 0.7rem !important;
+                margin-top: 5px !important;
+                display: inline-block !important;
+            }
+            
+            /* Fix badges stacking in accordion header */
+            .accordion-button .text-end,
+            .accordion-button .d-flex.flex-wrap {
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: flex-end !important;
+                gap: 5px !important;
+            }
+            
+            @media (min-width: 576px) {
+                .accordion-button .text-end,
+                .accordion-button .d-flex.flex-wrap {
+                    flex-direction: row !important;
+                    align-items: center !important;
+                }
+            }
+            
+            /* Ensure cards don't overflow */
+            .card {
+                max-width: 100% !important;
+                overflow-x: hidden !important;
+            }
+            
+            /* Fix family breakdown columns */
+            .col-md-4.col-12 {
+                flex: 0 0 100% !important;
+                max-width: 100% !important;
+            }
+            
+            /* Fix chart columns */
+            .col-md-6.col-12 {
+                flex: 0 0 100% !important;
+                max-width: 100% !important;
+            }
+            
+            /* Fix announcements/events columns */
+            .col-lg-6.col-12 {
+                flex: 0 0 100% !important;
+                max-width: 100% !important;
             }
             
             .card-body {
@@ -405,7 +611,7 @@
             <div class="card mb-3">
                 <div class="card-header">
                     <i class="fas fa-eye me-1"></i>
-                    Overview
+                    {{ autoTranslate('Overview') }}
                 </div>
             </div>
         </div>
@@ -416,10 +622,10 @@
                 <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="flex-grow-1">
-                            <div class="small text-white-50">Total Family Members</div>
+                            <div class="small text-white-50">{{ autoTranslate('Total Family Members') }}</div>
                             <div class="h4 mb-0">{{ number_format($totalMembers) }}</div>
                             <div class="small text-white-50 mt-1">
-                                <i class="fas fa-users me-1"></i>{{ number_format($registeredMembers) }} registered
+                                <i class="fas fa-users me-1"></i>{{ number_format($registeredMembers) }} {{ autoTranslate('registered') }}
                             </div>
                         </div>
                         <div class="ms-3">
@@ -428,7 +634,7 @@
                     </div>
                 </div>
                 <div class="card-footer d-flex align-items-center justify-content-between">
-                    <a class="small text-white stretched-link" href="{{ route('members.view') }}">View Details</a>
+                    <a class="small text-white stretched-link" href="{{ route('members.view') }}">{{ autoTranslate('View Details') }}</a>
                     <div class="small text-white"><i class="fas fa-angle-right"></i></div>
                 </div>
             </div>
@@ -439,7 +645,7 @@
                 <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="flex-grow-1">
-                            <div class="small text-white-50">Active Events</div>
+                            <div class="small text-white-50">{{ autoTranslate('Active Events') }}</div>
                             <div class="h4 mb-0">{{ number_format($activeEvents) }}</div>
                         </div>
                         <div class="ms-3">
@@ -448,7 +654,7 @@
                     </div>
                 </div>
                 <div class="card-footer d-flex align-items-center justify-content-between">
-                    <a class="small text-white stretched-link" href="{{ route('special.events.index') }}">View Details</a>
+                    <a class="small text-white stretched-link" href="{{ route('special.events.index') }}">{{ autoTranslate('View Details') }}</a>
                     <div class="small text-white"><i class="fas fa-angle-right"></i></div>
                 </div>
             </div>
@@ -459,7 +665,7 @@
                 <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="flex-grow-1">
-                            <div class="small text-white-50">Upcoming Celebrations</div>
+                            <div class="small text-white-50">{{ autoTranslate('Upcoming Celebrations') }}</div>
                             <div class="h4 mb-0">{{ number_format($upcomingCelebrations) }}</div>
                         </div>
                         <div class="ms-3">
@@ -468,7 +674,7 @@
                     </div>
                 </div>
                 <div class="card-footer d-flex align-items-center justify-content-between">
-                    <a class="small text-white stretched-link" href="{{ route('celebrations.index') }}">View Details</a>
+                    <a class="small text-white stretched-link" href="{{ route('celebrations.index') }}">{{ autoTranslate('View Details') }}</a>
                     <div class="small text-white"><i class="fas fa-angle-right"></i></div>
                 </div>
             </div>
@@ -479,8 +685,8 @@
                 <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="flex-grow-1">
-                            <div class="small text-white-50">Sunday Services</div>
-                            <div class="h4 mb-0">Active</div>
+                            <div class="small text-white-50">{{ autoTranslate('Sunday Services') }}</div>
+                            <div class="h4 mb-0">{{ autoTranslate('Active') }}</div>
                         </div>
                         <div class="ms-3">
                             <i class="fas fa-church fa-2x text-white-50"></i>
@@ -488,7 +694,7 @@
                     </div>
                 </div>
                 <div class="card-footer d-flex align-items-center justify-content-between">
-                    <a class="small text-white stretched-link" href="{{ route('services.sunday.index') }}">View Details</a>
+                    <a class="small text-white stretched-link" href="{{ route('services.sunday.index') }}">{{ autoTranslate('View Details') }}</a>
                     <div class="small text-white"><i class="fas fa-angle-right"></i></div>
                 </div>
             </div>
@@ -501,28 +707,28 @@
             <div class="card">
                 <div class="card-header">
                     <i class="fas fa-bolt me-1"></i>
-                    Quick Actions
+                    {{ autoTranslate('Quick Actions') }}
                 </div>
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-3 col-12 mb-3">
                             <a href="{{ route('members.add') }}" class="btn btn-primary w-100">
-                                <i class="fas fa-user-plus me-2"></i>Add New Member
+                                <i class="fas fa-user-plus me-2"></i>{{ autoTranslate('Add New Member') }}
                             </a>
                         </div>
                         <div class="col-md-3 col-12 mb-3">
                             <a href="{{ route('special.events.index') }}?action=add" class="btn btn-success w-100">
-                                <i class="fas fa-calendar-plus me-2"></i>Add Special Event
+                                <i class="fas fa-calendar-plus me-2"></i>{{ autoTranslate('Add Special Event') }}
                             </a>
                         </div>
                         <div class="col-md-3 col-12 mb-3">
                             <a href="{{ route('celebrations.index') }}?action=add" class="btn btn-warning w-100">
-                                <i class="fas fa-gift me-2"></i>Add Celebration
+                                <i class="fas fa-gift me-2"></i>{{ autoTranslate('Add Celebration') }}
                             </a>
                         </div>
                         <div class="col-md-3 col-12 mb-3">
                             <a href="{{ route('services.sunday.index') }}" class="btn btn-info w-100">
-                                <i class="fas fa-church me-2"></i>Sunday Services
+                                <i class="fas fa-church me-2"></i>{{ autoTranslate('Sunday Services') }}
                             </a>
                         </div>
                     </div>
@@ -537,7 +743,7 @@
             <div class="card">
                 <div class="card-header">
                     <i class="fas fa-chart-pie me-1"></i>
-                    Member Demographics
+                    {{ autoTranslate('Member Demographics') }}
                 </div>
                 <div class="card-body">
                     <div class="row">
@@ -549,8 +755,8 @@
                                         <i class="fas fa-male fa-2x"></i>
                                     </div>
                                     <h4 class="text-primary mb-1">{{ number_format($maleMembers) }}</h4>
-                                    <p class="text-muted mb-0">Male Members</p>
-                                    <small class="text-muted">{{ $totalMembers > 0 ? round(($maleMembers / $totalMembers) * 100, 1) : 0 }}% of total</small>
+                                    <p class="text-muted mb-0">{{ autoTranslate('Male Members') }}</p>
+                                    <small class="text-muted">{{ $totalMembers > 0 ? round(($maleMembers / $totalMembers) * 100, 1) : 0 }}% {{ autoTranslate('of total') }}</small>
                                 </div>
                             </div>
                         </div>
@@ -563,8 +769,8 @@
                                         <i class="fas fa-female fa-2x"></i>
                                     </div>
                                     <h4 class="mb-1" style="color: #e91e63;">{{ number_format($femaleMembers) }}</h4>
-                                    <p class="text-muted mb-0">Female Members</p>
-                                    <small class="text-muted">{{ $totalMembers > 0 ? round(($femaleMembers / $totalMembers) * 100, 1) : 0 }}% of total</small>
+                                    <p class="text-muted mb-0">{{ autoTranslate('Female Members') }}</p>
+                                    <small class="text-muted">{{ $totalMembers > 0 ? round(($femaleMembers / $totalMembers) * 100, 1) : 0 }}% {{ autoTranslate('of total') }}</small>
                                 </div>
                             </div>
                         </div>
@@ -577,8 +783,8 @@
                                         <i class="fas fa-child fa-2x"></i>
                                     </div>
                                     <h4 class="text-warning mb-1">{{ number_format($totalChildren) }}</h4>
-                                    <p class="text-muted mb-0">Children</p>
-                                    <small class="text-muted">Under 18 years</small>
+                                    <p class="text-muted mb-0">{{ autoTranslate('Children') }}</p>
+                                    <small class="text-muted">{{ autoTranslate('Under 18 years') }}</small>
                                 </div>
                             </div>
                         </div>
@@ -591,8 +797,8 @@
                                         <i class="fas fa-user-tie fa-2x"></i>
                                     </div>
                                     <h4 class="text-success mb-1">{{ number_format($adultMembers) }}</h4>
-                                    <p class="text-muted mb-0">Adult Members</p>
-                                    <small class="text-muted">18+ years old</small>
+                                    <p class="text-muted mb-0">{{ autoTranslate('Adult Members') }}</p>
+                                    <small class="text-muted">{{ autoTranslate('18+ years old') }}</small>
                                 </div>
                             </div>
                         </div>
@@ -604,15 +810,15 @@
                             <div class="card border-0 bg-light">
                                 <div class="card-body">
                                     <h6 class="card-title mb-3">
-                                        <i class="fas fa-family me-2"></i>Family Member Breakdown
+                                        <i class="fas fa-family me-2"></i>{{ autoTranslate('Family Member Breakdown') }}
                                     </h6>
                                     <div class="row">
                                         <div class="col-md-4 col-12 mb-3">
                                             <div class="d-flex align-items-center">
                                                 <div class="bg-primary rounded me-2" style="width: 20px; height: 20px;"></div>
                                                 <div>
-                                                    <div class="small fw-bold">Registered Members</div>
-                                                    <div class="small text-muted">{{ $familyBreakdown['registered_males'] }} male, {{ $familyBreakdown['registered_females'] }} female</div>
+                                                    <div class="small fw-bold">{{ autoTranslate('Registered Members') }}</div>
+                                                    <div class="small text-muted">{{ $familyBreakdown['registered_males'] }} {{ autoTranslate('male') }}, {{ $familyBreakdown['registered_females'] }} {{ autoTranslate('female') }}</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -620,8 +826,8 @@
                                             <div class="d-flex align-items-center">
                                                 <div class="bg-success rounded me-2" style="width: 20px; height: 20px;"></div>
                                                 <div>
-                                                    <div class="small fw-bold">Spouses</div>
-                                                    <div class="small text-muted">{{ $familyBreakdown['spouse_males'] }} male, {{ $familyBreakdown['spouse_females'] }} female</div>
+                                                    <div class="small fw-bold">{{ autoTranslate('Spouses') }}</div>
+                                                    <div class="small text-muted">{{ $familyBreakdown['spouse_males'] }} {{ autoTranslate('male') }}, {{ $familyBreakdown['spouse_females'] }} {{ autoTranslate('female') }}</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -629,8 +835,8 @@
                                             <div class="d-flex align-items-center">
                                                 <div class="bg-warning rounded me-2" style="width: 20px; height: 20px;"></div>
                                                 <div>
-                                                    <div class="small fw-bold">Children</div>
-                                                    <div class="small text-muted">{{ $familyBreakdown['child_males'] }} male, {{ $familyBreakdown['child_females'] }} female</div>
+                                                    <div class="small fw-bold">{{ autoTranslate('Children') }}</div>
+                                                    <div class="small text-muted">{{ $familyBreakdown['child_males'] }} {{ autoTranslate('male') }}, {{ $familyBreakdown['child_females'] }} {{ autoTranslate('female') }}</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -646,13 +852,13 @@
                             <div class="card border-0 bg-light">
                                 <div class="card-body">
                                     <h6 class="card-title mb-3">
-                                        <i class="fas fa-chart-bar me-2"></i>Family Member Distribution
+                                        <i class="fas fa-chart-bar me-2"></i>{{ autoTranslate('Family Member Distribution') }}
                                     </h6>
                                     <div class="row">
                                         <div class="col-md-6 col-12 mb-3">
                                             <div class="d-flex align-items-center mb-2">
                                                 <div class="bg-primary rounded me-2" style="width: 20px; height: 20px;"></div>
-                                                <span class="small">Male: {{ $maleMembers }} ({{ $totalMembers > 0 ? round(($maleMembers / $totalMembers) * 100, 1) : 0 }}%)</span>
+                                                <span class="small">{{ autoTranslate('Male') }}: {{ $maleMembers }} ({{ $totalMembers > 0 ? round(($maleMembers / $totalMembers) * 100, 1) : 0 }}%)</span>
                                             </div>
                                             <div class="progress mb-3" style="height: 8px;">
                                                 <div class="progress-bar bg-primary" role="progressbar" style="width: {{ $totalMembers > 0 ? ($maleMembers / $totalMembers) * 100 : 0 }}%"></div>
@@ -661,7 +867,7 @@
                                         <div class="col-md-6 col-12 mb-3">
                                             <div class="d-flex align-items-center mb-2">
                                                 <div class="rounded me-2" style="width: 20px; height: 20px; background-color: #e91e63;"></div>
-                                                <span class="small">Female: {{ $femaleMembers }} ({{ $totalMembers > 0 ? round(($femaleMembers / $totalMembers) * 100, 1) : 0 }}%)</span>
+                                                <span class="small">{{ autoTranslate('Female') }}: {{ $femaleMembers }} ({{ $totalMembers > 0 ? round(($femaleMembers / $totalMembers) * 100, 1) : 0 }}%)</span>
                                             </div>
                                             <div class="progress mb-3" style="height: 8px;">
                                                 <div class="progress-bar" role="progressbar" style="width: {{ $totalMembers > 0 ? ($femaleMembers / $totalMembers) * 100 : 0 }}%; background-color: #e91e63;"></div>
@@ -672,13 +878,13 @@
                                         <div class="col-md-6 col-12 mb-2">
                                             <div class="d-flex align-items-center mb-2">
                                                 <div class="bg-warning rounded me-2" style="width: 20px; height: 20px;"></div>
-                                                <span class="small">Children: {{ $totalChildren }}</span>
+                                                <span class="small">{{ autoTranslate('Children') }}: {{ $totalChildren }}</span>
                                             </div>
                                         </div>
                                         <div class="col-md-6 col-12 mb-2">
                                             <div class="d-flex align-items-center mb-2">
                                                 <div class="bg-success rounded me-2" style="width: 20px; height: 20px;"></div>
-                                                <span class="small">Adults: {{ $adultMembers }}</span>
+                                                <span class="small">{{ autoTranslate('Adults') }}: {{ $adultMembers }}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -691,13 +897,140 @@
         </div>
     </div>
 
+    <!-- Branches and Communities Section (Super Secretary Only) -->
+    @if(isset($isSuperSecretary) && $isSuperSecretary && isset($branchStats) && count($branchStats) > 0)
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-sitemap me-2"></i>{{ autoTranslate('Branches & Communities') }}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="accordion" id="branchesAccordion">
+                        @foreach($branchStats as $index => $branchStat)
+                        <div class="accordion-item mb-2">
+                            <h2 class="accordion-header" id="headingBranch{{ $branchStat['branch']->id }}">
+                                <button class="accordion-button {{ $index === 0 ? '' : 'collapsed' }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapseBranch{{ $branchStat['branch']->id }}" aria-expanded="{{ $index === 0 ? 'true' : 'false' }}" aria-controls="collapseBranch{{ $branchStat['branch']->id }}">
+                                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center w-100 me-3">
+                                        <div class="mb-2 mb-md-0">
+                                            <strong>{{ $branchStat['branch']->name }}</strong>
+                                            <span class="badge bg-secondary ms-2">{{ $branchStat['branch']->code }}</span>
+                                        </div>
+                                        <div class="text-end text-md-end d-flex flex-wrap gap-1 justify-content-md-end">
+                                            <span class="badge bg-primary">{{ number_format($branchStat['total_members']) }} {{ autoTranslate('Members') }}</span>
+                                            <span class="badge bg-info">{{ number_format($branchStat['total_leaders']) }} {{ autoTranslate('Leaders') }}</span>
+                                            <span class="badge bg-warning text-dark">{{ number_format($branchStat['communities_count']) }} {{ autoTranslate('Communities') }}</span>
+                                        </div>
+                                    </div>
+                                </button>
+                            </h2>
+                            <div id="collapseBranch{{ $branchStat['branch']->id }}" class="accordion-collapse collapse {{ $index === 0 ? 'show' : '' }}" aria-labelledby="headingBranch{{ $branchStat['branch']->id }}" data-bs-parent="#branchesAccordion">
+                                <div class="accordion-body">
+                                    @if($branchStat['communities']->count() > 0)
+                                        <div class="table-responsive" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                                            <table class="table table-sm table-hover" style="min-width: 600px;">
+                                                <thead>
+                                                    <tr>
+                                                        <th>{{ autoTranslate('Community Name') }}</th>
+                                                        <th>{{ autoTranslate('Address') }}</th>
+                                                        <th>{{ autoTranslate('Church Elder') }}</th>
+                                                        <th>{{ autoTranslate('Members') }}</th>
+                                                        <th>{{ autoTranslate('Actions') }}</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach($branchStat['communities'] as $community)
+                                                    <tr>
+                                                        <td>
+                                                            <strong>{{ $community->name }}</strong>
+                                                            @if($community->description)
+                                                                <br><small class="text-muted">{{ Str::limit($community->description, 50) }}</small>
+                                                            @endif
+                                                        </td>
+                                                        <td>
+                                                            @if($community->address)
+                                                                <small>{{ Str::limit($community->address, 40) }}</small>
+                                                            @else
+                                                                <span class="text-muted">{{ autoTranslate('N/A') }}</span>
+                                                            @endif
+                                                        </td>
+                                                        <td>
+                                                            @if($community->churchElder && $community->churchElder->member)
+                                                                <span class="badge bg-info">{{ $community->churchElder->member->full_name }}</span>
+                                                            @else
+                                                                <span class="text-muted">{{ autoTranslate('Not Assigned') }}</span>
+                                                            @endif
+                                                        </td>
+                                                        <td>
+                                                            <span class="badge bg-primary">{{ $community->members()->count() }}</span>
+                                                        </td>
+                                                        <td>
+                                                            <a href="{{ route('campuses.communities.show', [$branchStat['branch'], $community]) }}" class="btn btn-sm btn-info" title="{{ autoTranslate('View Community') }}">
+                                                                <i class="fas fa-eye"></i>
+                                                            </a>
+                                                        </td>
+                                                    </tr>
+                                                    @endforeach
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    @else
+                                        <div class="text-center py-3 text-muted">
+                                            <i class="fas fa-home fa-2x mb-2 d-block"></i>
+                                            <p class="mb-0">{{ autoTranslate('No communities assigned to this branch yet.') }}</p>
+                                            <a href="{{ route('campuses.communities.create', $branchStat['branch']) }}" class="btn btn-sm btn-primary mt-2">
+                                                <i class="fas fa-plus me-1"></i>{{ autoTranslate('Create Community') }}
+                                            </a>
+                                        </div>
+                                    @endif
+                                    
+                                    <div class="mt-3 pt-3 border-top">
+                                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-stretch align-items-md-center gap-2">
+                                            <div class="d-flex flex-column flex-sm-row gap-2">
+                                                <a href="{{ route('campuses.show', $branchStat['branch']) }}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-building me-1"></i>{{ autoTranslate('View Branch Details') }}
+                                                </a>
+                                                <a href="{{ route('members.view', ['campus_id' => $branchStat['branch']->id]) }}" class="btn btn-sm btn-outline-info">
+                                                    <i class="fas fa-users me-1"></i>{{ autoTranslate('View Members') }}
+                                                </a>
+                                            </div>
+                                            <div>
+                                                <a href="{{ route('campuses.communities.create', $branchStat['branch']) }}" class="btn btn-sm btn-success w-100 w-sm-auto">
+                                                    <i class="fas fa-plus me-1"></i>{{ autoTranslate('Add Community') }}
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                    
+                    @if(empty($branchStats))
+                    <div class="text-center py-5 text-muted">
+                        <i class="fas fa-building fa-3x mb-3 d-block"></i>
+                        <p class="mb-0">{{ autoTranslate('No branches created yet.') }}</p>
+                        @if(auth()->user()->isAdmin() || auth()->user()->isUsharikaAdmin())
+                        <a href="{{ route('campuses.create') }}" class="btn btn-primary mt-2">
+                            <i class="fas fa-plus me-1"></i>{{ autoTranslate('Create First Branch') }}
+                        </a>
+                        @endif
+                    </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
     <!-- Latest Announcements + Upcoming Events lists -->
     <div class="row">
         <div class="col-lg-6 col-12">
             <div class="card mb-4 border-0 shadow-sm">
                 <div class="card-header">
                     <i class="fas fa-bullhorn me-1"></i>
-                    Latest Announcements
+                    {{ autoTranslate('Latest Announcements') }}
                 </div>
                 <div class="card-body">
                     @if(isset($latestAnnouncements) && $latestAnnouncements->count())
@@ -708,7 +1041,7 @@
                                         <div class="flex-grow-1">
                                             @if($announcement->is_pinned)
                                                 <span class="badge bg-warning mb-1">
-                                                    <i class="fas fa-thumbtack me-1"></i>Pinned
+                                                    <i class="fas fa-thumbtack me-1"></i>{{ autoTranslate('Pinned') }}
                                                 </span>
                                             @endif
                                             <h6 class="mb-1">{{ $announcement->title }}</h6>
@@ -726,7 +1059,7 @@
                                             @if($announcement->start_date && $announcement->end_date)
                                                 {{ $announcement->start_date->format('M d') }} - {{ $announcement->end_date->format('M d, Y') }}
                                             @elseif($announcement->start_date)
-                                                Starts: {{ $announcement->start_date->format('M d, Y') }}
+                                                {{ autoTranslate('Starts') }}: {{ $announcement->start_date->format('M d, Y') }}
                                             @else
                                                 {{ $announcement->created_at->format('M d, Y') }}
                                             @endif
@@ -736,7 +1069,7 @@
                             @endforeach
                         </ul>
                     @else
-                        <p class="mb-0 text-muted">No announcements available.</p>
+                        <p class="mb-0 text-muted">{{ autoTranslate('No announcements available.') }}</p>
                     @endif
                 </div>
             </div>
@@ -745,7 +1078,7 @@
             <div class="card mb-4 border-0 shadow-sm">
                 <div class="card-header">
                     <i class="fas fa-calendar-alt me-1"></i>
-                    Upcoming Events
+                    {{ autoTranslate('Upcoming Events') }}
                 </div>
                 <div class="card-body">
                     @if(isset($upcomingEvents) && $upcomingEvents->count())
@@ -761,7 +1094,7 @@
                             @endforeach
                         </ul>
                     @else
-                        <p class="mb-0 text-muted">No upcoming events scheduled.</p>
+                        <p class="mb-0 text-muted">{{ autoTranslate('No upcoming events scheduled.') }}</p>
                     @endif
                 </div>
             </div>

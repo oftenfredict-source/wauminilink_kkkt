@@ -13,6 +13,20 @@
     RewriteCond %{HTTP:x-xsrf-token} .
     RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
 
+    # Force ALL /attendance routes through Laravel (prevent direct directory access)
+    # This handles both /attendance and /WauminiLink/public/attendance paths
+    # IMPORTANT: This must come BEFORE the general rewrite rules
+    # This ensures Laravel handles all attendance routes, not the physical directory
+    # Match any request starting with /attendance
+    RewriteCond %{REQUEST_URI} ^/attendance(/.*)?$
+    # Exclude the /attendance/Attendance subdirectory (separate app)
+    RewriteCond %{REQUEST_URI} !^/attendance/Attendance
+    # Exclude actual files (like CSS, JS, images) if they exist
+    RewriteCond %{REQUEST_FILENAME} !-f
+    # Route to Laravel's main index.php (even if directory exists)
+    # The [L] flag stops processing, ensuring Laravel handles the route
+    RewriteRule ^attendance(/.*)?$ index.php [L]
+
     # Redirect Trailing Slashes If Not A Folder...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_URI} (.+)/$

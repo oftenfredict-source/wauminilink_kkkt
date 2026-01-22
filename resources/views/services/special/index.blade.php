@@ -3,9 +3,9 @@
 @section('content')
 <div class="container-fluid px-4">
     <div class="d-flex flex-wrap align-items-center justify-content-between mt-4 mb-3 gap-2">
-        <h2 class="mb-0">Special Events</h2>
+        <h2 class="mb-0">{{ autoTranslate('Special Events') }}</h2>
         <div class="d-flex gap-2">
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addEventModal"><i class="fas fa-plus me-2"></i>Add Event</button>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addEventModal"><i class="fas fa-plus me-2"></i>{{ autoTranslate('Add Event') }}</button>
         </div>
     </div>
 
@@ -13,19 +13,19 @@
         <div class="card-body">
             <div class="row g-3 align-items-end">
                 <div class="col-md-4">
-                    <label class="form-label">Search</label>
-                    <input type="text" name="search" value="{{ request('search') }}" class="form-control" placeholder="Search title, speaker, venue">
+                    <label class="form-label">{{ autoTranslate('Search') }}</label>
+                    <input type="text" name="search" value="{{ request('search') }}" class="form-control" placeholder="{{ autoTranslate('Search title, speaker, venue') }}">
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">From</label>
+                    <label class="form-label">{{ autoTranslate('From') }}</label>
                     <input type="date" name="from" value="{{ request('from') }}" class="form-control">
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">To</label>
+                    <label class="form-label">{{ autoTranslate('To') }}</label>
                     <input type="date" name="to" value="{{ request('to') }}" class="form-control">
                 </div>
                 <div class="col-md-2 d-flex gap-2">
-                    <button type="submit" class="btn btn-primary w-100"><i class="fas fa-filter me-2"></i>Apply</button>
+                    <button type="submit" class="btn btn-primary w-100"><i class="fas fa-filter me-2"></i>{{ autoTranslate('Apply') }}</button>
                 </div>
             </div>
         </div>
@@ -38,12 +38,12 @@
                     <thead class="table-light">
                         <tr>
                             <th class="text-nowrap">#</th>
-                            <th>Date</th>
-                            <th>Title</th>
-                            <th>Speaker</th>
-                            <th>Time</th>
-                            <th>Venue</th>
-                            <th class="text-end">Actions</th>
+                            <th>{{ autoTranslate('Date') }}</th>
+                            <th>{{ autoTranslate('Title') }}</th>
+                            <th>{{ autoTranslate('Speaker') }}</th>
+                            <th>{{ autoTranslate('Time') }}</th>
+                            <th>{{ autoTranslate('Venue') }}</th>
+                            <th class="text-end">{{ autoTranslate('Actions') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -70,14 +70,14 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="7" class="text-center py-4">No special events found.</td></tr>
+                            <tr><td colspan="7" class="text-center py-4">{{ autoTranslate('No special events found.') }}</td></tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
         </div>
         <div class="card-footer d-flex justify-content-between align-items-center">
-            <div class="text-muted small">Showing {{ $events->firstItem() }} to {{ $events->lastItem() }} of {{ $events->total() }} entries</div>
+            <div class="text-muted small">{{ autoTranslate('Showing') }} {{ $events->firstItem() }} {{ autoTranslate('to') }} {{ $events->lastItem() }} {{ autoTranslate('of') }} {{ $events->total() }} {{ autoTranslate('entries') }}</div>
             <div>{{ $events->withQueryString()->links() }}</div>
         </div>
     </div>
@@ -88,60 +88,60 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
             <div class="modal-header text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
-                <h5 class="modal-title d-flex align-items-center gap-2"><i class="fas fa-star"></i><span>Add Special Event</span></h5>
+                <h5 class="modal-title d-flex align-items-center gap-2"><i class="fas fa-star"></i><span>{{ autoTranslate('Add Special Event') }}</span></h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body bg-light">
                 <form id="addEventForm">
                     <div class="row g-3">
                         <div class="col-md-4">
-                            <label class="form-label">Event Date</label>
+                            <label class="form-label">{{ autoTranslate('Event Date') }}</label>
                             <input type="date" class="form-control" id="ev_date" required>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label">Start Time</label>
+                            <label class="form-label">{{ autoTranslate('Start Time') }}</label>
                             <input type="time" class="form-control" id="ev_start">
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label">End Time</label>
+                            <label class="form-label">{{ autoTranslate('End Time') }}</label>
                             <input type="time" class="form-control" id="ev_end">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Title</label>
-                            <input type="text" class="form-control" id="ev_title" placeholder="e.g., Youth Conference">
+                            <label class="form-label">{{ autoTranslate('Title') }}</label>
+                            <input type="text" class="form-control" id="ev_title" placeholder="{{ autoTranslate('e.g., Youth Conference') }}">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Speaker</label>
-                            <input type="text" class="form-control" id="ev_speaker" placeholder="e.g., Guest Speaker">
+                            <label class="form-label">{{ autoTranslate('Speaker') }}</label>
+                            <input type="text" class="form-control" id="ev_speaker" placeholder="{{ autoTranslate('e.g., Guest Speaker') }}">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Venue</label>
-                            <input type="text" class="form-control" id="ev_venue" placeholder="Main Hall">
+                            <label class="form-label">{{ autoTranslate('Venue') }}</label>
+                            <input type="text" class="form-control" id="ev_venue" placeholder="{{ autoTranslate('Main Hall') }}">
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label">Attendance</label>
+                            <label class="form-label">{{ autoTranslate('Attendance') }}</label>
                             <input type="number" min="0" class="form-control" id="ev_attendance" placeholder="0">
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label">Budget (TZS)</label>
+                            <label class="form-label">{{ autoTranslate('Budget (TZS)') }}</label>
                             <input type="number" min="0" step="0.01" class="form-control" id="ev_budget" placeholder="0.00">
                         </div>
                         <div class="col-12">
-                            <label class="form-label">Category</label>
-                            <input type="text" class="form-control" id="ev_category" placeholder="e.g., Conference, Concert">
+                            <label class="form-label">{{ autoTranslate('Category') }}</label>
+                            <input type="text" class="form-control" id="ev_category" placeholder="{{ autoTranslate('e.g., Conference, Concert') }}">
                         </div>
                         <div class="col-12">
-                            <label class="form-label">Description</label>
+                            <label class="form-label">{{ autoTranslate('Description') }}</label>
                             <textarea class="form-control" id="ev_description" rows="2"></textarea>
                         </div>
                         <div class="col-12">
-                            <label class="form-label">Notes</label>
+                            <label class="form-label">{{ autoTranslate('Notes') }}</label>
                             <textarea class="form-control" id="ev_notes" rows="2"></textarea>
                         </div>
                     </div>
                     <div class="d-flex justify-content-end gap-2 mt-3">
-                        <button type="button" class="btn btn-outline-danger" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Save</button>
+                        <button type="button" class="btn btn-outline-danger" data-bs-dismiss="modal">{{ autoTranslate('Cancel') }}</button>
+                        <button type="submit" class="btn btn-primary">{{ autoTranslate('Save') }}</button>
                     </div>
                 </form>
             </div>
@@ -256,7 +256,7 @@
                             <div class="card border-0 shadow-sm mb-4">
                                 <div class="card-header bg-gradient text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 15px 15px 0 0;">
                                     <h6 class="mb-0 fw-bold">
-                                        <i class="fas fa-info-circle me-2"></i>Event Information
+                                        <i class="fas fa-info-circle me-2"></i>{{ autoTranslate('Event Information') }}
                                     </h6>
                                 </div>
                                 <div class="card-body">
@@ -303,7 +303,7 @@
                             <div class="card border-0 shadow-sm mb-4">
                                 <div class="card-header bg-gradient text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 15px 15px 0 0;">
                                     <h6 class="mb-0 fw-bold">
-                                        <i class="fas fa-clock me-2"></i>Schedule & Details
+                                        <i class="fas fa-clock me-2"></i>{{ autoTranslate('Schedule & Details') }}
                                     </h6>
                                 </div>
                                 <div class="card-body">
@@ -329,7 +329,7 @@
                                         <div class="d-flex align-items-center mb-2">
                                             <i class="fas fa-users text-primary me-3"></i>
                                             <div>
-                                                <small class="text-muted d-block">Expected Attendance</small>
+                                                <small class="text-muted d-block">{{ autoTranslate('Expected Attendance') }}</small>
                                                 <strong>${s.attendance_count || '—'}</strong>
                                             </div>
                                         </div>
@@ -351,7 +351,7 @@
                         <div class="card border-0 shadow-sm mb-4">
                             <div class="card-header bg-gradient text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 15px 15px 0 0;">
                                 <h6 class="mb-0 fw-bold">
-                                    <i class="fas fa-file-alt me-2"></i>Description
+                                    <i class="fas fa-file-alt me-2"></i>{{ autoTranslate('Description') }}
                                 </h6>
                             </div>
                             <div class="card-body">
@@ -363,7 +363,7 @@
                         <div class="card border-0 shadow-sm mb-4">
                             <div class="card-header bg-gradient text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 15px 15px 0 0;">
                                 <h6 class="mb-0 fw-bold">
-                                    <i class="fas fa-sticky-note me-2"></i>Notes
+                                    <i class="fas fa-sticky-note me-2"></i>{{ autoTranslate('Notes') }}
                                 </h6>
                             </div>
                             <div class="card-body">
@@ -374,11 +374,11 @@
                 `;
                 
                 Swal.fire({ 
-                    title: '<div class="d-flex align-items-center gap-2"><i class="fas fa-calendar-plus text-primary"></i><span>Event Details - ENHANCED</span></div>', 
+                    title: '<div class="d-flex align-items-center gap-2"><i class="fas fa-calendar-plus text-primary"></i><span>{{ autoTranslate('Event Details') }}</span></div>', 
                     html: html, 
                     width: 1000, 
                     showConfirmButton: true,
-                    confirmButtonText: 'Close',
+                    confirmButtonText: '{{ autoTranslate('Close') }}',
                     confirmButtonColor: '#667eea',
                     customClass: {
                         popup: 'swal-popup-enhanced',
@@ -387,7 +387,7 @@
                     }
                 });
             })
-            .catch(() => Swal.fire({ icon:'error', title:'Failed to load details' }));
+            .catch(() => Swal.fire({ icon:'error', title:'{{ autoTranslate('Failed to load details') }}' }));
     }
 
     function openEditEvent(id){
@@ -416,7 +416,7 @@
         const submitBtn = document.querySelector('#addEventModal .btn-primary');
         const originalText = submitBtn ? submitBtn.innerHTML : '';
         if (submitBtn) {
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>{{ autoTranslate('Saving...') }}';
             submitBtn.disabled = true;
         }
         
@@ -469,8 +469,8 @@
             bootstrap.Modal.getInstance(document.getElementById('addEventModal')).hide();
             Swal.fire({ 
                 icon:'success', 
-                title:'Event Saved!', 
-                text:'Your event has been added successfully.',
+                title:'{{ autoTranslate('Event Saved!') }}', 
+                text:'{{ autoTranslate('Your event has been added successfully.') }}',
                 timer:1500, 
                 showConfirmButton:false 
             }).then(() => {
@@ -494,8 +494,8 @@
             bootstrap.Modal.getInstance(document.getElementById('addEventModal')).hide();
             Swal.fire({ 
                 icon:'success', 
-                title:'Event Saved!', 
-                text:'Your event has been added successfully.',
+                title:'{{ autoTranslate('Event Saved!') }}', 
+                text:'{{ autoTranslate('Your event has been added successfully.') }}',
                 timer:1500, 
                 showConfirmButton:false 
             }).then(() => {
@@ -505,11 +505,11 @@
     });
 
     function confirmDeleteEvent(id){
-        Swal.fire({ title:'Delete event?', text:'This action cannot be undone.', icon:'warning', showCancelButton:true, confirmButtonText:'Yes, delete', cancelButtonText:'Cancel', confirmButtonColor:'#dc3545' })
+        Swal.fire({ title:'{{ autoTranslate('Delete event?') }}', text:'{{ autoTranslate('This action cannot be undone.') }}', icon:'warning', showCancelButton:true, confirmButtonText:'{{ autoTranslate('Yes, delete') }}', cancelButtonText:'{{ autoTranslate('Cancel') }}', confirmButtonColor:'#dc3545' })
         .then((result)=>{ if(result.isConfirmed){ fetch(`{{ url('/special-events') }}/${id}`, { method: 'DELETE', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') } })
             .then(r => r.json())
-            .then(res => { if(res.success){ document.getElementById(`row-${id}`)?.remove(); Swal.fire({ icon:'success', title:'Deleted', timer:1200, showConfirmButton:false }); } else { Swal.fire({ icon:'error', title:'Delete failed', text: res.message || 'Try again' }); } })
-            .catch(()=> Swal.fire({ icon:'error', title:'Error', text:'Request failed.' })); } });
+            .then(res => { if(res.success){ document.getElementById(`row-${id}`)?.remove(); Swal.fire({ icon:'success', title:'{{ autoTranslate('Deleted') }}', timer:1200, showConfirmButton:false }); } else { Swal.fire({ icon:'error', title:'{{ autoTranslate('Delete failed') }}', text: res.message || '{{ autoTranslate('Try again') }}' }); } })
+            .catch(()=> Swal.fire({ icon:'error', title:'{{ autoTranslate('Error') }}', text:'{{ autoTranslate('Request failed.') }}' })); } });
     }
 </script>
 @endpush

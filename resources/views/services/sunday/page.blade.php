@@ -2037,8 +2037,30 @@
                             document.getElementById('edit_other_service').value = s.service_type || '';
                         }
                         
-                        document.getElementById('edit_start').value = (s.start_time || '');
-                        document.getElementById('edit_end').value = (s.end_time || '');
+                        // Format time for HTML5 time input (HH:MM format)
+                        // Handle both string format (H:i) and datetime objects
+                        let startTime = '';
+                        let endTime = '';
+                        if (s.start_time) {
+                            if (typeof s.start_time === 'string') {
+                                // If it's already a string, use it (should be H:i format)
+                                startTime = s.start_time.length > 5 ? s.start_time.substring(0, 5) : s.start_time;
+                            } else if (s.start_time.format) {
+                                // If it's a Carbon/DateTime object
+                                startTime = s.start_time.format('HH:mm');
+                            }
+                        }
+                        if (s.end_time) {
+                            if (typeof s.end_time === 'string') {
+                                // If it's already a string, use it (should be H:i format)
+                                endTime = s.end_time.length > 5 ? s.end_time.substring(0, 5) : s.end_time;
+                            } else if (s.end_time.format) {
+                                // If it's a Carbon/DateTime object
+                                endTime = s.end_time.format('HH:mm');
+                            }
+                        }
+                        document.getElementById('edit_start').value = startTime;
+                        document.getElementById('edit_end').value = endTime;
                         document.getElementById('edit_theme').value = s.theme || '';
                         // Preacher will be set after dropdown loads in modal show event
                         // Values will be set after dropdowns load in modal show event
@@ -2296,8 +2318,17 @@
                 const editServiceType = document.getElementById('edit_service_type').value;
                 const editOtherService = document.getElementById('edit_other_service').value;
                 fd.append('service_type', editServiceType === 'other' && editOtherService ? editOtherService : editServiceType);
-                fd.append('start_time', document.getElementById('edit_start').value);
-                fd.append('end_time', document.getElementById('edit_end').value);
+                
+                // Only append time fields if they have values (to avoid empty string validation errors)
+                const startTime = document.getElementById('edit_start').value;
+                const endTime = document.getElementById('edit_end').value;
+                if (startTime && startTime.trim() !== '') {
+                    fd.append('start_time', startTime);
+                }
+                if (endTime && endTime.trim() !== '') {
+                    fd.append('end_time', endTime);
+                }
+                
                 fd.append('theme', document.getElementById('edit_theme').value);
                 // Handle preacher - get from select or custom input
                 const editPreacherSelect = document.getElementById('edit_preacher_id');

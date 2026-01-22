@@ -9,6 +9,7 @@ use App\Models\Pledge;
 use App\Models\Budget;
 use App\Models\Expense;
 use App\Models\Member;
+use App\Models\Campus;
 use App\Models\FundingRequest;
 use App\Services\BudgetFundingService;
 use Illuminate\Http\Request;
@@ -84,7 +85,7 @@ class FinanceController extends Controller
         $netIncome = $totalIncome - $monthlyExpenses;
         
         // Get recent transactions
-        $recentTithes = Tithe::with('member')
+        $recentTithes = Tithe::with(['member', 'campus', 'evangelismLeader'])
             ->orderBy('tithe_date', 'desc')
             ->limit(5)
             ->get();
@@ -159,7 +160,7 @@ class FinanceController extends Controller
      */
     public function tithes(Request $request)
     {
-        $query = Tithe::with('member');
+        $query = Tithe::with(['member', 'campus', 'evangelismLeader']);
         
         // Apply filters
         if ($request->filled('member_id')) {
@@ -183,13 +184,16 @@ class FinanceController extends Controller
         $members = Member::orderBy('full_name')->get();
         $totalMembers = Member::count();
         
+        // Get all campuses for the secretary to select when adding tithes
+        $campuses = Campus::orderBy('name')->get();
+        
         // Get pastor information for approval messages
         $pastor = \App\Models\User::where('can_approve_finances', true)
             ->orWhere('role', 'pastor')
             ->orWhere('role', 'admin')
             ->first();
         
-        return view('finance.tithes', compact('tithes', 'members', 'totalMembers', 'pastor'));
+        return view('finance.tithes', compact('tithes', 'members', 'totalMembers', 'pastor', 'campuses'));
     }
     
     /**
@@ -198,26 +202,43 @@ class FinanceController extends Controller
     public function storeTithe(Request $request)
     {
         $validated = $request->validate([
-            'member_id' => 'required|exists:members,id',
-            'amount' => 'required|numeric|min:0',
+            'campus_id' => 'required|exists:campuses,id',
+            'total_amount' => 'required|numeric|min:0',
             'tithe_date' => 'required|date',
-            'payment_method' => 'required|string',
-            'reference_number' => 'nullable|string',
-            'notes' => 'nullable|string',
-            'is_verified' => 'boolean'
+            'payment_method' => 'required|string|in:cash,check,bank_transfer,mobile_money',
+            'reference_number' => 'nullable|string|max:255',
+            'notes' => 'nullable|string|max:1000',
         ]);
         
-        $validated['recorded_by'] = auth()->user()->name ?? 'System';
-        $validated['approval_status'] = 'pending'; // Set to pending for pastor approval
-        $validated['is_verified'] = false; // Override any verification status
-        
-        $tithe = Tithe::create($validated);
-        
-        // Send notification to pastors about pending tithe
-        $this->sendFinancialApprovalNotification('tithe', $tithe);
-        
-        return redirect()->route('finance.tithes')
-            ->with('success', 'Tithe recorded successfully and sent for pastor approval');
+        try {
+            // Get campus name for success message
+            $campus = Campus::findOrFail($validated['campus_id']);
+            
+            // Create aggregate tithe record (no member_id - represents collection from all members)
+            $tithe = Tithe::create([
+                'member_id' => null, // No specific member - aggregate collection
+                'campus_id' => $validated['campus_id'],
+                'amount' => $validated['total_amount'],
+                'tithe_date' => $validated['tithe_date'],
+                'payment_method' => $validated['payment_method'],
+                'reference_number' => $validated['reference_number'] ?? null,
+                'notes' => $validated['notes'] ?? null,
+                'recorded_by' => auth()->user()->name ?? 'System',
+                'approval_status' => 'pending',
+                'is_verified' => false,
+                'is_aggregate' => true,
+                'submitted_to_secretary' => false,
+            ]);
+            
+            // Send notification to pastors about pending tithe
+            $this->sendFinancialApprovalNotification('tithe', $tithe);
+            
+            return redirect()->route('finance.tithes')
+                ->with('success', 'Aggregate tithe recorded successfully for ' . $campus->name . ' (TZS ' . number_format($validated['total_amount'], 2) . '). It will be reviewed for approval.');
+        } catch (\Exception $e) {
+            \Log::error('Failed to store aggregate tithe: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Failed to record tithe: ' . $e->getMessage());
+        }
     }
 
     /**

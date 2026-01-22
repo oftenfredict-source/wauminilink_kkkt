@@ -30,7 +30,7 @@ return [
             'validation_rules' => ['required', 'string']
         ],
         'church_name' => [
-            'value' => 'AIC Moshi Kilimanjaro',
+            'value' => 'KKKT Ushirika wa Longuo',
             'type' => 'string',
             'category' => 'general',
             'group' => 'basic',

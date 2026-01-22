@@ -18,6 +18,95 @@
                     </div>
                 </div>
                 <div class="card-body">
+                    <!-- TEMPORARY: Biometric Device Connection Test Section -->
+                    <div class="card border-warning mb-4" id="biometricTestSection">
+                        <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">
+                                <i class="fas fa-fingerprint"></i> <strong>Biometric Device Test (Temporary)</strong>
+                            </h6>
+                            <button type="button" class="btn btn-sm btn-outline-dark" onclick="toggleBiometricTest()">
+                                <i class="fas fa-chevron-down" id="biometricTestToggleIcon"></i>
+                            </button>
+                        </div>
+                        <div class="card-body" id="biometricTestContent" style="display: none;">
+                            <div class="alert alert-info mb-3">
+                                <i class="fas fa-info-circle"></i> <strong>Quick Test:</strong> Enter your biometric device details below to test the connection.
+                            </div>
+                            
+                            <form id="biometricTestForm">
+                                <div class="row mb-3">
+                                    <div class="col-md-4">
+                                        <label for="test_ip" class="form-label">Device IP Address <span class="text-danger">*</span></label>
+                                        <input type="text" id="test_ip" name="ip" value="{{ config('zkteco.ip', '192.168.100.108') }}" 
+                                               class="form-control form-control-sm" required placeholder="e.g., 192.168.100.108">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="test_port" class="form-label">Port <span class="text-danger">*</span></label>
+                                        <input type="number" id="test_port" name="port" value="{{ config('zkteco.port', 4370) }}" 
+                                               class="form-control form-control-sm" required min="1" max="65535">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="test_password" class="form-label">Comm Key (Password)</label>
+                                        <input type="number" id="test_password" name="password" value="{{ config('zkteco.password', 0) }}" 
+                                               class="form-control form-control-sm" placeholder="0 (default)">
+                                    </div>
+                                    <div class="col-md-2 d-flex align-items-end">
+                                        <button type="button" class="btn btn-primary btn-sm w-100" onclick="testBiometricConnection()">
+                                            <i class="fas fa-plug"></i> Test
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+
+                            <div id="biometricTestLoading" class="text-center" style="display:none;">
+                                <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <small class="d-block mt-2">Connecting to device...</small>
+                            </div>
+
+                            <div id="biometricTestResult" style="display:none;"></div>
+
+                            <div class="mt-3">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <button type="button" class="btn btn-outline-success" onclick="testBiometricDeviceInfo()">
+                                        <i class="fas fa-info-circle"></i> Device Info
+                                    </button>
+                                    <button type="button" class="btn btn-outline-info" onclick="testBiometricAttendance()">
+                                        <i class="fas fa-calendar-check"></i> Get Attendance
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary" onclick="testBiometricUsers()">
+                                        <i class="fas fa-users"></i> Get Users
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="mt-3 border-top pt-3">
+                                <h6 class="fw-bold mb-2"><i class="fas fa-user-plus"></i> Register Members to Device (Testing Mode)</h6>
+                                <div class="alert alert-info small mb-2">
+                                    <i class="fas fa-info-circle"></i> <strong>Auto-Generated Enroll IDs:</strong> 
+                                    The system automatically generates a unique 2-3 digit enroll ID (10-999) for each member when they are registered.
+                                    <br><strong>Testing Mode:</strong> Enter member name directly to register continuously.
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <label for="register_member_name" class="form-label small">Enter Member Name:</label>
+                                        <input type="text" id="register_member_name" class="form-control form-control-sm" 
+                                               placeholder="Type member full name (e.g., John Doe)" autocomplete="off"
+                                               onkeypress="if(event.key === 'Enter') { event.preventDefault(); registerMemberToDevice(); }">
+                                        <small class="text-muted">Type member name and press Enter or click Register</small>
+                                    </div>
+                                    <div class="col-md-4 d-flex align-items-end">
+                                        <button type="button" class="btn btn-success btn-sm w-100" onclick="registerMemberToDevice()">
+                                            <i class="fas fa-fingerprint"></i> Register Member
+                                        </button>
+                                    </div>
+                                </div>
+                                <div id="registerMemberResult" class="mt-2" style="display:none;"></div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Service Selection -->
                     <div class="row mb-4">
                         <div class="col-md-6">
@@ -569,7 +658,9 @@
 
 @section('scripts')
 <script>
-const biometricSyncUrl = "{{ route('attendance.biometric.sync') }}";
+// Get the biometric sync URL - use test route that's outside attendance directory
+// This works around the issue where php artisan serve serves the physical attendance directory
+const biometricSyncUrl = "/test-biometric-sync";
 
 function loadServices() {
     // Clear auto-sync when service type changes
@@ -755,15 +846,101 @@ if (attendanceForm) {
     const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
     loadingModal.show();
     
+    // Get CSRF token
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    if (!csrfToken) {
+        loadingModal.hide();
+        Swal.fire({
+            icon: 'error',
+            title: 'Session Error',
+            text: 'CSRF token not found. Please refresh the page and try again.',
+            confirmButtonText: 'OK'
+        }).then(() => {
+            window.location.reload();
+        });
+        return;
+    }
+    
+    // Create FormData and ensure CSRF token is included
+    const formData = new FormData(this);
+    if (!formData.has('_token')) {
+        formData.append('_token', csrfToken);
+    }
+    
     // Submit form
     fetch(this.action, {
         method: 'POST',
-        body: new FormData(this),
+        body: formData,
         headers: {
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        }
+            'X-CSRF-TOKEN': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin'
     })
-    .then(response => {
+    .then(async response => {
+        // Handle 419 CSRF Token Mismatch / Session Expired
+        if (response.status === 419) {
+            loadingModal.hide();
+            let errorMessage = 'Your session has expired. Please log in again.';
+            try {
+                const errorData = await response.json();
+                if (errorData.message) {
+                    errorMessage = errorData.message;
+                }
+                if (errorData.redirect) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Session Expired',
+                        text: errorMessage,
+                        confirmButtonText: 'Go to Login',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false
+                    }).then(() => {
+                        window.location.href = errorData.redirect || '{{ route("login") }}';
+                    });
+                    return;
+                }
+            } catch (e) {
+                // If JSON parsing fails, use default message
+            }
+            
+            Swal.fire({
+                icon: 'warning',
+                title: 'Session Expired',
+                text: errorMessage,
+                confirmButtonText: 'Go to Login',
+                allowOutsideClick: false,
+                allowEscapeKey: false
+            }).then(() => {
+                window.location.href = '{{ route("login") }}';
+            });
+            return;
+        }
+        
+        // Handle 401 Unauthorized
+        if (response.status === 401) {
+            loadingModal.hide();
+            let errorMessage = 'You are not authorized to perform this action.';
+            try {
+                const errorData = await response.json();
+                if (errorData.message) {
+                    errorMessage = errorData.message;
+                }
+            } catch (e) {
+                // Use default message
+            }
+            
+            Swal.fire({
+                icon: 'error',
+                title: 'Unauthorized',
+                text: errorMessage,
+                confirmButtonText: 'OK'
+            }).then(() => {
+                window.location.href = '{{ route("login") }}';
+            });
+            return;
+        }
+        
         if (!response.ok) {
             return response.json().then(err => {
                 // Check if it's a time restriction error (422 status)
@@ -996,29 +1173,90 @@ function performSync(selectedDate, silent = false) {
         loadingModal.show();
     }
 
-    fetch(biometricSyncUrl, {
+    // Use the route URL - ensure it's a valid URL
+    // NOTE: Using /test-biometric-sync because php artisan serve doesn't use .htaccess
+    // and the physical public/attendance directory intercepts /attendance/* routes
+    let syncUrl = biometricSyncUrl || '/test-biometric-sync';
+    
+    // Ensure URL is absolute (starts with /)
+    if (!syncUrl.startsWith('/') && !syncUrl.startsWith('http')) {
+        syncUrl = '/' + syncUrl;
+    }
+    
+    console.log('Syncing from URL:', syncUrl, 'Date:', selectedDate);
+    
+    fetch(syncUrl, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
         },
         body: new URLSearchParams({
             date: selectedDate
         })
     })
     .then(async (response) => {
+        // Handle 404 specifically
+        if (response.status === 404) {
+            if (!silent) {
+                loadingModal.hide();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Route Not Found (404)',
+                    html: 'The sync route was not found.<br><br>' +
+                          '<strong>Route attempted:</strong> ' + syncUrl + '<br><br>' +
+                          '<strong>Possible causes:</strong><br>' +
+                          '1. Route cache needs clearing<br>' +
+                          '2. Middleware blocking access<br>' +
+                          '3. User permissions issue<br><br>' +
+                          '<small>Please refresh the page (Ctrl+F5) or contact administrator.</small>',
+                    confirmButtonText: 'OK',
+                    footer: '<a href="javascript:location.reload(true)">Click here to refresh</a>'
+                });
+            }
+            console.error('404 Error - Route not found:', syncUrl);
+            
+            // If using test route and it fails, try the original route
+            if (syncUrl === '/test-biometric-sync') {
+                console.log('Test route failed, trying original route...');
+                syncUrl = '/attendance/biometric-sync';
+                // Retry with original route
+                return performSync(selectedDate, silent);
+            }
+            
+            return;
+        }
+        
+        // Handle other HTTP errors
+        if (!response.ok) {
+            const errorText = await response.text().catch(() => 'Unknown error');
+            console.error('HTTP Error:', response.status, errorText);
+        }
+        
         const data = await response.json().catch(() => ({}));
         if (!silent) {
             loadingModal.hide();
         }
 
         if (!response.ok || !data.success) {
+            let errorMessage = data.message || 'Failed to sync attendance from device.';
+            
+            // Add troubleshooting tips
+            if (errorMessage.includes('connect') || errorMessage.includes('timeout')) {
+                errorMessage += '\n\nTroubleshooting:\n1. Check if device is powered on\n2. Verify IP address in config\n3. Check network connectivity';
+            } else if (errorMessage.includes('No attendance records')) {
+                errorMessage += '\n\nNote: This is normal if no members have marked attendance on the device yet.';
+            }
+            
             if (!silent) {
                 Swal.fire({
                     icon: 'error',
                     title: 'Sync Failed',
-                    text: data.message || 'Failed to sync attendance from device.',
-                    confirmButtonText: 'OK'
+                    text: errorMessage,
+                    confirmButtonText: 'OK',
+                    width: '600px'
                 });
             } else {
                 console.warn('Auto-sync failed:', data.message);
@@ -1026,27 +1264,218 @@ function performSync(selectedDate, silent = false) {
             return;
         }
 
-        // Automatically check checkboxes for synced members
+        // Automatically check checkboxes for synced members and children (teenagers)
         const syncedMemberIds = data.synced_member_ids || [];
+        const syncedChildIds = data.synced_child_ids || [];
         let checkedCount = 0;
         
+        console.log('=== SYNC RESPONSE DATA ===');
+        console.log('Full response:', data);
+        console.log('synced_member_ids:', syncedMemberIds, '(type:', typeof syncedMemberIds, ', length:', syncedMemberIds.length, ')');
+        console.log('synced_child_ids:', syncedChildIds, '(type:', typeof syncedChildIds, ', length:', syncedChildIds.length, ')');
+        console.log('Checking checkboxes for synced members:', syncedMemberIds);
+        console.log('Checking checkboxes for synced children (teenagers):', syncedChildIds);
+        
+        // Check member checkboxes
         syncedMemberIds.forEach(memberId => {
-            const checkbox = document.getElementById(`member_${memberId}`);
-            if (checkbox && !checkbox.checked) {
+            // Try multiple ways to find the checkbox
+            let checkbox = document.getElementById(`member_${memberId}`);
+            
+            // If not found by ID, try by value attribute
+            if (!checkbox) {
+                checkbox = document.querySelector(`input.member-checkbox[value="${memberId}"]`);
+            }
+            
+            console.log(`Looking for checkbox for member ${memberId}:`, checkbox);
+            
+            if (checkbox) {
+                // Always check the checkbox if member has attendance from device
+                const wasChecked = checkbox.checked;
                 checkbox.checked = true;
-                checkedCount++;
                 
-                // Add visual indicator (badge) to show member was synced from device
-                const label = checkbox.closest('.form-check-label');
-                if (label && !label.querySelector('.biometric-badge')) {
+                if (!wasChecked) {
+                checkedCount++;
+                    console.log(`Checked checkbox for member ${memberId}`);
+                } else {
+                    console.log(`Checkbox for member ${memberId} was already checked`);
+                }
+                
+                // Add or update visual indicator (badge) to show member was synced from device
+                // Label is a sibling, not a parent, so we need to find it differently
+                const label = document.querySelector(`label[for="member_${memberId}"]`);
+                
+                if (label) {
+                    // Remove existing badge if any
+                    const existingBadge = label.querySelector('.biometric-badge');
+                    if (existingBadge) {
+                        existingBadge.remove();
+                    }
+                    
+                    // Check if badge already exists in the label content
+                    if (!label.querySelector('.biometric-badge')) {
+                        // Add new badge
                     const badge = document.createElement('span');
                     badge.className = 'badge bg-success biometric-badge ms-2';
                     badge.innerHTML = '<i class="fas fa-fingerprint"></i> Device';
                     badge.title = 'Synced from biometric device';
                     label.appendChild(badge);
+                        console.log(`Added badge for member ${memberId}`);
+                    }
+                } else {
+                    console.warn(`Could not find label for member ${memberId}`);
                 }
+            } else {
+                console.error(`Checkbox not found for member ${memberId}. Available checkboxes:`, 
+                    Array.from(document.querySelectorAll('.member-checkbox')).map(cb => ({
+                        id: cb.id,
+                        value: cb.value,
+                        name: cb.closest('.member-item')?.querySelector('strong')?.textContent || 'Unknown'
+                    }))
+                );
+                
+                // Try to find by member name or other attributes
+                console.warn(`Attempting alternative methods to find checkbox for member ${memberId}`);
             }
         });
+        
+        // Check child (teenager) checkboxes
+        console.log('=== PROCESSING CHILD CHECKBOXES ===');
+        console.log('Total child IDs to process:', syncedChildIds.length);
+        console.log('Child IDs:', syncedChildIds);
+        
+        // Define function to process child checkboxes (must be defined before calling)
+        const processChildCheckboxes = function() {
+            // First, log all available child checkboxes on the page
+            const allChildCheckboxes = Array.from(document.querySelectorAll('.child-checkbox'));
+            console.log('Available child checkboxes on page:', allChildCheckboxes.length);
+            console.log('Child checkbox details:', allChildCheckboxes.map(cb => ({
+                id: cb.id,
+                value: cb.value,
+                name: cb.closest('.child-item')?.querySelector('strong')?.textContent || 'Unknown',
+                visible: cb.offsetParent !== null,
+                parentVisible: cb.closest('.child-item')?.offsetParent !== null
+            })));
+            
+            syncedChildIds.forEach(childId => {
+            console.log(`\n--- Processing child ID: ${childId} (type: ${typeof childId}) ---`);
+            
+            // Try multiple ways to find the checkbox
+            let checkbox = document.getElementById(`child_${childId}`);
+            console.log(`  Checkbox by ID "child_${childId}":`, checkbox);
+            
+            // If not found by ID, try by value attribute
+            if (!checkbox) {
+                checkbox = document.querySelector(`input.child-checkbox[value="${childId}"]`);
+                console.log(`  Checkbox by value "${childId}":`, checkbox);
+            }
+            
+            // Also try as string
+            if (!checkbox) {
+                checkbox = document.querySelector(`input.child-checkbox[value="${String(childId)}"]`);
+                console.log(`  Checkbox by value (string) "${String(childId)}":`, checkbox);
+            }
+            
+            // Also try as integer
+            if (!checkbox) {
+                checkbox = document.querySelector(`input.child-checkbox[value="${parseInt(childId)}"]`);
+                console.log(`  Checkbox by value (int) "${parseInt(childId)}":`, checkbox);
+            }
+            
+            console.log(`  Final checkbox found:`, checkbox);
+            
+            if (checkbox) {
+                // Check if checkbox is visible
+                const isVisible = checkbox.offsetParent !== null;
+                console.log(`  Checkbox visible:`, isVisible);
+                
+                // Always check the checkbox if child has attendance from device
+                const wasChecked = checkbox.checked;
+                checkbox.checked = true;
+                
+                if (!wasChecked) {
+                    checkedCount++;
+                    console.log(`  ✅ Checked checkbox for child (teenager) ${childId}`);
+                } else {
+                    console.log(`  ℹ️ Checkbox for child ${childId} was already checked`);
+                }
+                
+                // Add or update visual indicator (badge) to show child was synced from device
+                const label = document.querySelector(`label[for="child_${childId}"]`);
+                console.log(`  Label found:`, label);
+                
+                if (label) {
+                    const existingBadge = label.querySelector('.biometric-badge');
+                    if (existingBadge) {
+                        existingBadge.remove();
+                        console.log(`  Removed existing badge`);
+                    }
+                    
+                    // Check if badge already exists in the label content
+                    if (!label.querySelector('.biometric-badge')) {
+                        // Add new badge
+                        const badge = document.createElement('span');
+                        badge.className = 'badge bg-success biometric-badge ms-2';
+                        badge.innerHTML = '<i class="fas fa-fingerprint"></i> Device';
+                        badge.title = 'Synced from biometric device';
+                        label.appendChild(badge);
+                        console.log(`  ✅ Added badge for child (teenager) ${childId}`);
+                    } else {
+                        console.log(`  Badge already exists`);
+                    }
+                } else {
+                    console.warn(`  ⚠️ Could not find label for child ${childId}`);
+                }
+            } else {
+                console.error(`  ❌ Checkbox not found for child ${childId}`);
+                console.error(`  Available child checkboxes:`, 
+                    Array.from(document.querySelectorAll('.child-checkbox')).map(cb => ({
+                        id: cb.id,
+                        value: cb.value,
+                        valueType: typeof cb.value,
+                        name: cb.closest('.child-item')?.querySelector('strong')?.textContent || 'Unknown'
+                    }))
+                );
+            }
+            });
+            
+            console.log('=== FINISHED PROCESSING CHILD CHECKBOXES ===');
+        };
+        
+        // If we have child IDs to process, ensure children tab is visible/active
+        if (syncedChildIds.length > 0) {
+            // Check if we're in children_service (children are always visible)
+            const isChildrenService = document.querySelector('#service_type')?.value === 'children_service';
+            
+            // If not children_service, we need to activate the children tab
+            if (!isChildrenService) {
+                const childrenTab = document.querySelector('#children-tab');
+                const childrenTabPane = document.querySelector('#children');
+                
+                if (childrenTab && childrenTabPane) {
+                    // Activate the children tab using Bootstrap
+                    const tab = new bootstrap.Tab(childrenTab);
+                    tab.show();
+                    console.log('Activated children tab to show teenager checkboxes');
+                    
+                    // Wait a bit for the tab to be fully shown before processing checkboxes
+                    setTimeout(() => {
+                        processChildCheckboxes();
+                    }, 100);
+                } else {
+                    console.warn('Children tab not found - children checkboxes might be hidden');
+                    // Process anyway - checkboxes might still be in DOM even if hidden
+                    processChildCheckboxes();
+                }
+            } else {
+                // Children service - children are always visible, process immediately
+                processChildCheckboxes();
+            }
+        } else {
+            console.log('No child IDs to process - skipping child checkbox processing');
+        }
+        
+        const totalSynced = syncedMemberIds.length + syncedChildIds.length;
+        console.log(`Total checkboxes checked: ${checkedCount} out of ${totalSynced} synced (${syncedMemberIds.length} members + ${syncedChildIds.length} teenagers)`);
         
         // Update selected count
         updateSelectedCount();
@@ -1054,7 +1483,7 @@ function performSync(selectedDate, silent = false) {
         // Show success message only if not in silent mode
         if (!silent) {
             const message = checkedCount > 0 
-                ? `${data.message}\n\n${checkedCount} member(s) automatically checked from device.`
+                ? `${data.message}\n\n${checkedCount} member(s)/teenager(s) automatically checked from device.`
                 : data.message || 'Attendance synced successfully from device.';
             
             Swal.fire({
@@ -1071,15 +1500,365 @@ function performSync(selectedDate, silent = false) {
     .catch((error) => {
         if (!silent) {
             loadingModal.hide();
+        }
+        
+        let errorMessage = error.message || 'An unexpected error occurred during sync.';
+        
+        // Check if it's a 404 error
+        if (errorMessage.includes('404') || errorMessage.includes('Not Found')) {
+            errorMessage = 'Route not found (404). Please refresh the page. If the issue persists, check that you are logged in and have the correct permissions.';
+        }
+        
+        if (!silent) {
             Swal.fire({
                 icon: 'error',
-                title: 'Error',
-                text: error.message || 'An unexpected error occurred during sync.',
-                confirmButtonText: 'OK'
+                title: 'Sync Error',
+                text: errorMessage,
+                confirmButtonText: 'OK',
+                footer: '<small>URL: ' + syncUrl + '</small>'
             });
         }
         console.error('Biometric sync error:', error);
+        console.error('Sync URL:', syncUrl);
+        console.error('Full error:', error);
     });
+}
+
+// ============================================
+// TEMPORARY: Biometric Device Test Functions
+// ============================================
+
+function toggleBiometricTest() {
+    const content = document.getElementById('biometricTestContent');
+    const icon = document.getElementById('biometricTestToggleIcon');
+    
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+        icon.classList.remove('fa-chevron-down');
+        icon.classList.add('fa-chevron-up');
+    } else {
+        content.style.display = 'none';
+        icon.classList.remove('fa-chevron-up');
+        icon.classList.add('fa-chevron-down');
+    }
+}
+
+function getBiometricTestData() {
+    return {
+        ip: document.getElementById('test_ip').value,
+        port: parseInt(document.getElementById('test_port').value),
+        password: document.getElementById('test_password').value ? parseInt(document.getElementById('test_password').value) : 0
+    };
+}
+
+function showBiometricTestLoading(show) {
+    const el = document.getElementById('biometricTestLoading');
+    if (el) {
+        el.style.display = show ? 'block' : 'none';
+    }
+}
+
+function showBiometricTestResult(success, message, data = null) {
+    const resultDiv = document.getElementById('biometricTestResult');
+    if (!resultDiv) return;
+    
+    resultDiv.style.display = 'block';
+    
+    let alertClass = success ? 'alert-success' : 'alert-danger';
+    let icon = success ? '<i class="fas fa-check-circle"></i>' : '<i class="fas fa-exclamation-circle"></i>';
+    
+    let content = `<div class="alert ${alertClass} alert-dismissible fade show" role="alert">`;
+    content += `${icon} <strong>${success ? 'Success' : 'Error'}</strong><br>`;
+    content += message;
+    content += '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>';
+    content += '</div>';
+    
+    if (data) {
+        content += '<div class="mt-2"><small><strong>Response:</strong></small>';
+        content += '<pre class="bg-light p-2 rounded small" style="max-height: 200px; overflow-y: auto; font-size: 0.75rem;">';
+        content += JSON.stringify(data, null, 2);
+        content += '</pre></div>';
+    }
+    
+    resultDiv.innerHTML = content;
+}
+
+async function testBiometricConnection() {
+    showBiometricTestLoading(true);
+    const resultDiv = document.getElementById('biometricTestResult');
+    if (resultDiv) {
+        resultDiv.style.display = 'none';
+    }
+    
+    try {
+        const formData = getBiometricTestData();
+        const response = await fetch('{{ route("biometric.test-connection") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const result = await response.json();
+        showBiometricTestResult(result.success, result.message || (result.success ? 'Connection successful!' : 'Connection failed.'), result.device_info || result);
+    } catch (error) {
+        showBiometricTestResult(false, 'Error: ' + error.message);
+    } finally {
+        showBiometricTestLoading(false);
+    }
+}
+
+async function testBiometricDeviceInfo() {
+    showBiometricTestLoading(true);
+    const resultDiv = document.getElementById('biometricTestResult');
+    if (resultDiv) {
+        resultDiv.style.display = 'none';
+    }
+    
+    try {
+        const formData = getBiometricTestData();
+        const response = await fetch('{{ route("biometric.device-info") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const result = await response.json();
+        const message = result.success 
+            ? 'Device information retrieved successfully!' 
+            : (result.message || 'Failed to get device information.');
+        showBiometricTestResult(result.success, message, result);
+    } catch (error) {
+        showBiometricTestResult(false, 'Error: ' + error.message);
+    } finally {
+        showBiometricTestLoading(false);
+    }
+}
+
+async function testBiometricAttendance() {
+    showBiometricTestLoading(true);
+    const resultDiv = document.getElementById('biometricTestResult');
+    if (resultDiv) {
+        resultDiv.style.display = 'none';
+    }
+    
+    try {
+        const formData = getBiometricTestData();
+        const response = await fetch('{{ route("biometric.attendance") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const result = await response.json();
+        const message = result.success 
+            ? `Retrieved ${result.count || 0} attendance record(s) from device` 
+            : (result.message || 'Failed to get attendance records.');
+        showBiometricTestResult(result.success, message, result);
+    } catch (error) {
+        showBiometricTestResult(false, 'Error: ' + error.message);
+    } finally {
+        showBiometricTestLoading(false);
+    }
+}
+
+async function testBiometricUsers() {
+    showBiometricTestLoading(true);
+    const resultDiv = document.getElementById('biometricTestResult');
+    if (resultDiv) {
+        resultDiv.style.display = 'none';
+    }
+    
+    try {
+        const formData = getBiometricTestData();
+        const response = await fetch('{{ route("biometric.users") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const result = await response.json();
+        const message = result.success 
+            ? `Retrieved ${result.count || 0} user(s) from device` 
+            : (result.message || 'Failed to get users.');
+        showBiometricTestResult(result.success, message, result);
+    } catch (error) {
+        showBiometricTestResult(false, 'Error: ' + error.message);
+    } finally {
+        showBiometricTestLoading(false);
+    }
+}
+
+// Register a member to the biometric device (Testing Mode - by name)
+async function registerMemberToDevice() {
+    const memberName = document.getElementById('register_member_name').value.trim();
+    const resultDiv = document.getElementById('registerMemberResult');
+    
+    if (!memberName) {
+        if (resultDiv) {
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<div class="alert alert-warning">Please enter a member name</div>';
+        }
+        return;
+    }
+
+    // First, search for the member by name (case-insensitive, flexible matching)
+    let memberId = null;
+    let foundMember = null;
+    try {
+        const searchResponse = await fetch(`{{ route("biometric.search-members") }}?q=${encodeURIComponent(memberName)}`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+        
+        const searchResult = await searchResponse.json();
+        
+        if (searchResult.success && searchResult.members && searchResult.members.length > 0) {
+            // Try exact match first (case-insensitive, ignore extra spaces)
+            const normalizedInput = memberName.toLowerCase().trim().replace(/\s+/g, ' ');
+            const exactMatch = searchResult.members.find(m => {
+                const normalizedName = m.name.toLowerCase().trim().replace(/\s+/g, ' ');
+                return normalizedName === normalizedInput;
+            });
+            
+            if (exactMatch) {
+                memberId = exactMatch.id;
+                foundMember = exactMatch;
+            } else {
+                // Use the first matching member if no exact match
+                memberId = searchResult.members[0].id;
+                foundMember = searchResult.members[0];
+            }
+        } else {
+            // Show helpful error with suggestions
+            let errorMsg = `<strong>Member "${memberName}" not found.</strong>`;
+            errorMsg += '<br><small class="text-muted">';
+            errorMsg += 'Please check the spelling. The search is case-insensitive and handles extra spaces.';
+            errorMsg += '<br>Make sure the member exists in your members list.';
+            errorMsg += '</small>';
+            
+            if (resultDiv) {
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = `<div class="alert alert-warning">${errorMsg}</div>`;
+            }
+            return;
+        }
+    } catch (error) {
+        if (resultDiv) {
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `<div class="alert alert-danger">Error searching for member: ${error.message}</div>`;
+        }
+        return;
+    }
+    
+    if (!memberId) {
+        if (resultDiv) {
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<div class="alert alert-warning">Could not find member. Please check the name.</div>';
+        }
+        return;
+    }
+
+    showBiometricTestLoading(true);
+    if (resultDiv) {
+        resultDiv.style.display = 'none';
+    }
+
+    try {
+        const formData = getBiometricTestData();
+        formData.member_id = parseInt(memberId);
+
+        const response = await fetch('{{ route("biometric.register-member") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+
+        const result = await response.json();
+        
+        if (resultDiv) {
+            resultDiv.style.display = 'block';
+            let alertClass = result.success ? 'alert-success' : 'alert-danger';
+            let icon = result.success ? '<i class="fas fa-check-circle"></i>' : '<i class="fas fa-exclamation-circle"></i>';
+            
+            let message = result.message || 'Registration completed';
+            if (foundMember && foundMember.name !== memberName) {
+                message += ` (Registered as: ${foundMember.name})`;
+            }
+            
+            // Show detailed registration list if available
+            if (result.success && result.registered && result.registered.length > 0) {
+                message += '<br><br><strong>Registered to Device:</strong><ul class="mb-0 mt-2">';
+                result.registered.forEach(function(item) {
+                    message += `<li>${item}</li>`;
+                });
+                message += '</ul>';
+            }
+            
+            // Show errors/warnings if any
+            if (result.errors && result.errors.length > 0) {
+                message += '<br><br><strong class="text-warning">⚠️ Warnings:</strong><ul class="mb-0 mt-2">';
+                result.errors.forEach(function(error) {
+                    message += `<li class="text-warning">${error}</li>`;
+                });
+                message += '</ul>';
+            }
+            
+            // Add device registration confirmation
+            if (result.success) {
+                message += '<br><small class="text-success"><i class="fas fa-check"></i> All eligible family members registered to biometric device!</small>';
+            }
+            
+            resultDiv.innerHTML = `<div class="alert ${alertClass}">
+                ${icon} <strong>${result.success ? 'Success' : 'Error'}</strong><br>
+                ${message}
+                ${result.enroll_id ? `<br><small>Main Member Enroll ID: <strong>${result.enroll_id}</strong> (Use this ID on the device to enroll fingerprint)</small>` : ''}
+                ${result.registered_count ? `<br><small>Total registered: <strong>${result.registered_count}</strong> person(s)</small>` : ''}
+            </div>`;
+        }
+
+        if (result.success) {
+            // For testing: Keep the name in the field for continuous registration
+            // Just focus the input so user can type next name
+            const nameInput = document.getElementById('register_member_name');
+            if (nameInput) {
+                // Clear the field for next entry
+                nameInput.value = '';
+                nameInput.focus();
+            }
+        }
+    } catch (error) {
+        if (resultDiv) {
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `<div class="alert alert-danger">
+                <i class="fas fa-exclamation-circle"></i> <strong>Error</strong><br>
+                ${error.message}
+            </div>`;
+        }
+    } finally {
+        showBiometricTestLoading(false);
+    }
 }
 </script>
 @endsection

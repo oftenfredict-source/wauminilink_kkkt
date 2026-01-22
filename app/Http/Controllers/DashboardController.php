@@ -14,6 +14,8 @@ use App\Models\Donation;
 use App\Models\Expense;
 use App\Models\Announcement;
 use App\Models\Leader;
+use App\Models\Campus;
+use App\Models\Community;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -103,6 +105,44 @@ class DashboardController extends Controller
         // Calculate family-inclusive demographics
         $familyDemographics = $this->calculateFamilyDemographics();
         
+        // Check if secretary is super secretary (main campus secretary)
+        $isSuperSecretary = false;
+        $branches = collect();
+        $branchStats = [];
+        
+        if ($user) {
+            $campus = $user->getCampus();
+            if ($campus && $campus->is_main_campus) {
+                $isSuperSecretary = true;
+                
+                // Get all branches
+                $branches = Campus::where('is_main_campus', false)
+                    ->where('is_active', true)
+                    ->withCount('members')
+                    ->orderBy('name')
+                    ->get();
+                
+                // Get branch statistics with communities
+                foreach ($branches as $branch) {
+                    $communities = Community::where('campus_id', $branch->id)
+                        ->where('is_active', true)
+                        ->with('churchElder.member')
+                        ->orderBy('name')
+                        ->get();
+                    
+                    $branchStats[] = [
+                        'branch' => $branch,
+                        'communities' => $communities,
+                        'communities_count' => $communities->count(),
+                        'total_members' => Member::where('campus_id', $branch->id)->count(),
+                        'total_leaders' => Leader::where('campus_id', $branch->id)
+                            ->where('is_active', true)
+                            ->count(),
+                    ];
+                }
+            }
+        }
+        
         return view('dashboard', compact(
             'registeredMembers',
             'activeEvents', 
@@ -115,7 +155,10 @@ class DashboardController extends Controller
             'monthlyExpenses',
             'netIncome',
             'secretary',
-            'user'
+            'user',
+            'isSuperSecretary',
+            'branches',
+            'branchStats'
         ) + $familyDemographics);
     }
     
@@ -202,14 +245,14 @@ class DashboardController extends Controller
     }
 
     /**
-     * Show password change form for leaders (pastor, secretary, treasurer)
+     * Show password change form for leaders (pastor, secretary, treasurer, evangelism leader)
      */
     public function showChangePassword()
     {
         $user = Auth::user();
         
-        // Check if user is a leader (pastor, secretary, treasurer) or admin
-        if (!$user->isPastor() && !$user->isSecretary() && !$user->isTreasurer() && !$user->isAdmin()) {
+        // Check if user is a leader (pastor, secretary, treasurer, evangelism leader) or admin
+        if (!$user->isPastor() && !$user->isSecretary() && !$user->isTreasurer() && !$user->isEvangelismLeader() && !$user->isAdmin()) {
             return redirect()->route('dashboard')->withErrors(['error' => 'Unauthorized access.']);
         }
 
@@ -223,8 +266,8 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
         
-        // Check if user is a leader (pastor, secretary, treasurer) or admin
-        if (!$user->isPastor() && !$user->isSecretary() && !$user->isTreasurer() && !$user->isAdmin()) {
+        // Check if user is a leader (pastor, secretary, treasurer, evangelism leader) or admin
+        if (!$user->isPastor() && !$user->isSecretary() && !$user->isTreasurer() && !$user->isEvangelismLeader() && !$user->isAdmin()) {
             return redirect()->route('dashboard')->withErrors(['error' => 'Unauthorized access.']);
         }
 

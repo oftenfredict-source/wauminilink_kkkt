@@ -12,6 +12,7 @@ use App\Models\PledgePayment;
 use App\Models\Member;
 use App\Models\Leader;
 use App\Models\FundingRequest;
+use App\Models\CommunityOffering;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -59,7 +60,7 @@ class FinancialApprovalController extends Controller
     }
 
     /**
-     * Check if user can approve financial records (only pastor/admin)
+     * Check if user can approve financial records (secretary, pastor/admin)
      */
     private function checkApprovalPermission()
     {
@@ -69,8 +70,13 @@ class FinancialApprovalController extends Controller
         
         $user = auth()->user();
         
-        // Simple permission check - only pastor/admin can approve
+        // Simple permission check - secretary, pastor/admin can approve
         $canApprove = false;
+        
+        // Check if user is secretary
+        if ($user->role === 'secretary') {
+            $canApprove = true;
+        }
         
         // Check if user has explicit approval permission
         if ($user->can_approve_finances) {
@@ -88,7 +94,7 @@ class FinancialApprovalController extends Controller
         }
         
         if (!$canApprove) {
-            abort(403, 'Unauthorized access. Only Pastors and authorized users can approve financial records.');
+            abort(403, 'Unauthorized access. Only Secretaries, Pastors and authorized users can approve financial records.');
         }
     }
 
@@ -101,12 +107,12 @@ class FinancialApprovalController extends Controller
         $today = Carbon::today();
         
         // Get pending records (show all pending, not just today's)
-        $pendingTithes = Tithe::with(['member', 'approver'])
+        $pendingTithes = Tithe::with(['member', 'approver', 'evangelismLeader', 'campus'])
             ->where('approval_status', 'pending')
             ->orderBy('created_at', 'desc')
             ->get();
             
-        $pendingOfferings = Offering::with(['member', 'approver'])
+        $pendingOfferings = Offering::with(['member', 'approver', 'evangelismLeader', 'campus'])
             ->where('approval_status', 'pending')
             ->orderBy('created_at', 'desc')
             ->get();
@@ -146,15 +152,22 @@ class FinancialApprovalController extends Controller
             ->where('approval_status', 'pending')
             ->orderBy('created_at', 'desc')
             ->get();
+            
+        // Get pending community offerings (from Evangelism Leader, ready for Secretary)
+        $pendingCommunityOfferings = CommunityOffering::with(['community', 'service', 'evangelismLeader', 'churchElder'])
+            ->where('status', 'pending_secretary')
+            ->orderBy('handover_to_evangelism_at', 'asc')
+            ->get();
 
         // Get summary statistics
         $totalPending = $pendingTithes->count() + $pendingOfferings->count() + 
                        $pendingDonations->count() + $pendingExpenses->count() + 
-                       $pendingBudgets->count() + $pendingPledgePayments->count();
+                       $pendingBudgets->count() + $pendingPledgePayments->count() +
+                       $pendingCommunityOfferings->count();
 
         $totalPendingAmount = $pendingTithes->sum('amount') + $pendingOfferings->sum('amount') + 
                              $pendingDonations->sum('amount') + $pendingExpenses->sum('amount') +
-                             $pendingPledgePayments->sum('amount');
+                             $pendingPledgePayments->sum('amount') + $pendingCommunityOfferings->sum('amount');
 
         // Get recent approvals (last 7 days)
         $recentApprovals = collect();
@@ -311,6 +324,7 @@ class FinancialApprovalController extends Controller
             'pendingExpenses',
             'pendingBudgets',
             'pendingPledgePayments',
+            'pendingCommunityOfferings',
             'totalPending',
             'totalPendingAmount',
             'recentApprovals',

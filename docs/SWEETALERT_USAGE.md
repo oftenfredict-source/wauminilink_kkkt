@@ -317,3 +317,19 @@ SweetAlert2 supports all modern browsers:
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

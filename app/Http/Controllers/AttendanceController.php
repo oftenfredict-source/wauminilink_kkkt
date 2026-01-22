@@ -9,11 +9,13 @@ use App\Models\Member;
 use App\Models\Child;
 use App\Models\Offering;
 use App\Services\SmsService;
+use App\Services\ZKTecoService;
 use App\Notifications\MissedAttendanceNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class AttendanceController extends Controller
 {
@@ -770,6 +772,7 @@ class AttendanceController extends Controller
 
     /**
      * Sync attendance records from biometric device into ServiceAttendance
+     * This syncs directly from the ZKTeco device and automatically checks checkboxes
      */
     public function syncBiometricAttendance(Request $request)
     {
@@ -786,86 +789,360 @@ class AttendanceController extends Controller
         }
 
         try {
-            $response = Http::timeout(10)->get('http://192.168.100.100:8000/api/v1/attendances', [
-                // If the biometric API supports date filtering, keep this.
-                // Otherwise the device will return all records and we will filter by date manually.
-                'date' => $date,
-                'per_page' => 500,
+            // Connect directly to ZKTeco device
+            $ip = config('zkteco.ip', '192.168.100.108');
+            $port = config('zkteco.port', 4370);
+            $password = config('zkteco.password', 0);
+            
+            Log::info("Starting biometric sync for date: {$date}", [
+                'ip' => $ip,
+                'port' => $port,
+                'service_id' => $service->id
             ]);
-        } catch (\Throwable $e) {
-            \Log::error('Biometric attendance sync failed (HTTP error)', [
-                'date' => $date,
-                'error' => $e->getMessage(),
-            ]);
-
+            
+            $zkteco = new ZKTecoService($ip, $port, $password);
+            
+            if (!$zkteco->connect()) {
+                Log::error("Failed to connect to biometric device", [
+                    'ip' => $ip,
+                    'port' => $port,
+                    'date' => $date
+                ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to contact biometric device: ' . $e->getMessage(),
+                    'message' => 'Failed to connect to biometric device. Please check device connection and settings.',
             ], 500);
         }
 
-        if (!$response->successful()) {
-            \Log::warning('Biometric attendance sync HTTP non-success', [
-                'date' => $date,
-                'status' => $response->status(),
-                'body' => $response->body(),
-            ]);
+            Log::info("Successfully connected to biometric device");
+
+            // Get users from device (those who have enrolled fingerprints)
+            $deviceUsers = [];
+            try {
+                $deviceUsers = $zkteco->getUsers();
+                Log::info("Retrieved " . count($deviceUsers) . " users from device (enrolled members)");
+                
+                if (count($deviceUsers) > 0) {
+                    Log::info("Sample device user: " . json_encode($deviceUsers[0]));
+                }
+            } catch (\Exception $e) {
+                Log::warning("Error getting users from device: " . $e->getMessage());
+                // Continue even if we can't get users - we'll still process attendance
+            }
+
+            // Get attendance records from device
+            try {
+                $attendanceRecords = $zkteco->getAttendances();
+                Log::info("Retrieved " . count($attendanceRecords) . " total attendance records from device");
+                
+                if (count($attendanceRecords) > 0) {
+                    // Log first 3 records with full structure for debugging
+                    Log::info("=== ATTENDANCE RECORDS FROM DEVICE ===");
+                    for ($i = 0; $i < min(3, count($attendanceRecords)); $i++) {
+                        Log::info("Record #{$i}: " . json_encode($attendanceRecords[$i], JSON_PRETTY_PRINT));
+                        Log::info("Record #{$i} keys: " . implode(', ', array_keys($attendanceRecords[$i])));
+                        
+                        // Show what we extract
+                        $eid = $attendanceRecords[$i]['user_id'] ?? $attendanceRecords[$i]['pin'] ?? $attendanceRecords[$i]['id'] ?? $attendanceRecords[$i]['uid'] ?? null;
+                        $ts = $attendanceRecords[$i]['record_time'] ?? $attendanceRecords[$i]['timestamp'] ?? $attendanceRecords[$i]['time'] ?? null;
+                        Log::info("Record #{$i} extracted - enroll_id: {$eid}, timestamp: " . var_export($ts, true));
+                    }
+                    
+                    // Log all enroll IDs found in attendance records for debugging
+                    // CRITICAL: Use user_id first (not uid) - uid is just sequential record number
+                    $foundEnrollIds = [];
+                    foreach ($attendanceRecords as $rec) {
+                        $eid = $rec['user_id'] ?? $rec['pin'] ?? $rec['id'] ?? $rec['uid'] ?? null;
+                        if ($eid) {
+                            $foundEnrollIds[] = (string)$eid;
+                        }
+                    }
+                    Log::info("Enroll IDs found in attendance records (using user_id field): " . implode(', ', array_unique($foundEnrollIds)));
+                } else {
+                    Log::warning("No attendance records found on device at all. Device might be empty or connection issue.");
+                }
+            } catch (\Exception $e) {
+                Log::error("Error getting attendances from device: " . $e->getMessage());
+                $zkteco->disconnect();
+                throw $e;
+            }
+            
+            $zkteco->disconnect();
+            
+            // Create a set of enroll IDs that have fingerprints enrolled on device
+            $enrolledEnrollIds = [];
+            foreach ($deviceUsers as $deviceUser) {
+                $enrollId = $deviceUser['uid'] ?? $deviceUser['id'] ?? $deviceUser['userid'] ?? null;
+                if ($enrollId) {
+                    $enrolledEnrollIds[(string)$enrollId] = true;
+                }
+            }
+            Log::info("Members with fingerprints enrolled on device: " . count($enrolledEnrollIds));
+
+            // If no attendance records, provide helpful message
+            // IMPORTANT: Registering a member doesn't create attendance - they must USE their fingerprint
+            if (empty($attendanceRecords)) {
+                $enrolledCount = count($enrolledEnrollIds);
+                $message = "No attendance records found on device at all.";
+                
+                if ($enrolledCount > 0) {
+                    $enrolledIds = array_keys($enrolledEnrollIds);
+                    $message = "⚠️ NO ATTENDANCE RECORDS FOUND";
+                    $message .= "\n\n📊 Status:";
+                    $message .= "\n• {$enrolledCount} member(s) registered on device (Enroll IDs: " . implode(', ', $enrolledIds) . ")";
+                    $message .= "\n• 0 attendance records found";
+                    $message .= "\n• Date being synced: {$date}";
+                    $message .= "\n\n🔍 CRITICAL DIFFERENCE:";
+                    $message .= "\n❌ Enrolling fingerprint (in MENU) = Only saves fingerprint template";
+                    $message .= "\n   → This does NOT create attendance records";
+                    $message .= "\n   → Checkbox will NOT be checked";
+                    $message .= "\n\n✅ Marking attendance (on MAIN SCREEN) = Creates attendance record";
+                    $message .= "\n   → This creates an attendance record";
+                    $message .= "\n   → Checkbox WILL be checked after sync";
+                    $message .= "\n\n📋 HOW TO MARK ATTENDANCE:";
+                    $message .= "\n1. Go to physical ZKTeco device";
+                    $message .= "\n2. Make sure you're on the MAIN/HOME SCREEN (not in any menu)";
+                    $message .= "\n3. Member places their enrolled finger on the scanner";
+                    $message .= "\n4. Device should show: 'Verified', 'Success', or member's name";
+                    $message .= "\n5. This creates an ATTENDANCE RECORD";
+                    $message .= "\n6. Return to system and sync again";
+                    $message .= "\n7. Checkbox will be checked automatically";
+                    $message .= "\n\n💡 Remember: Enrollment (MENU) ≠ Attendance (MAIN SCREEN)";
+                } else {
+                    $message .= " No members are registered on the device yet.";
+                }
 
             return response()->json([
-                'success' => false,
-                'message' => 'Biometric device API returned HTTP status ' . $response->status(),
-            ], 500);
-        }
-
-        $payload = $response->json();
-        if (!($payload['success'] ?? false) || !is_array($payload['data'] ?? null)) {
-            \Log::warning('Biometric attendance sync: unexpected payload', [
-                'date' => $date,
-                'payload' => $payload,
+                    'success' => true,
+                    'message' => $message,
+                    'inserted' => 0,
+                    'synced_member_ids' => [], // Don't check any checkboxes if no attendance
+                    'enrolled_count' => $enrolledCount,
+                    'enrolled_ids' => $enrolledCount > 0 ? array_keys($enrolledEnrollIds) : [],
+                    'debug_info' => [
+                        'total_records_on_device' => 0,
+                        'requested_date' => $date,
+                        'enrolled_members' => $enrolledCount > 0 ? array_keys($enrolledEnrollIds) : []
+                    ]
+                ]);
+            }
+            
+            // Log how many records match the date and show all dates found
+            $recordsForDate = 0;
+            $allDatesFound = [];
+            $allEnrollIdsInRecords = [];
+            
+            foreach ($attendanceRecords as $rec) {
+                // CRITICAL: Use user_id first (not uid) - uid is just sequential record number
+                $eid = $rec['user_id'] ?? $rec['pin'] ?? $rec['id'] ?? $rec['uid'] ?? null;
+                if ($eid) {
+                    $allEnrollIdsInRecords[] = (string)$eid;
+                }
+                
+                // CRITICAL: Use record_time first - this is the primary timestamp field from ZKTeco
+                $timestamp = $rec['record_time'] ?? $rec['timestamp'] ?? $rec['time'] ?? $rec['punch_time'] ?? $rec['datetime'] ?? null;
+                if ($timestamp) {
+                    try {
+                        if (is_numeric($timestamp)) {
+                            $recDate = date('Y-m-d', (int)$timestamp);
+                        } elseif (is_string($timestamp)) {
+                            $recDate = date('Y-m-d', strtotime($timestamp));
+                        } else {
+                            continue;
+                        }
+                        $allDatesFound[] = $recDate;
+                        if ($recDate === $date) {
+                            $recordsForDate++;
+                        }
+                    } catch (\Exception $e) {
+                        // Skip if can't parse
+                    }
+                }
+            }
+            
+            $uniqueDates = array_unique($allDatesFound);
+            $uniqueEnrollIds = array_unique($allEnrollIdsInRecords);
+            
+            Log::info("Attendance records analysis", [
+                'total_records_on_device' => count($attendanceRecords),
+                'records_matching_service_date' => $recordsForDate,
+                'service_date' => $date,
+                'service_id' => $service->id,
+                'all_dates_found_on_device' => $uniqueDates,
+                'note' => 'Only records matching the service date will be synced. Previous service attendance will be ignored.',
+                'all_enroll_ids_in_records' => $uniqueEnrollIds,
+                'enrolled_members_on_device' => array_keys($enrolledEnrollIds)
             ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Biometric device API returned invalid data format',
-            ], 500);
-        }
-
-        $records = $payload['data'];
         $insertedCount = 0;
         $syncedMemberIds = []; // Track which member IDs were synced
+        $syncedChildIds = []; // Track which child IDs were synced (teenagers)
 
-        foreach ($records as $row) {
-            // Example row:
-            // {
-            //   "id": 40,
-            //   "user": { "id": 15, "name": "Ally", "enroll_id": "2" },
-            //   "attendance_date": "2025-12-01",
-            //   "check_in_time": "2025-12-01 12:00:24",
-            //   ...
-            // }
-
-            // Filter by date (in case API doesn't support date filter)
-            if (!empty($row['attendance_date']) && $row['attendance_date'] !== $date) {
+            foreach ($attendanceRecords as $index => $record) {
+                try {
+                    // CRITICAL: Based on actual ZKTeco device data structure:
+                    //   - uid = sequential record number (1, 2, 3, 4...) - DO NOT USE THIS!
+                    //   - user_id = actual user's enroll ID (1, 1, 1, 4, 4, 2...) - USE THIS!
+                    //   - pin = alternative field for enroll ID
+                    // We MUST use 'user_id' as the enroll_id, NOT 'uid'!
+                    
+                    // IMPORTANT: Check user_id FIRST, not uid!
+                    $enrollId = $record['user_id'] ?? $record['pin'] ?? $record['id'] ?? $record['uid'] ?? null;
+                    
+                    if (empty($enrollId)) {
+                        Log::warning("Attendance record missing enroll ID", [
+                            'record_index' => $index,
+                            'record' => $record,
+                            'record_keys' => array_keys($record)
+                        ]);
                 continue;
             }
 
-            $enrollId = $row['user']['enroll_id'] ?? null;
-            if (empty($enrollId)) {
-                continue;
-            }
+                    // Log full record structure for first few records
+                    if ($index < 3) {
+                        Log::info("=== PROCESSING ATTENDANCE RECORD #{$index} ===", [
+                            'enroll_id' => $enrollId,
+                            'enroll_id_type' => gettype($enrollId),
+                            'record_keys' => array_keys($record),
+                            'full_record' => $record,
+                            'user_id_field' => $record['user_id'] ?? 'NOT SET',
+                            'uid_field' => $record['uid'] ?? 'NOT SET',
+                            'pin_field' => $record['pin'] ?? 'NOT SET',
+                            'record_time_field' => $record['record_time'] ?? 'NOT SET',
+                            'timestamp_field' => $record['timestamp'] ?? 'NOT SET',
+                        ]);
+                    }
 
-            // Find linked member by biometric_enroll_id
-            $member = Member::where('biometric_enroll_id', (string) $enrollId)->first();
-            if (!$member) {
-                \Log::warning('Biometric attendance record has no matching member', [
-                    'date' => $date,
+                    // Get timestamp from record - CRITICAL: record_time is the primary field!
+                    // ZKTeco library returns 'record_time' as the main timestamp field
+                    $timestamp = $record['record_time'] ?? $record['timestamp'] ?? $record['time'] ?? $record['punch_time'] ?? $record['datetime'] ?? null;
+                    
+                    // Parse timestamp to get date
+                    $recordDate = null;
+                    if ($timestamp) {
+                        try {
+                            // ZKTeco timestamps can be:
+                            // - Unix timestamp (numeric)
+                            // - Formatted string (e.g., "2025-12-01 12:00:00")
+                            // - DateTime object
+                            if (is_numeric($timestamp)) {
+                                $recordDate = date('Y-m-d', (int)$timestamp);
+                            } elseif (is_string($timestamp)) {
+                                $recordDate = date('Y-m-d', strtotime($timestamp));
+                            } elseif (is_object($timestamp) && method_exists($timestamp, 'format')) {
+                                $recordDate = $timestamp->format('Y-m-d');
+                            }
+                        } catch (\Exception $e) {
+                            Log::warning('Failed to parse attendance timestamp', [
+                                'timestamp' => $timestamp,
+                                'timestamp_type' => gettype($timestamp),
+                                'error' => $e->getMessage(),
+                                'record' => $record
+                            ]);
+                        }
+                    } else {
+                        // If no timestamp, use current date as fallback
+                        $recordDate = $date;
+                        Log::warning("Attendance record missing timestamp, using requested date", [
+                            'enroll_id' => $enrollId,
+                            'record' => $record
+                        ]);
+                    }
+
+                    // CRITICAL: STRICT DATE FILTERING - Only sync records that EXACTLY match the service date
+                    // This ensures each service is independent - members must mark attendance fresh for each new service
+                    // Records without dates are SKIPPED to prevent syncing old/unknown records
+                    
+                    if (!$recordDate) {
+                        // If record has no date, skip it - it might be from a previous service
+                        // We cannot safely assign it to the current service
+                        Log::warning("Skipping attendance record - no valid date found (prevents syncing old records)", [
+                            'enroll_id' => $enrollId,
+                            'requested_service_date' => $date,
+                            'service_id' => $service->id,
+                            'timestamp' => $timestamp,
+                            'reason' => 'Record missing date information - cannot verify it belongs to this service'
+                        ]);
+                        continue; // Skip records without dates
+                    }
+                    
+                    // Only process records that EXACTLY match the service date
+                    if ($recordDate !== $date) {
+                        Log::info("Skipping attendance record - date does not match service date (strict filtering)", [
+                            'record_date' => $recordDate,
+                            'service_date' => $date,
+                            'service_id' => $service->id,
+                            'enroll_id' => $enrollId,
+                            'timestamp' => $timestamp,
+                            'reason' => 'Record is from a different date - each service requires fresh attendance'
+                        ]);
+                        continue; // Skip records from different dates
+                    }
+                    
+                    Log::info("Processing attendance record - date matches", [
                     'enroll_id' => $enrollId,
-                    'user' => $row['user'] ?? null,
+                        'record_date' => $recordDate,
+                        'requested_date' => $date,
+                        'timestamp' => $timestamp
+                    ]);
+
+            // Find linked member or child (teenager) by biometric_enroll_id
+                    // Try multiple ways to match enroll ID - check both members and children
+                    $member = Member::where('biometric_enroll_id', (string) $enrollId)
+                        ->orWhere('biometric_enroll_id', (int) $enrollId)
+                        ->first();
+                    
+                    $child = null;
+                    if (!$member) {
+                        // If no member found, check if it's a teenager (child)
+                        $child = Child::where('biometric_enroll_id', (string) $enrollId)
+                            ->orWhere('biometric_enroll_id', (int) $enrollId)
+                            ->first();
+                    }
+                    
+            if (!$member && !$child) {
+                        // Log all members and children with enroll IDs for debugging
+                        $allMemberEnrollIds = Member::whereNotNull('biometric_enroll_id')
+                            ->pluck('biometric_enroll_id', 'id')
+                            ->toArray();
+                        $allChildEnrollIds = Child::whereNotNull('biometric_enroll_id')
+                            ->pluck('biometric_enroll_id', 'id')
+                            ->toArray();
+                        
+                        Log::warning('Biometric attendance record has no matching member or child', [
+                    'date' => $date,
+                            'enroll_id_from_device' => $enrollId,
+                            'enroll_id_type' => gettype($enrollId),
+                            'record' => $record,
+                            'available_member_enroll_ids' => $allMemberEnrollIds,
+                            'available_child_enroll_ids' => $allChildEnrollIds,
+                            'hint' => 'Check if enroll ID from device matches any member\'s or child\'s biometric_enroll_id'
                 ]);
                 continue;
             }
 
-            // Avoid duplicate attendance for same member & service
+                    // Process attendance for member or child
+                    if ($member) {
+                        Log::info("Found matching member for attendance record", [
+                            'member_id' => $member->id,
+                            'member_name' => $member->full_name,
+                            'member_enroll_id' => $member->biometric_enroll_id,
+                            'device_enroll_id' => $enrollId,
+                            'record_date' => $recordDate,
+                            'requested_date' => $date
+                        ]);
+                        
+                        // If member marked attendance, they must have enrolled fingerprint
+                        // So we don't need to check enrolledEnrollIds - the attendance record is proof
+                        Log::info("Processing attendance for member", [
+                            'member_id' => $member->id,
+                            'member_name' => $member->full_name,
+                            'enroll_id' => $enrollId,
+                            'record_date' => $recordDate,
+                            'requested_date' => $date
+                        ]);
+                        
+                        // Check if attendance already exists for this member and service
             $exists = ServiceAttendance::where([
                 'service_type' => $serviceType,
                 'service_id' => $service->id,
@@ -874,13 +1151,40 @@ class AttendanceController extends Controller
 
             if ($exists) {
                 // Member already has attendance, but still include in synced list for checkbox checking
+                            // This ensures the checkbox is checked even if attendance was already in database
                 $syncedMemberIds[] = $member->id;
+                            Log::info("Member already has attendance - adding to synced list for checkbox", [
+                                'member_id' => $member->id,
+                                'member_name' => $member->full_name,
+                                'enroll_id' => $enrollId,
+                                'service_id' => $service->id,
+                                'service_date' => $service->service_date
+                            ]);
                 continue;
             }
 
-            $attendedAt = $row['check_in_time'] ?? null;
-            if (empty($attendedAt) && !empty($row['attendance_date'])) {
-                $attendedAt = $row['attendance_date'] . ' 00:00:00';
+                        // Create attendance record for member
+                        $attendedAt = null;
+                        if ($timestamp) {
+                            try {
+                                if (is_numeric($timestamp)) {
+                                    $attendedAt = date('Y-m-d H:i:s', (int)$timestamp);
+                                } elseif (is_string($timestamp)) {
+                                    $attendedAt = date('Y-m-d H:i:s', strtotime($timestamp));
+                                } elseif (is_object($timestamp) && method_exists($timestamp, 'format')) {
+                                    $attendedAt = $timestamp->format('Y-m-d H:i:s');
+                                } else {
+                                    $attendedAt = now();
+                                }
+                            } catch (\Exception $e) {
+                                Log::warning("Failed to format timestamp, using current time", [
+                                    'timestamp' => $timestamp,
+                                    'error' => $e->getMessage()
+                                ]);
+                                $attendedAt = now();
+                            }
+                        } else {
+                            $attendedAt = $date . ' ' . date('H:i:s');
             }
 
             ServiceAttendance::create([
@@ -888,21 +1192,226 @@ class AttendanceController extends Controller
                 'service_id' => $service->id,
                 'member_id' => $member->id,
                 'child_id' => null,
-                'attended_at' => $attendedAt ?? now(),
-                'recorded_by' => 'BiometricDevice',
-                'notes' => 'Imported from biometric device ' . ($row['device_ip'] ?? 'unknown'),
+                            'attended_at' => $attendedAt,
+                            'recorded_by' => auth()->id(),
             ]);
 
             $insertedCount++;
-            $syncedMemberIds[] = $member->id; // Track synced member ID
+                        $syncedMemberIds[] = $member->id;
+                        
+                        Log::info("Created attendance record for member", [
+                            'member_id' => $member->id,
+                            'member_name' => $member->full_name,
+                            'enroll_id' => $enrollId,
+                            'service_id' => $service->id,
+                            'attended_at' => $attendedAt
+                        ]);
+                    } elseif ($child) {
+                        // Process attendance for teenager (child)
+                        Log::info("Found matching child (teenager) for attendance record", [
+                            'child_id' => $child->id,
+                            'child_name' => $child->full_name,
+                            'child_enroll_id' => $child->biometric_enroll_id,
+                            'device_enroll_id' => $enrollId,
+                            'record_date' => $recordDate,
+                            'requested_date' => $date
+                        ]);
+                        
+                        // Check if attendance already exists for this child and THIS SPECIFIC SERVICE
+                        // Each service is independent - children must mark attendance for each new service
+                        $exists = ServiceAttendance::where([
+                            'service_type' => $serviceType,
+                            'service_id' => $service->id, // This ensures we check for THIS specific service only
+                            'child_id' => $child->id,
+                        ])->exists();
+
+                        if ($exists) {
+                            // Child already has attendance, but still include in synced list for checkbox checking
+                            $syncedChildIds[] = $child->id;
+                            Log::info("Child already has attendance - adding to synced list for checkbox", [
+                                'child_id' => $child->id,
+                                'child_name' => $child->full_name,
+                                'enroll_id' => $enrollId,
+                                'service_id' => $service->id,
+                                'service_date' => $service->service_date
+                            ]);
+                            continue;
+                        }
+
+                        // Create attendance record for child
+                        $attendedAt = null;
+                        if ($timestamp) {
+                            try {
+                                if (is_numeric($timestamp)) {
+                                    $attendedAt = date('Y-m-d H:i:s', (int)$timestamp);
+                                } elseif (is_string($timestamp)) {
+                                    $attendedAt = date('Y-m-d H:i:s', strtotime($timestamp));
+                                } elseif (is_object($timestamp) && method_exists($timestamp, 'format')) {
+                                    $attendedAt = $timestamp->format('Y-m-d H:i:s');
+                                } else {
+                                    $attendedAt = now();
+                                }
+                            } catch (\Exception $e) {
+                                Log::warning("Failed to format timestamp, using current time", [
+                                    'timestamp' => $timestamp,
+                                    'error' => $e->getMessage()
+                                ]);
+                                $attendedAt = now();
+                            }
+                        } else {
+                            $attendedAt = $date . ' ' . date('H:i:s');
+                        }
+
+                        ServiceAttendance::create([
+                            'service_type' => $serviceType,
+                            'service_id' => $service->id,
+                            'member_id' => null,
+                            'child_id' => $child->id,
+                            'attended_at' => $attendedAt,
+                            'recorded_by' => auth()->id(),
+                        ]);
+
+                        $insertedCount++;
+                        $syncedChildIds[] = $child->id; // Add child ID to synced list for checkbox checking
+                        
+                        Log::info("Created attendance record for child (teenager)", [
+                            'child_id' => $child->id,
+                            'child_name' => $child->full_name,
+                            'enroll_id' => $enrollId,
+                            'service_id' => $service->id,
+                            'attended_at' => $attendedAt
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    Log::error("Error processing attendance record", [
+                        'record_index' => $index,
+                        'record' => $record,
+                        'error' => $e->getMessage()
+                    ]);
+                    // Continue with next record instead of failing entire sync
+                    continue;
+                }
+            }
+
+            // IMPORTANT: Only return member IDs who actually marked attendance on the device
+            // Do NOT check checkboxes for members who just enrolled fingerprint but didn't mark attendance
+            // The synced_member_ids array already contains only members who marked attendance
+            // No need to add additional members - only those who used their fingerprint to mark attendance
+            
+            $uniqueSyncedIds = array_values(array_unique($syncedMemberIds)); // Re-index array and ensure unique
+            
+            // Convert to integers to match checkbox IDs (they're stored as integers in HTML)
+            $uniqueSyncedIds = array_map('intval', $uniqueSyncedIds);
+            
+            // Also process child IDs for teenagers
+            $uniqueSyncedChildIds = array_values(array_unique($syncedChildIds)); // Re-index array and ensure unique
+            $uniqueSyncedChildIds = array_map('intval', $uniqueSyncedChildIds);
+            
+            // Log detailed information for debugging
+            $debugInfo = [
+                'total_attendance_records' => count($attendanceRecords),
+                'inserted_count' => $insertedCount,
+                'synced_member_ids_count' => count($uniqueSyncedIds),
+                'synced_member_ids' => $uniqueSyncedIds,
+                'synced_child_ids_count' => count($uniqueSyncedChildIds),
+                'synced_child_ids' => $uniqueSyncedChildIds,
+                'synced_member_ids_types' => array_map('gettype', $uniqueSyncedIds),
+                'enrolled_members_count' => count($enrolledEnrollIds),
+                'requested_date' => $date,
+                'service_id' => $service->id,
+                'service_date' => $service->service_date
+            ];
+            
+            // Add member details for each synced member
+            if (count($uniqueSyncedIds) > 0) {
+                $memberDetails = [];
+                foreach ($uniqueSyncedIds as $mid) {
+                    $m = Member::find($mid);
+                    if ($m) {
+                        $memberDetails[] = [
+                            'id' => $m->id,
+                            'name' => $m->full_name,
+                            'enroll_id' => $m->biometric_enroll_id,
+                            'checkbox_id' => "member_{$m->id}"
+                        ];
+                    }
+                }
+                $debugInfo['synced_member_details'] = $memberDetails;
+            }
+            
+            // Add child details for each synced child (teenager)
+            if (count($uniqueSyncedChildIds) > 0) {
+                $childDetails = [];
+                foreach ($uniqueSyncedChildIds as $cid) {
+                    $c = Child::find($cid);
+                    if ($c) {
+                        $childDetails[] = [
+                            'id' => $c->id,
+                            'name' => $c->full_name,
+                            'enroll_id' => $c->biometric_enroll_id,
+                            'checkbox_id' => "child_{$c->id}"
+                        ];
+                    }
+                }
+                $debugInfo['synced_child_details'] = $childDetails;
+            }
+            
+            Log::info("Sync complete - returning synced member and child IDs", $debugInfo);
+            
+            $totalSynced = count($uniqueSyncedIds) + count($uniqueSyncedChildIds);
+            $message = "Biometric attendance synced successfully for service on {$date}. {$insertedCount} new record(s) added.";
+            
+            // Add note about service-specific attendance
+            $message .= "\n\n📅 Note: Each service requires fresh attendance. Only attendance marked for this service date has been synced.";
+            $message .= " Previous service attendance records are ignored.";
+            
+            if ($totalSynced > 0) {
+                $memberText = count($uniqueSyncedIds) > 0 ? count($uniqueSyncedIds) . " member(s)" : "";
+                $childText = count($uniqueSyncedChildIds) > 0 ? count($uniqueSyncedChildIds) . " teenager(s)" : "";
+                $parts = array_filter([$memberText, $childText]);
+                $message .= "\n\n✅ " . implode(" and ", $parts) . " found with attendance for this service.";
+            } else {
+                $message .= "\n\n⚠️ No members or teenagers found with attendance for this service date.";
+                if (count($enrolledEnrollIds) > 0) {
+                    $message .= "\n\n💡 " . count($enrolledEnrollIds) . " member(s) are registered on device but haven't marked attendance yet.";
+                    $message .= "\n   Members must USE their fingerprint on the device (on the main screen) to create attendance records for this service.";
+                }
         }
 
         return response()->json([
             'success' => true,
-            'message' => "Biometric attendance synced successfully for {$date}",
+                'message' => $message,
             'inserted' => $insertedCount,
-            'synced_member_ids' => array_unique($syncedMemberIds), // Return unique member IDs that were synced
-        ]);
+                'synced_member_ids' => $uniqueSyncedIds, // Return unique member IDs that were synced (as integers)
+                'synced_child_ids' => $uniqueSyncedChildIds, // Return unique child IDs (teenagers) that were synced (as integers)
+                'enrolled_count' => count($enrolledEnrollIds),
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Biometric attendance sync failed', [
+                'date' => $date,
+                'error' => $e->getMessage(),
+                'error_class' => get_class($e),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            // Provide more helpful error message
+            $errorMessage = 'Failed to sync from biometric device: ' . $e->getMessage();
+            
+            // Add troubleshooting tips based on error type
+            if (strpos($e->getMessage(), 'connect') !== false || strpos($e->getMessage(), 'timeout') !== false) {
+                $errorMessage .= ' Please check: 1) Device is powered on, 2) IP address is correct, 3) Device is on the same network.';
+            } elseif (strpos($e->getMessage(), 'getAttendances') !== false) {
+                $errorMessage .= ' The device may not support this method. Check device compatibility.';
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => $errorMessage,
+            ], 500);
+        }
     }
     
     /**

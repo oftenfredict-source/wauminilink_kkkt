@@ -17,6 +17,9 @@ class SundayService extends Model
         'preacher',
         'coordinator_id',
         'church_elder_id',
+        'campus_id',
+        'evangelism_leader_id',
+        'is_branch_service',
         'start_time',
         'end_time',
         'venue',
@@ -80,6 +83,30 @@ class SundayService extends Model
     public function promiseGuests()
     {
         return $this->hasMany(PromiseGuest::class, 'service_id');
+    }
+
+    /**
+     * Get the campus (for branch services)
+     */
+    public function campus()
+    {
+        return $this->belongsTo(Campus::class);
+    }
+
+    /**
+     * Get the evangelism leader (for branch services)
+     */
+    public function evangelismLeader()
+    {
+        return $this->belongsTo(User::class, 'evangelism_leader_id');
+    }
+
+    /**
+     * Get branch offerings for this service
+     */
+    public function branchOfferings()
+    {
+        return $this->hasMany(BranchOffering::class, 'service_id');
     }
 }
 

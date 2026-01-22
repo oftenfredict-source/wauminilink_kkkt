@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "d3c16cb86c42230c6c023d9a5d9bcf42",
+    "content-hash": "24f97fb756f88c5d3a2b008be69cacb6",
     "packages": [
         {
             "name": "brick/math",
@@ -134,6 +134,66 @@
                 }
             ],
             "time": "2024-02-09T16:56:22+00:00"
+        },
+        {
+            "name": "coding-libs/zkteco-php",
+            "version": "v0.0.34",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/coding-libs/zkteco-php.git",
+                "reference": "253dbb93f2585b9f5d50c3ea0ee0167ac2eeadb3"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/coding-libs/zkteco-php/zipball/253dbb93f2585b9f5d50c3ea0ee0167ac2eeadb3",
+                "reference": "253dbb93f2585b9f5d50c3ea0ee0167ac2eeadb3",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^8.0|^9.3|^10.4"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "CodingLibs\\ZktecoPhp\\ZktecoPhpServiceProvider"
+                    ]
+                },
+                "branch-alias": {
+                    "dev-master": "1.x-dev"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "CodingLibs\\ZktecoPhp\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Coding Libs",
+                    "email": "codinglibs4u@gmail.com"
+                }
+            ],
+            "description": "A package for managing ZKTeco device.",
+            "homepage": "https://github.com/coding-libs",
+            "keywords": [
+                "Fingerprint",
+                "attendances",
+                "laravel",
+                "zkteco"
+            ],
+            "support": {
+                "issues": "https://github.com/coding-libs/zkteco-php/issues",
+                "source": "https://github.com/coding-libs/zkteco-php"
+            },
+            "time": "2025-08-11T13:29:13+00:00"
         },
         {
             "name": "dflydev/dot-access-data",
@@ -3339,6 +3399,138 @@
                 "source": "https://github.com/ramsey/uuid/tree/4.9.1"
             },
             "time": "2025-09-04T20:59:21+00:00"
+        },
+        {
+            "name": "smalot/pdfparser",
+            "version": "v2.12.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/smalot/pdfparser.git",
+                "reference": "370b7e983fafecb787a9bcfd73baab8038212ad1"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/smalot/pdfparser/zipball/370b7e983fafecb787a9bcfd73baab8038212ad1",
+                "reference": "370b7e983fafecb787a9bcfd73baab8038212ad1",
+                "shasum": ""
+            },
+            "require": {
+                "ext-iconv": "*",
+                "ext-zlib": "*",
+                "php": ">=7.1",
+                "symfony/polyfill-mbstring": "^1.18"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-0": {
+                    "Smalot\\PdfParser\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "LGPL-3.0"
+            ],
+            "authors": [
+                {
+                    "name": "Sebastien MALOT",
+                    "email": "sebastien@malot.fr"
+                }
+            ],
+            "description": "Pdf parser library. Can read and extract information from pdf file.",
+            "homepage": "https://www.pdfparser.org",
+            "keywords": [
+                "extract",
+                "parse",
+                "parser",
+                "pdf",
+                "text"
+            ],
+            "support": {
+                "issues": "https://github.com/smalot/pdfparser/issues",
+                "source": "https://github.com/smalot/pdfparser/tree/v2.12.2"
+            },
+            "time": "2025-09-04T08:49:09+00:00"
+        },
+        {
+            "name": "stichoza/google-translate-php",
+            "version": "v5.3.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Stichoza/google-translate-php.git",
+                "reference": "4d9a267ac063c16967df67dcba30a71fbfb5f550"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Stichoza/google-translate-php/zipball/4d9a267ac063c16967df67dcba30a71fbfb5f550",
+                "reference": "4d9a267ac063c16967df67dcba30a71fbfb5f550",
+                "shasum": ""
+            },
+            "require": {
+                "ext-dom": "*",
+                "ext-json": "*",
+                "ext-mbstring": "*",
+                "guzzlehttp/guzzle": "^7.0",
+                "php": "^8.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^9.5.10"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Stichoza\\GoogleTranslate\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Levan Velijanashvili",
+                    "email": "me@stichoza.com"
+                }
+            ],
+            "description": "Free Google Translate API PHP Package",
+            "homepage": "https://github.com/Stichoza/google-translate-php",
+            "keywords": [
+                "google",
+                "php",
+                "translate",
+                "translating",
+                "translator"
+            ],
+            "support": {
+                "issues": "https://github.com/Stichoza/google-translate-php/issues",
+                "source": "https://github.com/Stichoza/google-translate-php/tree/v5.3.1"
+            },
+            "funding": [
+                {
+                    "url": "https://btc.com/bc1qc25j4x7yahghm8nnn6lypnw59nptylsw32nkfl",
+                    "type": "custom"
+                },
+                {
+                    "url": "https://www.paypal.me/stichoza",
+                    "type": "custom"
+                },
+                {
+                    "url": "https://ko-fi.com/stichoza",
+                    "type": "ko_fi"
+                },
+                {
+                    "url": "https://liberapay.com/stichoza",
+                    "type": "liberapay"
+                },
+                {
+                    "url": "https://opencollective.com/stichoza",
+                    "type": "open_collective"
+                },
+                {
+                    "url": "https://www.patreon.com/stichoza",
+                    "type": "patreon"
+                }
+            ],
+            "time": "2025-11-01T22:45:28+00:00"
         },
         {
             "name": "symfony/clock",

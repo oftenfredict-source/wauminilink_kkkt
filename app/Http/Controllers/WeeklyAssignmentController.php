@@ -338,7 +338,7 @@ class WeeklyAssignmentController extends Controller
             }
 
             // Get church name from settings
-            $churchName = SettingsService::get('church_name', 'AIC Moshi Kilimanjaro');
+            $churchName = SettingsService::get('church_name', 'KKKT Ushirika wa Longuo');
 
             // Format dates
             $startDate = $assignment->week_start_date->format('Y-m-d');

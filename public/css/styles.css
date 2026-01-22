@@ -10877,7 +10877,8 @@ body {
   min-width: 0;
   flex-grow: 1;
   min-height: calc(100vh - 56px);
-  margin-left: -225px;
+  margin-left: 0;
+  transition: margin 0.15s ease-in-out;
 }
 
 .sb-sidenav-toggled #layoutSidenav #layoutSidenav_nav {
@@ -10903,13 +10904,15 @@ body {
   }
   #layoutSidenav #layoutSidenav_content {
     margin-left: 0;
-    transition: margin 0.15s ease-in-out;
+    padding-left: 225px;
+    transition: margin 0.15s ease-in-out, padding 0.15s ease-in-out;
   }
   .sb-sidenav-toggled #layoutSidenav #layoutSidenav_nav {
     transform: translateX(-225px);
   }
   .sb-sidenav-toggled #layoutSidenav #layoutSidenav_content {
-    margin-left: -225px;
+    margin-left: 0;
+    padding-left: 0;
   }
   .sb-sidenav-toggled #layoutSidenav #layoutSidenav_content:before {
     display: none;
@@ -10932,6 +10935,21 @@ body {
 .sb-nav-fixed #layoutSidenav #layoutSidenav_content {
   padding-left: 225px;
   top: 56px;
+  transition: padding 0.15s ease-in-out;
+}
+/* When sidebar is toggled (closed), remove padding */
+body.sb-nav-fixed.sb-sidenav-toggled #layoutSidenav #layoutSidenav_content,
+.sb-nav-fixed #layoutSidenav.sb-sidenav-toggled #layoutSidenav_content {
+  padding-left: 0;
+}
+/* Ensure padding is always applied when sidebar is open (not toggled) on desktop */
+@media (min-width: 992px) {
+  body.sb-nav-fixed:not(.sb-sidenav-toggled) #layoutSidenav #layoutSidenav_content {
+    padding-left: 225px !important;
+  }
+  body.sb-nav-fixed.sb-sidenav-toggled #layoutSidenav #layoutSidenav_content {
+    padding-left: 0 !important;
+  }
 }
 
 #layoutError {

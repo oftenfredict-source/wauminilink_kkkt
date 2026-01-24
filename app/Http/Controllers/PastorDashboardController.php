@@ -578,4 +578,82 @@ class PastorDashboardController extends Controller
 
         return back()->with('success', 'Your comments have been added successfully.');
     }
+
+    /**
+     * Update Evangelism Issue Status
+     */
+    public function updateEvangelismIssueStatus(Request $request, EvangelismIssue $issue)
+    {
+        $this->checkPastorPermission();
+        
+        $validated = $request->validate([
+            'status' => 'required|in:open,in_progress,resolved,closed',
+            'resolution_notes' => 'nullable|string|max:2000',
+        ]);
+
+        $updateData = [
+            'status' => $validated['status'],
+        ];
+
+        // If status is resolved, set resolved_by and resolved_at
+        if ($validated['status'] === 'resolved') {
+            $updateData['resolved_by'] = auth()->id();
+            $updateData['resolved_at'] = now();
+            if (!empty($validated['resolution_notes'])) {
+                $updateData['resolution_notes'] = $validated['resolution_notes'];
+            }
+        } elseif ($validated['status'] === 'closed') {
+            // If closing, also set resolved info if not already set
+            if (!$issue->resolved_by) {
+                $updateData['resolved_by'] = auth()->id();
+                $updateData['resolved_at'] = now();
+            }
+            if (!empty($validated['resolution_notes'])) {
+                $updateData['resolution_notes'] = $validated['resolution_notes'];
+            }
+        }
+
+        $issue->update($updateData);
+
+        return back()->with('success', 'Issue status updated successfully.');
+    }
+
+    /**
+     * Update Church Elder Issue Status
+     */
+    public function updateChurchElderIssueStatus(Request $request, ChurchElderIssue $issue)
+    {
+        $this->checkPastorPermission();
+        
+        $validated = $request->validate([
+            'status' => 'required|in:open,in_progress,resolved,closed',
+            'resolution_notes' => 'nullable|string|max:2000',
+        ]);
+
+        $updateData = [
+            'status' => $validated['status'],
+        ];
+
+        // If status is resolved, set resolved_by and resolved_at
+        if ($validated['status'] === 'resolved') {
+            $updateData['resolved_by'] = auth()->id();
+            $updateData['resolved_at'] = now();
+            if (!empty($validated['resolution_notes'])) {
+                $updateData['resolution_notes'] = $validated['resolution_notes'];
+            }
+        } elseif ($validated['status'] === 'closed') {
+            // If closing, also set resolved info if not already set
+            if (!$issue->resolved_by) {
+                $updateData['resolved_by'] = auth()->id();
+                $updateData['resolved_at'] = now();
+            }
+            if (!empty($validated['resolution_notes'])) {
+                $updateData['resolution_notes'] = $validated['resolution_notes'];
+            }
+        }
+
+        $issue->update($updateData);
+
+        return back()->with('success', 'Issue status updated successfully.');
+    }
 }

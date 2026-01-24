@@ -33,8 +33,21 @@
                     <h6 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Record New Attendance</h6>
                 </div>
                 <div class="card-body">
+                    @if(isset($selectedService) && !$canRecordAttendance)
+                    <!-- Time Restriction Warning -->
+                    <div class="alert alert-warning d-flex align-items-center mb-3" role="alert">
+                        <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
+                        <div>
+                            <strong>Attendance & Offering Recording Restricted</strong>
+                            <p class="mb-0">{{ $timeRestrictionMessage }}</p>
+                        </div>
+                    </div>
+                    @endif
+                    
                     <form id="attendanceForm">
                         @csrf
+                        <input type="hidden" id="canRecordAttendance" value="{{ isset($selectedService) && $canRecordAttendance ? '1' : '0' }}">
+                        <input type="hidden" id="timeRestrictionMessage" value="{{ $timeRestrictionMessage ?? '' }}">
                         <div class="row g-2 mb-2">
                             <div class="col-md-6">
                                 <label for="service_id" class="form-label small">Service <span class="text-danger">*</span></label>
@@ -97,7 +110,7 @@
                             <label for="notes" class="form-label small">Notes</label>
                             <textarea class="form-control form-control-sm" id="notes" name="notes" rows="2"></textarea>
                         </div>
-                        <button type="submit" class="btn btn-sm btn-primary w-100">
+                        <button type="submit" class="btn btn-sm btn-primary w-100" id="saveAttendanceBtn" @if(isset($selectedService) && !$canRecordAttendance) disabled @endif>
                             <i class="fas fa-save me-1"></i>Record Attendance
                         </button>
                     </form>
@@ -175,6 +188,19 @@ document.addEventListener('DOMContentLoaded', function() {
     
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
+        
+        // Check if attendance can be recorded
+        const canRecord = document.getElementById('canRecordAttendance')?.value === '1';
+        if (!canRecord) {
+            const message = document.getElementById('timeRestrictionMessage')?.value || 'Attendance cannot be recorded before the service start time.';
+            Swal.fire({
+                icon: 'warning',
+                title: 'Time Restriction',
+                text: message,
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
         
         const formData = new FormData(form);
         const selectedOptions = document.getElementById('member_ids').selectedOptions;

@@ -58,16 +58,18 @@
                         <strong>Description:</strong><br>
                         <p class="text-muted">{{ $issue->description }}</p>
                     </div>
-                    @if($issue->resolution)
+                    @if($issue->resolution_notes)
                     <div class="mb-3">
-                        <strong>Resolution:</strong><br>
-                        <p class="text-muted">{{ $issue->resolution }}</p>
+                        <strong>Resolution Notes:</strong><br>
+                        <div class="alert alert-success">
+                            {!! nl2br(e($issue->resolution_notes)) !!}
+                        </div>
                     </div>
                     @endif
-                    @if($issue->admin_notes)
+                    @if($issue->resolved_at && $issue->resolver)
                     <div class="mb-3">
-                        <strong>Admin Notes:</strong><br>
-                        <p class="text-muted">{{ $issue->admin_notes }}</p>
+                        <strong>Resolved By:</strong><br>
+                        <span class="text-muted">{{ $issue->resolver->name }} on {{ $issue->resolved_at->format('F d, Y h:i A') }}</span>
                     </div>
                     @endif
                 </div>
@@ -124,6 +126,43 @@
                 </div>
             </div>
             @endif
+
+            <!-- Update Status Form -->
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-tasks me-2"></i>Update Issue Status</h5>
+                </div>
+                <div class="card-body">
+                    <form action="{{ route('pastor.issues.update-status-evangelism', $issue->id) }}" method="POST">
+                        @csrf
+                        <div class="mb-3">
+                            <label for="status" class="form-label">Status <span class="text-danger">*</span></label>
+                            <select class="form-select @error('status') is-invalid @enderror" id="status" name="status" required>
+                                <option value="open" {{ $issue->status === 'open' ? 'selected' : '' }}>Open</option>
+                                <option value="in_progress" {{ $issue->status === 'in_progress' ? 'selected' : '' }}>In Progress</option>
+                                <option value="resolved" {{ $issue->status === 'resolved' ? 'selected' : '' }}>Resolved</option>
+                                <option value="closed" {{ $issue->status === 'closed' ? 'selected' : '' }}>Closed</option>
+                            </select>
+                            @error('status')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        <div class="mb-3">
+                            <label for="resolution_notes" class="form-label">Resolution Notes</label>
+                            <textarea class="form-control @error('resolution_notes') is-invalid @enderror" 
+                                      id="resolution_notes" name="resolution_notes" rows="3" 
+                                      placeholder="Optional: Add notes about how the issue was resolved...">{{ old('resolution_notes', $issue->resolution_notes) }}</textarea>
+                            @error('resolution_notes')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                            <small class="text-muted">Optional: Add notes when resolving or closing the issue</small>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-save me-1"></i> Update Status
+                        </button>
+                    </form>
+                </div>
+            </div>
 
             <!-- Add/Update Comments Form -->
             <div class="card border-0 shadow-sm">

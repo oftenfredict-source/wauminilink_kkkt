@@ -158,13 +158,17 @@
                                             </td>
                                             <td>
                                                 <i class="fas fa-calendar text-muted me-1"></i>
-                                                {{ $leader->appointment_date->format('d M Y') }}
+                                                @if(is_object($leader->appointment_date) && method_exists($leader->appointment_date, 'format'))
+                                                    {{ $leader->appointment_date->format('d M Y') }}
+                                                @else
+                                                    {{ \Carbon\Carbon::parse($leader->appointment_date)->format('d M Y') }}
+                                                @endif
                                                 @if($leader->end_date)
-                                                    <br><small class="text-muted">Until: {{ $leader->end_date->format('d M Y') }}</small>
+                                                    <br><small class="text-muted">Until: {{ is_object($leader->end_date) && method_exists($leader->end_date, 'format') ? $leader->end_date->format('d M Y') : \Carbon\Carbon::parse($leader->end_date)->format('d M Y') }}</small>
                                                 @endif
                                             </td>
                                             <td>
-                                                @if($leader->isCurrentlyActive())
+                                                @if(method_exists($leader, 'isCurrentlyActive') ? $leader->isCurrentlyActive() : ($leader->is_active ?? false))
                                                     <span class="badge bg-success">
                                                         <i class="fas fa-check-circle me-1"></i>Active
                                                     </span>

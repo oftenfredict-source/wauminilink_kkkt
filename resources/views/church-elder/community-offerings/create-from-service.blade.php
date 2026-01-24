@@ -32,6 +32,20 @@
     </div>
     @endif
 
+    @if(!$canRecordOffering)
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-warning d-flex align-items-center" role="alert">
+                <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
+                <div>
+                    <strong>Offering Recording Restricted</strong>
+                    <p class="mb-0">{{ $timeRestrictionMessage }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
     <div class="row">
         <div class="col-lg-8 mx-auto">
             <div class="card border-0 shadow-sm">
@@ -39,7 +53,7 @@
                     <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Service Information</h5>
                 </div>
                 <div class="card-body">
-                    <div class="row mb-3">
+                        <div class="row mb-3">
                         <div class="col-md-6">
                             <strong>Service Type:</strong><br>
                             <span class="badge bg-info">{{ ucfirst(str_replace('_', ' ', $service->service_type)) }}</span>
@@ -47,6 +61,9 @@
                         <div class="col-md-6">
                             <strong>Service Date:</strong><br>
                             {{ $service->service_date->format('F d, Y') }}
+                            @if($service->start_time)
+                                <br><small class="text-muted">Start Time: {{ \Carbon\Carbon::parse($service->start_time)->format('h:i A') }}</small>
+                            @endif
                         </div>
                     </div>
                     @if($service->theme)
@@ -118,7 +135,7 @@
                             <a href="{{ route('church-elder.services', $community->id) }}" class="btn btn-outline-secondary">
                                 <i class="fas fa-times me-1"></i> Cancel
                             </a>
-                            <button type="submit" class="btn btn-success">
+                            <button type="submit" class="btn btn-success" @if(!$canRecordOffering) disabled @endif>
                                 <i class="fas fa-paper-plane me-1"></i> Submit to Evangelism Leader
                             </button>
                         </div>

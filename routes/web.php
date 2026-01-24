@@ -111,6 +111,8 @@ Route::middleware(['auth', PreventBackHistory::class])->group(function () {
         Route::get('/issues/church-elder/{issue}', [PastorDashboardController::class, 'showChurchElderIssue'])->name('issues.show-elder');
         Route::post('/issues/evangelism/{issue}/comment', [PastorDashboardController::class, 'commentEvangelismIssue'])->name('issues.comment-evangelism');
         Route::post('/issues/church-elder/{issue}/comment', [PastorDashboardController::class, 'commentChurchElderIssue'])->name('issues.comment-elder');
+        Route::post('/issues/evangelism/{issue}/status', [PastorDashboardController::class, 'updateEvangelismIssueStatus'])->name('issues.update-status-evangelism');
+        Route::post('/issues/church-elder/{issue}/status', [PastorDashboardController::class, 'updateChurchElderIssueStatus'])->name('issues.update-status-elder');
         
         Route::get('/reports', [PastorDashboardController::class, 'allReports'])->name('reports.index');
     });

@@ -50,9 +50,22 @@ class CommunityOfferingController extends Controller
             return view('church-elder.community-offerings.index', compact('offerings', 'community'));
         } 
         elseif ($user->isEvangelismLeader()) {
-            // Leader sees submissions from communities they oversee (or all if they oversee all)
+            // Get the evangelism leader's campus
+            $campus = $user->getCampus();
+            
+            if (!$campus) {
+                abort(404, 'Campus not found for this evangelism leader.');
+            }
+            
+            // Get all community IDs for this campus
+            $communityIds = Community::where('campus_id', $campus->id)
+                ->pluck('id')
+                ->toArray();
+            
+            // Leader sees submissions from communities in their campus only
             // Include rejected offerings so they can see what was rejected
             $offerings = CommunityOffering::whereIn('status', ['pending_evangelism', 'rejected'])
+                ->whereIn('community_id', $communityIds)
                 ->with(['community', 'service', 'churchElder', 'rejectedBy'])
                 ->orderByRaw("CASE WHEN status = 'rejected' THEN 1 ELSE 0 END")
                 ->orderBy('offering_date', 'asc')
@@ -60,16 +73,19 @@ class CommunityOfferingController extends Controller
                 
             $confirmedOfferings = CommunityOffering::where('evangelism_leader_id', $user->id)
                 ->where('status', 'pending_secretary')
+                ->whereIn('community_id', $communityIds)
                 ->with(['community', 'service'])
                 ->orderBy('updated_at', 'desc')
                 ->paginate(10);
 
-            // Get consolidated totals
+            // Get consolidated totals (only for communities in this campus)
             $consolidatedTotal = CommunityOffering::where('evangelism_leader_id', $user->id)
                 ->where('status', 'pending_secretary')
+                ->whereIn('community_id', $communityIds)
                 ->sum('amount');
             $consolidatedCount = CommunityOffering::where('evangelism_leader_id', $user->id)
                 ->where('status', 'pending_secretary')
+                ->whereIn('community_id', $communityIds)
                 ->count();
                 
             return view('evangelism-leader.offerings.index', compact('offerings', 'confirmedOfferings', 'consolidatedTotal', 'consolidatedCount'));
@@ -148,7 +164,56 @@ class CommunityOfferingController extends Controller
             ->where('community_id', $community->id)
             ->first();
 
-        return view('church-elder.community-offerings.create-from-service', compact('community', 'service', 'existingOffering'));
+        // Check date and time restriction for offering
+        $canRecordOffering = true;
+        $timeRestrictionMessage = '';
+        $serviceDate = $service->service_date ?? null;
+        $startTime = $service->start_time ?? null;
+        $now = now();
+        
+        if ($serviceDate) {
+            // First check if service date has been reached
+            $serviceDateOnly = \Carbon\Carbon::parse($serviceDate->format('Y-m-d'))->startOfDay();
+            $today = $now->copy()->startOfDay();
+            
+            if ($today->lt($serviceDateOnly)) {
+                $canRecordOffering = false;
+                $timeRestrictionMessage = 'Offering cannot be recorded before the service date. Service date is ' . 
+                    $serviceDateOnly->format('d/m/Y') . '. Today is ' . 
+                    $today->format('d/m/Y') . '.';
+            } elseif ($startTime) {
+                // If date is reached, check if start time has been reached
+                try {
+                    $timeString = $startTime;
+                    if ($startTime instanceof \Carbon\Carbon) {
+                        $timeString = $startTime->format('H:i:s');
+                    } elseif (is_object($startTime) && method_exists($startTime, 'format')) {
+                        $timeString = $startTime->format('H:i:s');
+                    } elseif (is_string($startTime)) {
+                        if (strlen($startTime) === 5) {
+                            $timeString = $startTime . ':00';
+                        }
+                    }
+                    
+                    $serviceStartDateTime = \Carbon\Carbon::parse($serviceDate->format('Y-m-d') . ' ' . $timeString);
+                    
+                    if ($now->lt($serviceStartDateTime)) {
+                        $canRecordOffering = false;
+                        $timeRestrictionMessage = 'Offering cannot be recorded before the service start time. Service starts at ' . 
+                            $serviceStartDateTime->format('d/m/Y h:i A') . '. Current time is ' . 
+                            $now->format('d/m/Y h:i A') . '.';
+                    }
+                } catch (\Exception $e) {
+                    \Log::warning('Failed to parse service start time for offering restriction', [
+                        'service_id' => $service->id,
+                        'start_time' => $startTime,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+        }
+
+        return view('church-elder.community-offerings.create-from-service', compact('community', 'service', 'existingOffering', 'canRecordOffering', 'timeRestrictionMessage'));
     }
 
     /**
@@ -178,12 +243,58 @@ class CommunityOfferingController extends Controller
             return back()->with('error', 'You are not authorized to create offerings for this community.');
         }
 
-        // If service_id is provided, verify it belongs to this elder
+        // If service_id is provided, verify it belongs to this elder and check date/time restriction
         if (!empty($validated['service_id'])) {
             $service = SundayService::findOrFail($validated['service_id']);
             if ($service->church_elder_id != $user->member_id) {
                 return back()->with('error', 'This service does not belong to you.');
             }
+            
+            // Check date and time restriction
+            $serviceDate = $service->service_date ?? null;
+            $startTime = $service->start_time ?? null;
+            $now = now();
+            
+            if ($serviceDate) {
+                // First check if service date has been reached
+                $serviceDateOnly = \Carbon\Carbon::parse($serviceDate->format('Y-m-d'))->startOfDay();
+                $today = $now->copy()->startOfDay();
+                
+                if ($today->lt($serviceDateOnly)) {
+                    return back()->with('error', 'Offering cannot be recorded before the service date. Service date is ' . 
+                        $serviceDateOnly->format('d/m/Y') . '. Today is ' . 
+                        $today->format('d/m/Y') . '.');
+                } elseif ($startTime) {
+                    // If date is reached, check if start time has been reached
+                    try {
+                        $timeString = $startTime;
+                        if ($startTime instanceof \Carbon\Carbon) {
+                            $timeString = $startTime->format('H:i:s');
+                        } elseif (is_object($startTime) && method_exists($startTime, 'format')) {
+                            $timeString = $startTime->format('H:i:s');
+                        } elseif (is_string($startTime)) {
+                            if (strlen($startTime) === 5) {
+                                $timeString = $startTime . ':00';
+                            }
+                        }
+                        
+                        $serviceStartDateTime = \Carbon\Carbon::parse($serviceDate->format('Y-m-d') . ' ' . $timeString);
+                        
+                        if ($now->lt($serviceStartDateTime)) {
+                            return back()->with('error', 'Offering cannot be recorded before the service start time. Service starts at ' . 
+                                $serviceStartDateTime->format('d/m/Y h:i A') . '. Current time is ' . 
+                                $now->format('d/m/Y h:i A') . '.');
+                        }
+                    } catch (\Exception $e) {
+                        \Log::warning('Failed to parse service start time for offering restriction', [
+                            'service_id' => $service->id,
+                            'start_time' => $startTime,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                }
+            }
+            
             // Auto-fill service_type if not provided
             if (empty($validated['service_type'])) {
                 $validated['service_type'] = $service->service_type;
@@ -228,6 +339,14 @@ class CommunityOfferingController extends Controller
             abort(403);
         }
         
+        // Verify the offering belongs to a community in the evangelism leader's campus
+        if ($user->isEvangelismLeader()) {
+            $campus = $user->getCampus();
+            if (!$campus || !$offering->community || $offering->community->campus_id !== $campus->id) {
+                abort(403, 'You are not authorized to confirm offerings from communities outside your campus.');
+            }
+        }
+        
         if ($offering->status !== 'pending_evangelism') {
             return back()->with('error', 'This offering is not pending your confirmation.');
         }
@@ -258,6 +377,14 @@ class CommunityOfferingController extends Controller
         $user = auth()->user();
         if (!$user->isEvangelismLeader() && !$user->isAdmin()) {
             abort(403);
+        }
+        
+        // Verify the offering belongs to a community in the evangelism leader's campus
+        if ($user->isEvangelismLeader()) {
+            $campus = $user->getCampus();
+            if (!$campus || !$offering->community || $offering->community->campus_id !== $campus->id) {
+                abort(403, 'You are not authorized to reject offerings from communities outside your campus.');
+            }
         }
         
         if ($offering->status !== 'pending_evangelism') {
@@ -312,9 +439,25 @@ class CommunityOfferingController extends Controller
             'offering_ids.*' => 'exists:community_offerings,id',
         ]);
 
-        $offerings = CommunityOffering::whereIn('id', $validated['offering_ids'])
-            ->where('status', 'pending_evangelism')
-            ->get();
+        // Get the evangelism leader's campus and filter offerings
+        $query = CommunityOffering::whereIn('id', $validated['offering_ids'])
+            ->where('status', 'pending_evangelism');
+            
+        if ($user->isEvangelismLeader()) {
+            $campus = $user->getCampus();
+            if (!$campus) {
+                abort(404, 'Campus not found for this evangelism leader.');
+            }
+            
+            // Get all community IDs for this campus
+            $communityIds = Community::where('campus_id', $campus->id)
+                ->pluck('id')
+                ->toArray();
+                
+            $query->whereIn('community_id', $communityIds);
+        }
+
+        $offerings = $query->get();
 
         $confirmedCount = 0;
         foreach ($offerings as $offering) {
@@ -377,8 +520,21 @@ class CommunityOfferingController extends Controller
             abort(403);
         }
 
+        // Get the evangelism leader's campus
+        $campus = $user->getCampus();
+        
+        if (!$campus) {
+            abort(404, 'Campus not found for this evangelism leader.');
+        }
+        
+        // Get all community IDs for this campus
+        $communityIds = Community::where('campus_id', $campus->id)
+            ->pluck('id')
+            ->toArray();
+
         $offerings = CommunityOffering::where('evangelism_leader_id', $user->id)
             ->where('status', 'pending_secretary')
+            ->whereIn('community_id', $communityIds)
             ->with(['community', 'service', 'churchElder'])
             ->orderBy('offering_date', 'asc')
             ->get();
@@ -414,6 +570,12 @@ class CommunityOfferingController extends Controller
                 abort(403);
             }
         } elseif ($user->isEvangelismLeader()) {
+            // Verify the offering belongs to a community in the evangelism leader's campus
+            $campus = $user->getCampus();
+            if (!$campus || !$offering->community || $offering->community->campus_id !== $campus->id) {
+                abort(403, 'You are not authorized to view offerings from communities outside your campus.');
+            }
+            
             // Can view if pending (they can confirm) or if they confirmed it
             if ($offering->status == 'pending_evangelism' || $offering->evangelism_leader_id == $user->id) {
                 // Allowed

@@ -82,7 +82,39 @@
                                                     <i class="fas fa-user-check"></i>
                                                 </a>
                                                 @if(in_array($service->service_type, ['prayer_meeting', 'bible_study', 'youth_service', 'women_fellowship', 'men_fellowship', 'evangelism']) && !isset($serviceOfferings[$service->id]))
-                                                    <a href="{{ route('church-elder.community-offerings.create-from-service', [$community->id, $service->id]) }}" class="btn btn-success" title="Record Offering">
+                                                    @php
+                                                        $canRecordOffering = true;
+                                                        $serviceDate = $service->service_date ?? null;
+                                                        $startTime = $service->start_time ?? null;
+                                                        
+                                                        if ($serviceDate && $startTime) {
+                                                            try {
+                                                                $timeString = $startTime;
+                                                                if ($startTime instanceof \Carbon\Carbon) {
+                                                                    $timeString = $startTime->format('H:i:s');
+                                                                } elseif (is_object($startTime) && method_exists($startTime, 'format')) {
+                                                                    $timeString = $startTime->format('H:i:s');
+                                                                } elseif (is_string($startTime)) {
+                                                                    if (strlen($startTime) === 5) {
+                                                                        $timeString = $startTime . ':00';
+                                                                    }
+                                                                }
+                                                                
+                                                                $serviceStartDateTime = \Carbon\Carbon::parse($serviceDate->format('Y-m-d') . ' ' . $timeString);
+                                                                $now = now();
+                                                                
+                                                                if ($now->lt($serviceStartDateTime)) {
+                                                                    $canRecordOffering = false;
+                                                                }
+                                                            } catch (\Exception $e) {
+                                                                // Allow if parsing fails
+                                                            }
+                                                        }
+                                                    @endphp
+                                                    <a href="{{ route('church-elder.community-offerings.create-from-service', [$community->id, $service->id]) }}" 
+                                                       class="btn btn-success {{ !$canRecordOffering ? 'disabled' : '' }}" 
+                                                       title="{{ !$canRecordOffering ? 'Offering can only be recorded after service start time' : 'Record Offering' }}"
+                                                       @if(!$canRecordOffering) onclick="return false;" @endif>
                                                         <i class="fas fa-money-bill-wave"></i>
                                                     </a>
                                                 @elseif(isset($serviceOfferings[$service->id]))

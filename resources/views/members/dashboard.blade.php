@@ -45,15 +45,11 @@
                             <span class="marquee-item">
                                 <i class="fas fa-church me-2"></i>
                                 <strong>Karibu katika kanisa la KKKT USHIRIKA WA LONGUO</strong> | 
-                                <i class="fas fa-mobile-alt me-1"></i> <strong>Lipa Namba Voda:</strong> <span class="highlight-number">68019088</span> - <strong>{{ \App\Services\SettingsService::get('church_name', 'KKKT Ushirika wa Longuo') }}</strong> | 
-                                <i class="fas fa-university me-1"></i> <strong>CRDB Bank:</strong> Akaunti <span class="highlight-number">0152324275400</span> - <strong>Africa Inland Church Tanzania</strong> | 
                                 <i class="fas fa-heart me-1"></i> Karibu tuabudu pamoja — <strong>Mungu akubariki!</strong>
                             </span>
                             <span class="marquee-item" style="padding-left: 80px;">
                                 <i class="fas fa-church me-2"></i>
                                 <strong>Karibu katika kanisa la KKKT USHIRIKA WA LONGUO</strong> | 
-                                <i class="fas fa-mobile-alt me-1"></i> <strong>Lipa Namba Voda:</strong> <span class="highlight-number">68019088</span> - <strong>{{ \App\Services\SettingsService::get('church_name', 'KKKT Ushirika wa Longuo') }}</strong> | 
-                                <i class="fas fa-university me-1"></i> <strong>CRDB Bank:</strong> Akaunti <span class="highlight-number">0152324275400</span> - <strong>Africa Inland Church Tanzania</strong> | 
                                 <i class="fas fa-heart me-1"></i> Karibu tuabudu pamoja — <strong>Mungu akubariki!</strong>
                             </span>
                         </div>

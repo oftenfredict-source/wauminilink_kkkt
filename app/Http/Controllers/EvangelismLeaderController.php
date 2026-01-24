@@ -664,7 +664,29 @@ class EvangelismLeaderController extends Controller
         $validated['guests_count'] = $validated['guests_count'] ?? 0;
         $validated['offerings_amount'] = 0;
 
-        $service = SundayService::create($validated);
+        // Check for duplicate branch service for this campus
+        $existingService = SundayService::where('service_date', $validated['service_date'])
+            ->where('service_type', $validated['service_type'])
+            ->where('campus_id', $campus->id)
+            ->where('is_branch_service', true)
+            ->first();
+        
+        if ($existingService) {
+            return redirect()->back()
+                ->withErrors(['service_date' => 'A branch Sunday service already exists for this date in your campus.'])
+                ->withInput();
+        }
+
+        try {
+            $service = SundayService::create($validated);
+        } catch (\Illuminate\Database\QueryException $e) {
+            if ($e->getCode() == 23000) {
+                return redirect()->back()
+                    ->withErrors(['service_date' => 'A service already exists for this date and type.'])
+                    ->withInput();
+            }
+            throw $e;
+        }
 
         Log::info('Branch Sunday service created', [
             'service_id' => $service->id,
@@ -743,11 +765,61 @@ class EvangelismLeaderController extends Controller
         }
 
         $service = null;
+        $canRecordOffering = true;
+        $timeRestrictionMessage = '';
+        
         if ($request->has('service_id')) {
             $service = SundayService::where('id', $request->service_id)
                 ->where('campus_id', $campus->id)
                 ->where('is_branch_service', true)
                 ->firstOrFail();
+            
+            // Check date and time restriction for offering
+            $serviceDate = $service->service_date ?? null;
+            $startTime = $service->start_time ?? null;
+            $now = now();
+            
+            if ($serviceDate) {
+                // First check if service date has been reached
+                $serviceDateOnly = \Carbon\Carbon::parse($serviceDate->format('Y-m-d'))->startOfDay();
+                $today = $now->copy()->startOfDay();
+                
+                if ($today->lt($serviceDateOnly)) {
+                    $canRecordOffering = false;
+                    $timeRestrictionMessage = 'Offering cannot be recorded before the service date. Service date is ' . 
+                        $serviceDateOnly->format('d/m/Y') . '. Today is ' . 
+                        $today->format('d/m/Y') . '.';
+                } elseif ($startTime) {
+                    // If date is reached, check if start time has been reached
+                    try {
+                        $timeString = $startTime;
+                        if ($startTime instanceof \Carbon\Carbon) {
+                            $timeString = $startTime->format('H:i:s');
+                        } elseif (is_object($startTime) && method_exists($startTime, 'format')) {
+                            $timeString = $startTime->format('H:i:s');
+                        } elseif (is_string($startTime)) {
+                            if (strlen($startTime) === 5) {
+                                $timeString = $startTime . ':00';
+                            }
+                        }
+                        
+                        $serviceStartDateTime = \Carbon\Carbon::parse($serviceDate->format('Y-m-d') . ' ' . $timeString);
+                        
+                        if ($now->lt($serviceStartDateTime)) {
+                            $canRecordOffering = false;
+                            $timeRestrictionMessage = 'Offering cannot be recorded before the service start time. Service starts at ' . 
+                                $serviceStartDateTime->format('d/m/Y h:i A') . '. Current time is ' . 
+                                $now->format('d/m/Y h:i A') . '.';
+                        }
+                    } catch (\Exception $e) {
+                        \Log::warning('Failed to parse service start time for offering restriction', [
+                            'service_id' => $service->id,
+                            'start_time' => $startTime,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                }
+            }
         }
 
         // Get recent branch services for selection
@@ -758,7 +830,7 @@ class EvangelismLeaderController extends Controller
             ->limit(20)
             ->get();
 
-        return view('evangelism-leader.branch-offerings.create', compact('campus', 'service', 'recentServices'));
+        return view('evangelism-leader.branch-offerings.create', compact('campus', 'service', 'recentServices', 'canRecordOffering', 'timeRestrictionMessage'));
     }
 
     /**
@@ -785,11 +857,56 @@ class EvangelismLeaderController extends Controller
             'leader_notes' => 'nullable|string',
         ]);
 
-        // Verify service belongs to this campus if provided
+        // Verify service belongs to this campus if provided and check date/time restriction
         if ($validated['service_id']) {
             $service = SundayService::findOrFail($validated['service_id']);
             if ($service->campus_id !== $campus->id || !$service->is_branch_service) {
                 return back()->with('error', 'Invalid service selected.')->withInput();
+            }
+            
+            // Check date and time restriction
+            $serviceDate = $service->service_date ?? null;
+            $startTime = $service->start_time ?? null;
+            $now = now();
+            
+            if ($serviceDate) {
+                // First check if service date has been reached
+                $serviceDateOnly = \Carbon\Carbon::parse($serviceDate->format('Y-m-d'))->startOfDay();
+                $today = $now->copy()->startOfDay();
+                
+                if ($today->lt($serviceDateOnly)) {
+                    return back()->with('error', 'Offering cannot be recorded before the service date. Service date is ' . 
+                        $serviceDateOnly->format('d/m/Y') . '. Today is ' . 
+                        $today->format('d/m/Y') . '.')->withInput();
+                } elseif ($startTime) {
+                    // If date is reached, check if start time has been reached
+                    try {
+                        $timeString = $startTime;
+                        if ($startTime instanceof \Carbon\Carbon) {
+                            $timeString = $startTime->format('H:i:s');
+                        } elseif (is_object($startTime) && method_exists($startTime, 'format')) {
+                            $timeString = $startTime->format('H:i:s');
+                        } elseif (is_string($startTime)) {
+                            if (strlen($startTime) === 5) {
+                                $timeString = $startTime . ':00';
+                            }
+                        }
+                        
+                        $serviceStartDateTime = \Carbon\Carbon::parse($serviceDate->format('Y-m-d') . ' ' . $timeString);
+                        
+                        if ($now->lt($serviceStartDateTime)) {
+                            return back()->with('error', 'Offering cannot be recorded before the service start time. Service starts at ' . 
+                                $serviceStartDateTime->format('d/m/Y h:i A') . '. Current time is ' . 
+                                $now->format('d/m/Y h:i A') . '.')->withInput();
+                        }
+                    } catch (\Exception $e) {
+                        \Log::warning('Failed to parse service start time for offering restriction', [
+                            'service_id' => $service->id,
+                            'start_time' => $startTime,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                }
             }
         }
 
@@ -855,7 +972,44 @@ class EvangelismLeaderController extends Controller
             ->with('member')
             ->get();
 
-        return view('evangelism-leader.branch-services.attendance', compact('service', 'campus', 'members', 'existingAttendance'));
+        // Check time restriction for attendance and offering
+        $canRecordAttendance = true;
+        $timeRestrictionMessage = '';
+        $serviceDate = $service->service_date ?? null;
+        $startTime = $service->start_time ?? null;
+        
+        if ($serviceDate && $startTime) {
+            try {
+                $timeString = $startTime;
+                if ($startTime instanceof \Carbon\Carbon) {
+                    $timeString = $startTime->format('H:i:s');
+                } elseif (is_object($startTime) && method_exists($startTime, 'format')) {
+                    $timeString = $startTime->format('H:i:s');
+                } elseif (is_string($startTime)) {
+                    if (strlen($startTime) === 5) {
+                        $timeString = $startTime . ':00';
+                    }
+                }
+                
+                $serviceStartDateTime = \Carbon\Carbon::parse($serviceDate->format('Y-m-d') . ' ' . $timeString);
+                $now = now();
+                
+                if ($now->lt($serviceStartDateTime)) {
+                    $canRecordAttendance = false;
+                    $timeRestrictionMessage = 'Attendance and offering cannot be recorded before the service start time. Service starts at ' . 
+                        $serviceStartDateTime->format('d/m/Y h:i A') . '. Current time is ' . 
+                        $now->format('d/m/Y h:i A') . '.';
+                }
+            } catch (\Exception $e) {
+                \Log::warning('Failed to parse service start time for attendance restriction', [
+                    'service_id' => $service->id,
+                    'start_time' => $startTime,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
+        return view('evangelism-leader.branch-services.attendance', compact('service', 'campus', 'members', 'existingAttendance', 'canRecordAttendance', 'timeRestrictionMessage'));
     }
 
     /**
@@ -883,6 +1037,43 @@ class EvangelismLeaderController extends Controller
             'guests_count' => 'nullable|integer|min:0',
             'notes' => 'nullable|string|max:1000',
         ]);
+
+        // Check time restriction
+        $serviceDate = $service->service_date ?? null;
+        $startTime = $service->start_time ?? null;
+        
+        if ($serviceDate && $startTime) {
+            try {
+                $timeString = $startTime;
+                if ($startTime instanceof \Carbon\Carbon) {
+                    $timeString = $startTime->format('H:i:s');
+                } elseif (is_object($startTime) && method_exists($startTime, 'format')) {
+                    $timeString = $startTime->format('H:i:s');
+                } elseif (is_string($startTime)) {
+                    if (strlen($startTime) === 5) {
+                        $timeString = $startTime . ':00';
+                    }
+                }
+                
+                $serviceStartDateTime = \Carbon\Carbon::parse($serviceDate->format('Y-m-d') . ' ' . $timeString);
+                $now = now();
+                
+                if ($now->lt($serviceStartDateTime)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Attendance cannot be recorded before the service start time. Service starts at ' . 
+                            $serviceStartDateTime->format('d/m/Y h:i A') . '. Current time is ' . 
+                            $now->format('d/m/Y h:i A') . '.'
+                    ], 422);
+                }
+            } catch (\Exception $e) {
+                \Log::warning('Failed to parse service start time for attendance restriction', [
+                    'service_id' => $service->id,
+                    'start_time' => $startTime,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
 
         // Clean and validate member IDs
         $rawMemberIds = is_array($request->member_ids) ? $request->member_ids : [];
@@ -1416,12 +1607,59 @@ class EvangelismLeaderController extends Controller
             ->with('member')
             ->get();
         
+        // Get all members from this campus who haven't contributed yet
+        // This includes members with contribution records (has_contributed = false) 
+        // and members who don't have a contribution record yet
+        $contributedMemberIds = $bereavement->contributions()
+            ->where('has_contributed', true)
+            ->whereIn('member_id', $campusMemberIds)
+            ->pluck('member_id')
+            ->filter()
+            ->toArray();
+        
+        $availableMembers = Member::whereIn('id', $campusMemberIds)
+            ->whereNotIn('id', $contributedMemberIds)
+            ->orderBy('full_name')
+            ->get();
+        
         // Calculate totals
         $totalContributions = $contributions->where('has_contributed', true)->sum(function($contribution) {
             return $contribution->contribution_amount ?? 0;
         });
         $totalContributors = $contributions->where('has_contributed', true)->count();
-        $totalMembers = $contributions->count();
+        
+        // Total members should be all members from the campus
+        $totalMembers = $campusMemberIds->count();
+        
+        // Get all members who have contribution records (contributed or not)
+        $membersWithRecords = $contributions->pluck('member_id')->unique();
+        // Get all members from campus who don't have contribution records
+        $membersWithoutRecords = Member::whereIn('id', $campusMemberIds)
+            ->whereNotIn('id', $membersWithRecords)
+            ->pluck('id');
+        
+        // Create a collection of all non-contributors for the view
+        // This includes: members with records (has_contributed = false) + members without records
+        $nonContributors = collect();
+        
+        // Add members with contribution records who haven't contributed
+        foreach ($contributions->where('has_contributed', false) as $contribution) {
+            $nonContributors->push($contribution);
+        }
+        
+        // Add members without contribution records (they haven't contributed by default)
+        $membersWithoutRecordsList = Member::whereIn('id', $membersWithoutRecords)
+            ->with('community')
+            ->get();
+        
+        foreach ($membersWithoutRecordsList as $member) {
+            // Create a pseudo-contribution object for display
+            $nonContributors->push((object)[
+                'member' => $member,
+                'member_id' => $member->id,
+                'has_contributed' => false,
+            ]);
+        }
         
         \Log::info('Bereavement show statistics', [
             'event_id' => $bereavement->id,
@@ -1429,10 +1667,11 @@ class EvangelismLeaderController extends Controller
             'total_contributors' => $totalContributors,
             'total_members' => $totalMembers,
             'contributions_count' => $contributions->count(),
-            'campus_member_ids_count' => $campusMemberIds->count()
+            'campus_member_ids_count' => $campusMemberIds->count(),
+            'available_members_count' => $availableMembers->count()
         ]);
         
-        return view('evangelism-leader.bereavement.show', compact('bereavement', 'contributions', 'totalContributions', 'totalContributors', 'totalMembers', 'campus'));
+        return view('evangelism-leader.bereavement.show', compact('bereavement', 'contributions', 'totalContributions', 'totalContributors', 'totalMembers', 'campus', 'availableMembers', 'nonContributors'));
     }
 
     /**
@@ -1670,23 +1909,22 @@ class EvangelismLeaderController extends Controller
                 ->with('error', 'Member does not belong to your campus.');
         }
 
-        $contribution = BereavementContribution::where('bereavement_event_id', $bereavement->id)
-            ->where('member_id', $validated['member_id'])
-            ->first();
-
-        if (!$contribution) {
-            return redirect()->back()
-                ->with('error', 'Contribution record not found for this member.');
-        }
-
-        $contribution->update([
-            'has_contributed' => true,
-            'contribution_amount' => $validated['amount'],
-            'contribution_date' => $validated['contribution_date'],
-            'payment_method' => $validated['payment_method'],
-            'notes' => $validated['notes'] ?? null,
-            'recorded_by' => auth()->id(),
-        ]);
+        // Use updateOrCreate to handle both existing and new contribution records
+        $contribution = BereavementContribution::updateOrCreate(
+            [
+                'bereavement_event_id' => $bereavement->id,
+                'member_id' => $validated['member_id'],
+            ],
+            [
+                'has_contributed' => true,
+                'contribution_amount' => $validated['amount'],
+                'contribution_date' => $validated['contribution_date'],
+                'contribution_type' => 'individual',
+                'payment_method' => $validated['payment_method'],
+                'notes' => $validated['notes'] ?? null,
+                'recorded_by' => $user->id,
+            ]
+        );
 
         return redirect()->back()
             ->with('success', 'Contribution recorded successfully.');

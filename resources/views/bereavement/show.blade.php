@@ -253,15 +253,22 @@
                     <input type="hidden" name="bereavement_id" value="{{ $bereavement->id }}">
                     <div class="mb-3">
                         <label class="form-label">Member <span class="text-danger">*</span></label>
-                        <select name="member_id" class="form-select" required>
+                        <select name="member_id" id="member_id_select" class="form-select" required>
                             <option value="">Select Member</option>
                             @foreach($availableMembers as $member)
-                            <option value="{{ $member->id }}">{{ $member->full_name }} ({{ $member->member_id }})</option>
+                            <option value="{{ $member->id }}" data-member-name="{{ $member->full_name }}" data-member-id="{{ $member->member_id }}">
+                                {{ $member->full_name }} ({{ $member->member_id }})
+                            </option>
                             @endforeach
                         </select>
                         @if($availableMembers->isEmpty())
                         <small class="text-muted">All members have already contributed to this event.</small>
                         @endif
+                        <div id="member_info" class="mt-2" style="display: none;">
+                            <div class="alert alert-info mb-0">
+                                <small><strong>Selected Member:</strong> <span id="selected_member_name"></span></small>
+                            </div>
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Amount <span class="text-danger">*</span></label>
@@ -309,18 +316,37 @@ function openRecordContributionModal() {
     const modal = new bootstrap.Modal(document.getElementById('recordContributionModal'));
     modal.show();
     
-    // Reset form and hide reference number by default
+    // Reset form and hide reference number and member info by default
     document.getElementById('contributionForm').reset();
     document.getElementById('reference_number_group').style.display = 'none';
     document.getElementById('reference_number').removeAttribute('required');
+    document.getElementById('member_info').style.display = 'none';
 }
 
-// Handle payment method change
+// Handle payment method change and member selection
 document.addEventListener('DOMContentLoaded', function() {
     const paymentMethodSelect = document.getElementById('payment_method');
     const referenceNumberGroup = document.getElementById('reference_number_group');
     const referenceNumberInput = document.getElementById('reference_number');
+    const memberSelect = document.getElementById('member_id_select');
+    const memberInfo = document.getElementById('member_info');
+    const selectedMemberName = document.getElementById('selected_member_name');
     
+    // Handle member selection
+    if (memberSelect) {
+        memberSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            if (this.value && selectedOption) {
+                const memberName = selectedOption.getAttribute('data-member-name') || selectedOption.text;
+                selectedMemberName.textContent = memberName;
+                memberInfo.style.display = 'block';
+            } else {
+                memberInfo.style.display = 'none';
+            }
+        });
+    }
+    
+    // Handle payment method change
     if (paymentMethodSelect) {
         paymentMethodSelect.addEventListener('change', function() {
             if (this.value === 'cash') {

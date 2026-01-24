@@ -15,7 +15,6 @@ class BereavementContribution extends Model
         'member_id',
         'has_contributed',
         'contribution_amount',
-        'amount', // Support both column names
         'contribution_date',
         'contribution_type',
         'payment_method',
@@ -29,26 +28,19 @@ class BereavementContribution extends Model
     protected $casts = [
         'has_contributed' => 'boolean',
         'contribution_amount' => 'decimal:2',
-        'amount' => 'decimal:2',
         'contribution_date' => 'date',
         'is_verified' => 'boolean',
         'approved_at' => 'datetime',
     ];
-
-    /**
-     * Accessor for contribution_amount - use amount (since table uses 'amount' column)
-     */
-    public function getContributionAmountAttribute()
+    
+    // Override setAttribute to prevent 'amount' from being set
+    public function setAttribute($key, $value)
     {
-        return $this->attributes['amount'] ?? 0;
-    }
-
-    /**
-     * Mutator to set amount when contribution_amount is set
-     */
-    public function setContributionAmountAttribute($value)
-    {
-        $this->attributes['amount'] = $value;
+        if ($key === 'amount') {
+            // Silently ignore attempts to set 'amount', use 'contribution_amount' instead
+            $key = 'contribution_amount';
+        }
+        return parent::setAttribute($key, $value);
     }
 
     // Relationships

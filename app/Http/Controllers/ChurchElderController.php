@@ -987,7 +987,47 @@ class ChurchElderController extends Controller
         ->limit(20)
         ->get();
 
-        return view('church-elder.attendance', compact('community', 'members', 'recentServices', 'recentAttendances', 'selectedService'));
+        // Check time restriction for selected service
+        $canRecordAttendance = true;
+        $timeRestrictionMessage = '';
+        
+        if ($selectedService) {
+            $serviceDate = $selectedService->service_date ?? null;
+            $startTime = $selectedService->start_time ?? null;
+            
+            if ($serviceDate && $startTime) {
+                try {
+                    $timeString = $startTime;
+                    if ($startTime instanceof \Carbon\Carbon) {
+                        $timeString = $startTime->format('H:i:s');
+                    } elseif (is_object($startTime) && method_exists($startTime, 'format')) {
+                        $timeString = $startTime->format('H:i:s');
+                    } elseif (is_string($startTime)) {
+                        if (strlen($startTime) === 5) {
+                            $timeString = $startTime . ':00';
+                        }
+                    }
+                    
+                    $serviceStartDateTime = \Carbon\Carbon::parse($serviceDate->format('Y-m-d') . ' ' . $timeString);
+                    $now = now();
+                    
+                    if ($now->lt($serviceStartDateTime)) {
+                        $canRecordAttendance = false;
+                        $timeRestrictionMessage = 'Attendance and offering cannot be recorded before the service start time. Service starts at ' . 
+                            $serviceStartDateTime->format('d/m/Y h:i A') . '. Current time is ' . 
+                            $now->format('d/m/Y h:i A') . '.';
+                    }
+                } catch (\Exception $e) {
+                    \Log::warning('Failed to parse service start time for attendance restriction', [
+                        'service_id' => $selectedService->id,
+                        'start_time' => $startTime,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+        }
+
+        return view('church-elder.attendance', compact('community', 'members', 'recentServices', 'recentAttendances', 'selectedService', 'canRecordAttendance', 'timeRestrictionMessage'));
     }
 
     /**
@@ -1022,6 +1062,43 @@ class ChurchElderController extends Controller
                 'success' => false,
                 'message' => 'This service does not belong to you. You can only record attendance for services you created.'
             ], 403);
+        }
+
+        // Check time restriction
+        $serviceDate = $service->service_date ?? null;
+        $startTime = $service->start_time ?? null;
+        
+        if ($serviceDate && $startTime) {
+            try {
+                $timeString = $startTime;
+                if ($startTime instanceof \Carbon\Carbon) {
+                    $timeString = $startTime->format('H:i:s');
+                } elseif (is_object($startTime) && method_exists($startTime, 'format')) {
+                    $timeString = $startTime->format('H:i:s');
+                } elseif (is_string($startTime)) {
+                    if (strlen($startTime) === 5) {
+                        $timeString = $startTime . ':00';
+                    }
+                }
+                
+                $serviceStartDateTime = \Carbon\Carbon::parse($serviceDate->format('Y-m-d') . ' ' . $timeString);
+                $now = now();
+                
+                if ($now->lt($serviceStartDateTime)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Attendance cannot be recorded before the service start time. Service starts at ' . 
+                            $serviceStartDateTime->format('d/m/Y h:i A') . '. Current time is ' . 
+                            $now->format('d/m/Y h:i A') . '.'
+                    ], 422);
+                }
+            } catch (\Exception $e) {
+                \Log::warning('Failed to parse service start time for attendance restriction', [
+                    'service_id' => $service->id,
+                    'start_time' => $startTime,
+                    'error' => $e->getMessage()
+                ]);
+            }
         }
 
         // Verify all members belong to this community

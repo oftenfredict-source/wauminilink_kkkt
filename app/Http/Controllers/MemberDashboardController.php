@@ -382,6 +382,66 @@ class MemberDashboardController extends Controller
             })
             ->get();
         
+        // Get senior pastors from users table (users with role='pastor' or can_approve_finances=true)
+        $seniorPastors = \App\Models\User::where(function($query) {
+                $query->where('role', 'pastor')
+                      ->orWhere(function($q) {
+                          $q->where('can_approve_finances', true)
+                            ->where('role', '!=', 'admin'); // Exclude admins
+                      });
+            })
+            ->whereNotNull('member_id') // Only include pastors who are also members
+            ->with('member')
+            ->get();
+        
+        // Create pseudo-leader objects for senior pastors who aren't in the leaders table
+        $seniorPastorLeaders = collect();
+        foreach ($seniorPastors as $pastorUser) {
+            if ($pastorUser->member) {
+                // Check if this pastor is already in the leaders list
+                $existsInLeaders = $allLeaders->contains(function($leader) use ($pastorUser) {
+                    return $leader->member_id === $pastorUser->member_id && 
+                           in_array($leader->position, ['pastor', 'assistant_pastor']);
+                });
+                
+                // If not in leaders table, create a pseudo-leader object
+                if (!$existsInLeaders) {
+                    $pseudoLeader = new class {
+                        public $id;
+                        public $member_id;
+                        public $member;
+                        public $position;
+                        public $position_display;
+                        public $appointment_date;
+                        public $end_date;
+                        public $is_active;
+                        public $campus_id;
+                        public $communities;
+                        
+                        public function isCurrentlyActive() {
+                            return true;
+                        }
+                    };
+                    
+                    $pseudoLeader->id = 'pastor_' . $pastorUser->id;
+                    $pseudoLeader->member_id = $pastorUser->member_id;
+                    $pseudoLeader->member = $pastorUser->member;
+                    $pseudoLeader->position = 'pastor';
+                    $pseudoLeader->position_display = 'Mchungaji Mkuu';
+                    $pseudoLeader->appointment_date = \Carbon\Carbon::parse($pastorUser->created_at ?? now());
+                    $pseudoLeader->end_date = null;
+                    $pseudoLeader->is_active = true;
+                    $pseudoLeader->campus_id = null;
+                    $pseudoLeader->communities = collect();
+                    
+                    $seniorPastorLeaders->push($pseudoLeader);
+                }
+            }
+        }
+        
+        // Combine leaders from leaders table and senior pastors
+        $allLeaders = $allLeaders->merge($seniorPastorLeaders);
+        
         // Filter leaders based on position and member's location
         $leaders = $allLeaders->filter(function($leader) use ($memberCampusId, $memberCommunityId) {
             // Always show Pastor and Assistant Pastor

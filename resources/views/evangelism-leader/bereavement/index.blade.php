@@ -168,8 +168,6 @@
                         <div>
                             <span class="progress-indicator progress-contributed"></span>
                             {{ $event->contributions->where('has_contributed', true)->count() }} contributed
-                            <span class="progress-indicator progress-not-contributed ms-3"></span>
-                            {{ $event->contributions->where('has_contributed', false)->count() }} not yet
                         </div>
                     </div>
                     @if($event->related_departments)

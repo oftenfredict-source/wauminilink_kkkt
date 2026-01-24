@@ -33,15 +33,31 @@
                     <h6 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Record Attendance</h6>
                 </div>
                 <div class="card-body">
+                    @if(!$canRecordAttendance)
+                    <!-- Time Restriction Warning -->
+                    <div class="alert alert-warning d-flex align-items-center mb-3" role="alert">
+                        <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
+                        <div>
+                            <strong>Attendance & Offering Recording Restricted</strong>
+                            <p class="mb-0">{{ $timeRestrictionMessage }}</p>
+                        </div>
+                    </div>
+                    @endif
+                    
                     <form id="attendanceForm">
                         @csrf
                         <input type="hidden" name="service_type" value="sunday_service">
                         <input type="hidden" name="service_id" value="{{ $service->id }}">
+                        <input type="hidden" id="canRecordAttendance" value="{{ $canRecordAttendance ? '1' : '0' }}">
+                        <input type="hidden" id="timeRestrictionMessage" value="{{ $timeRestrictionMessage }}">
                         
                         <div class="mb-3">
                             <label class="form-label small">Service Information</label>
                             <div class="alert alert-info mb-0">
                                 <strong>{{ $service->service_date->format('l, F d, Y') }}</strong><br>
+                                @if($service->start_time)
+                                    <small>Start Time: {{ \Carbon\Carbon::parse($service->start_time)->format('h:i A') }}</small><br>
+                                @endif
                                 @if($service->theme)
                                     <small>Theme: {{ $service->theme }}</small><br>
                                 @endif
@@ -81,7 +97,7 @@
                             <textarea class="form-control form-control-sm" id="notes" name="notes" rows="2"></textarea>
                         </div>
 
-                        <button type="submit" class="btn btn-sm btn-primary w-100">
+                        <button type="submit" class="btn btn-sm btn-primary w-100" id="saveAttendanceBtn" @if(!$canRecordAttendance) disabled @endif>
                             <i class="fas fa-save me-1"></i> Record Attendance
                         </button>
                     </form>
@@ -147,6 +163,19 @@ document.addEventListener('DOMContentLoaded', function() {
     
     form.addEventListener('submit', function(e) {
         e.preventDefault();
+        
+        // Check if attendance can be recorded
+        const canRecord = document.getElementById('canRecordAttendance')?.value === '1';
+        if (!canRecord) {
+            const message = document.getElementById('timeRestrictionMessage')?.value || 'Attendance cannot be recorded before the service start time.';
+            Swal.fire({
+                icon: 'warning',
+                title: 'Time Restriction',
+                text: message,
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
         
         const formData = new FormData(form);
         

@@ -2019,10 +2019,6 @@
                                 <div class="sb-nav-link-icon"><i class="fas fa-users-cog"></i></div>
                                 Leaders
                             </a>
-                            <a class="nav-link" href="{{ route('member.change-password') }}">
-                                <div class="sb-nav-link-icon"><i class="fas fa-key"></i></div>
-                                Change Password
-                            </a>
                             @endif
                             
                             @if(auth()->user()->isChurchElder())
@@ -2104,8 +2100,49 @@
                             @endif
                             @endif
                             
+                            {{-- Member Portal for Evangelism Leaders (they are also members) - Show FIRST, same structure as Church Elders --}}
+                            @if(auth()->user()->isEvangelismLeader() && auth()->user()->member)
+                            {{-- Member Portal for Evangelism Leaders --}}
+                            <div class="sb-sidenav-menu-heading">Member Portal</div>
+                            <a class="nav-link" href="{{ route('member.dashboard') }}">
+                                <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
+                                Dashboard
+                            </a>
+                            <a class="nav-link" href="{{ route('member.information') }}">
+                                <div class="sb-nav-link-icon"><i class="fas fa-user-circle"></i></div>
+                                My Information
+                            </a>
+                            <a class="nav-link" href="{{ route('member.finance') }}">
+                                <div class="sb-nav-link-icon"><i class="fas fa-wallet"></i></div>
+                                My Finance
+                            </a>
+                            <a class="nav-link" href="{{ route('member.announcements') }}">
+                                <div class="sb-nav-link-icon"><i class="fas fa-bullhorn"></i></div>
+                                Announcements
+                                @php
+                                    $member = auth()->user()->member ?? null;
+                                    if ($member) {
+                                        $activeAnnouncements = \App\Models\Announcement::active()->pluck('id');
+                                        $viewedAnnouncementIds = \App\Models\AnnouncementView::where('member_id', $member->id)
+                                            ->whereIn('announcement_id', $activeAnnouncements)
+                                            ->pluck('announcement_id');
+                                        $unreadCount = $activeAnnouncements->diff($viewedAnnouncementIds)->count();
+                                    } else {
+                                        $unreadCount = 0;
+                                    }
+                                @endphp
+                                @if($unreadCount > 0)
+                                    <span class="badge bg-danger ms-2">{{ $unreadCount }}</span>
+                                @endif
+                            </a>
+                            <a class="nav-link" href="{{ route('member.leaders') }}">
+                                <div class="sb-nav-link-icon"><i class="fas fa-users-cog"></i></div>
+                                Leaders
+                            </a>
+                            @endif
+                            
                             {{-- Remove Finance menu for Church Elders (moved to community section) --}}
-                            @if(auth()->user()->isMember() && !auth()->user()->isChurchElder())
+                            @if(auth()->user()->isMember() && !auth()->user()->isChurchElder() && !auth()->user()->isEvangelismLeader())
                             {{-- Member Menu --}}
                             <div class="sb-sidenav-menu-heading">Member Portal</div>
                             <a class="nav-link" href="{{ route('member.dashboard') }}">
@@ -2143,11 +2180,7 @@
                                 <div class="sb-nav-link-icon"><i class="fas fa-users-cog"></i></div>
                                 Leaders
                             </a>
-                            <a class="nav-link" href="{{ route('member.change-password') }}">
-                                <div class="sb-nav-link-icon"><i class="fas fa-key"></i></div>
-                                Change Password
-                            </a>
-                            @elseif(!auth()->user()->isTreasurer() && !auth()->user()->isAdmin() && !auth()->user()->isChurchElder())
+                            @elseif(!auth()->user()->isTreasurer() && !auth()->user()->isAdmin() && !auth()->user()->isChurchElder() && !auth()->user()->isEvangelismLeader())
                             <div class="sb-sidenav-menu-heading">Main</div>
                             <a class="nav-link" href="{{ route('dashboard') }}">
                                 <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
@@ -2156,7 +2189,7 @@
                             @endif
                             
                             @if(!auth()->user()->isTreasurer() || auth()->user()->isAdmin())
-                            @if(!auth()->user()->isMember() && !auth()->user()->isChurchElder())
+                            @if(!auth()->user()->isMember() && !auth()->user()->isChurchElder() && !auth()->user()->isEvangelismLeader())
                             
                             <div class="sb-sidenav-menu-heading">Management</div>
                             <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapseMembers" aria-expanded="false" aria-controls="collapseMembers">

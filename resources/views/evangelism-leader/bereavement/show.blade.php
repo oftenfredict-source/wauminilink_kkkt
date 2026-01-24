@@ -181,6 +181,7 @@
                     </div>
                 </div>
             </div>
+            @if(($totalMembers - $totalContributors) > 0)
             <div class="card stat-card border-left-secondary">
                 <div class="card-body">
                     <div class="d-flex align-items-center">
@@ -192,6 +193,7 @@
                     </div>
                 </div>
             </div>
+            @endif
         </div>
     </div>
 
@@ -204,11 +206,13 @@
                         Contributors ({{ $totalContributors }})
                     </a>
                 </li>
+                @if(($totalMembers - $totalContributors) > 0)
                 <li class="nav-item">
                     <a class="nav-link" data-bs-toggle="tab" href="#nonContributors">
                         Not Yet Contributed ({{ $totalMembers - $totalContributors }})
                     </a>
                 </li>
+                @endif
             </ul>
         </div>
         <div class="card-body">
@@ -260,7 +264,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse($contributions->where('has_contributed', false) as $contribution)
+                                @forelse($nonContributors ?? [] as $contribution)
                                 <tr>
                                     <td>
                                         <span class="contribution-status status-not-contributed"></span>
@@ -301,18 +305,27 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Member <span class="text-danger">*</span></label>
-                        <select name="member_id" class="form-select @error('member_id') is-invalid @enderror" required>
+                        <select name="member_id" id="member_id_select" class="form-select @error('member_id') is-invalid @enderror" required>
                             <option value="">Select Member</option>
-                            @foreach($contributions->where('has_contributed', false) as $contribution)
-                            <option value="{{ $contribution->member_id }}">{{ $contribution->member->full_name ?? 'N/A' }} ({{ $contribution->member->member_id ?? 'N/A' }})</option>
+                            @foreach($availableMembers as $member)
+                            <option value="{{ $member->id }}" 
+                                    data-member-name="{{ $member->full_name }}" 
+                                    data-member-id="{{ $member->member_id ?? 'N/A' }}">
+                                {{ $member->full_name }} ({{ $member->member_id ?? 'N/A' }})
+                            </option>
                             @endforeach
                         </select>
                         @error('member_id')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
-                        @if($contributions->where('has_contributed', false)->isEmpty())
+                        @if($availableMembers->isEmpty())
                         <small class="text-muted">All members have already contributed to this event.</small>
                         @endif
+                        <div id="member_info" class="mt-2" style="display: none;">
+                            <div class="alert alert-info mb-0">
+                                <small><strong>Selected Member:</strong> <span id="selected_member_name"></span></small>
+                            </div>
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Amount <span class="text-danger">*</span></label>
@@ -359,9 +372,44 @@
 
 <script>
 function openRecordContributionModal() {
-    const modal = new bootstrap.Modal(document.getElementById('recordContributionModal'));
+    const modalElement = document.getElementById('recordContributionModal');
+    if (!modalElement) {
+        console.error('Record Contribution Modal not found');
+        return;
+    }
+    
+    const modal = new bootstrap.Modal(modalElement);
+    
+    // Reset member info display when opening
+    setTimeout(function() {
+        const memberInfo = document.getElementById('member_info');
+        if (memberInfo) {
+            memberInfo.style.display = 'none';
+        }
+    }, 100);
+    
     modal.show();
 }
+
+// Handle member selection - use event delegation to work even if modal is dynamically loaded
+document.addEventListener('change', function(e) {
+    if (e.target && e.target.id === 'member_id_select') {
+        const memberSelect = e.target;
+        const memberInfo = document.getElementById('member_info');
+        const selectedMemberName = document.getElementById('selected_member_name');
+        
+        if (memberInfo && selectedMemberName) {
+            const selectedOption = memberSelect.options[memberSelect.selectedIndex];
+            if (memberSelect.value && selectedOption) {
+                const memberName = selectedOption.getAttribute('data-member-name') || selectedOption.text;
+                selectedMemberName.textContent = memberName;
+                memberInfo.style.display = 'block';
+            } else {
+                memberInfo.style.display = 'none';
+            }
+        }
+    }
+});
 
 function confirmCloseBereavement() {
     Swal.fire({

@@ -79,6 +79,8 @@ class AttendanceController extends Controller
         $attendanceRecords = collect();
         $childAttendanceRecords = collect();
         $existingOfferingAmount = null;
+        $canRecordAttendance = true;
+        $timeRestrictionMessage = '';
         
         if ($selectedService) {
             $attendanceRecords = ServiceAttendance::forService($serviceType, $serviceId)
@@ -105,6 +107,54 @@ class AttendanceController extends Controller
                     $existingOfferingAmount = $selectedService->offerings_amount;
                 }
             }
+            
+            // Check date and time restriction for attendance and offering
+            $serviceDate = $selectedService->service_date ?? ($selectedService->event_date ?? null);
+            $startTime = $selectedService->start_time ?? null;
+            $now = now();
+            
+            if ($serviceDate) {
+                // First check if service date has been reached
+                $serviceDateOnly = \Carbon\Carbon::parse($serviceDate->format('Y-m-d'))->startOfDay();
+                $today = $now->copy()->startOfDay();
+                
+                if ($today->lt($serviceDateOnly)) {
+                    $canRecordAttendance = false;
+                    $timeRestrictionMessage = 'Attendance and offering cannot be recorded before the service date. Service date is ' . 
+                        $serviceDateOnly->format('d/m/Y') . '. Today is ' . 
+                        $today->format('d/m/Y') . '.';
+                } elseif ($startTime) {
+                    // If date is reached, check if start time has been reached
+                    try {
+                        $timeString = $startTime;
+                        if ($startTime instanceof \Carbon\Carbon) {
+                            $timeString = $startTime->format('H:i:s');
+                        } elseif (is_object($startTime) && method_exists($startTime, 'format')) {
+                            $timeString = $startTime->format('H:i:s');
+                        } elseif (is_string($startTime)) {
+                            if (strlen($startTime) === 5) {
+                                $timeString = $startTime . ':00';
+                            }
+                        }
+                        
+                        $serviceStartDateTime = \Carbon\Carbon::parse($serviceDate->format('Y-m-d') . ' ' . $timeString);
+                        
+                        if ($now->lt($serviceStartDateTime)) {
+                            $canRecordAttendance = false;
+                            $timeRestrictionMessage = 'Attendance and offering cannot be recorded before the service start time. Service starts at ' . 
+                                $serviceStartDateTime->format('d/m/Y h:i A') . '. Current time is ' . 
+                                $now->format('d/m/Y h:i A') . '.';
+                        }
+                    } catch (\Exception $e) {
+                        \Log::warning('Failed to parse service start time for attendance restriction', [
+                            'service_type' => $serviceType,
+                            'service_id' => $serviceId,
+                            'start_time' => $startTime,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                }
+            }
         }
         
         return view('attendance.index', compact(
@@ -116,7 +166,9 @@ class AttendanceController extends Controller
             'children',
             'attendanceRecords',
             'childAttendanceRecords',
-            'existingOfferingAmount'
+            'existingOfferingAmount',
+            'canRecordAttendance',
+            'timeRestrictionMessage'
         ));
     }
     
@@ -155,7 +207,7 @@ class AttendanceController extends Controller
             ], 422);
         }
         
-        // Get the service to check start time
+        // Get the service to check date and start time
         $serviceType = $request->service_type;
         $serviceId = $request->service_id;
         
@@ -167,6 +219,23 @@ class AttendanceController extends Controller
             $service = SpecialEvent::findOrFail($serviceId);
             $serviceDate = $service->event_date;
             $startTime = $service->start_time;
+        }
+        
+        $now = now();
+        
+        // First check if service date has been reached
+        if ($serviceDate) {
+            $serviceDateOnly = \Carbon\Carbon::parse($serviceDate->format('Y-m-d'))->startOfDay();
+            $today = $now->copy()->startOfDay();
+            
+            if ($today->lt($serviceDateOnly)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Attendance cannot be recorded before the service date. Service date is ' . 
+                        $serviceDateOnly->format('d/m/Y') . '. Today is ' . 
+                        $today->format('d/m/Y') . '.'
+                ], 422);
+            }
         }
         
         // Check if service has a start time
@@ -189,7 +258,6 @@ class AttendanceController extends Controller
                 $serviceStartDateTime = \Carbon\Carbon::parse($serviceDate->format('Y-m-d') . ' ' . $timeString);
                 
                 // Check if current time is before service start time
-                $now = now();
                 if ($now->lt($serviceStartDateTime)) {
                     return response()->json([
                         'success' => false,

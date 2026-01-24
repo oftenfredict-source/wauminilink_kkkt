@@ -84,8 +84,14 @@ class SundayServiceController extends Controller
             \Log::info('Validated data:', $validated);
 
             // Check for duplicate service_date + service_type combination
+            // For main services (is_branch_service = false or null), check without campus_id
+            // For branch services, they should be created through the branch service controller
             $existingService = SundayService::where('service_date', $validated['service_date'])
                 ->where('service_type', $validated['service_type'])
+                ->where(function($query) {
+                    $query->where('is_branch_service', false)
+                          ->orWhereNull('is_branch_service');
+                })
                 ->first();
             
             if ($existingService) {

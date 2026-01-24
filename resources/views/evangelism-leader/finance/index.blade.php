@@ -295,7 +295,7 @@
                                             <span class="badge bg-warning">Pending Approval</span>
                                         @endif
                                     </td>
-                                    <td>{{ $offering->submitted_at ? $offering->submitted_at->format('M d, Y H:i') : 'N/A' }}</td>
+                                    <td>{{ $offering->submitted_at ? \Carbon\Carbon::parse($offering->submitted_at)->format('M d, Y H:i') : 'N/A' }}</td>
                                     <td>
                                         <a href="{{ route('evangelism-leader.finance.offerings.show', $offering->id) }}" class="btn btn-sm btn-info">
                                             <i class="fas fa-eye"></i> View
@@ -339,7 +339,7 @@
                                             <span class="badge bg-warning">Pending Approval</span>
                                         @endif
                                     </td>
-                                    <td>{{ $tithe->submitted_at ? $tithe->submitted_at->format('M d, Y H:i') : 'N/A' }}</td>
+                                    <td>{{ $tithe->submitted_at ? \Carbon\Carbon::parse($tithe->submitted_at)->format('M d, Y H:i') : 'N/A' }}</td>
                                     <td>
                                         <a href="{{ route('evangelism-leader.finance.tithes.show', $tithe->id) }}" class="btn btn-sm btn-info">
                                             <i class="fas fa-eye"></i> View

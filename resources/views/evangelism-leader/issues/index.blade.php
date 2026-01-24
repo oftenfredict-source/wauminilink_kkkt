@@ -58,7 +58,19 @@
                                             </span>
                                         </td>
                                         <td>
-                                            <span class="badge {{ $issue->status_badge }}">
+                                            @php
+                                                $statusDescriptions = [
+                                                    'open' => 'Issue has been reported and is awaiting attention',
+                                                    'in_progress' => 'Issue is currently being worked on',
+                                                    'resolved' => 'Issue has been resolved',
+                                                    'closed' => 'Issue has been closed'
+                                                ];
+                                                $statusDescription = $statusDescriptions[$issue->status] ?? 'Unknown status';
+                                            @endphp
+                                            <span class="badge {{ $issue->status_badge }}" 
+                                                  data-bs-toggle="tooltip" 
+                                                  data-bs-placement="top" 
+                                                  title="{{ $statusDescription }}">
                                                 {{ ucfirst(str_replace('_', ' ', $issue->status)) }}
                                             </span>
                                         </td>
@@ -90,6 +102,16 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Bootstrap tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
 @endsection
 
 

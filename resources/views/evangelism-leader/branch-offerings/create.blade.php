@@ -20,12 +20,28 @@
         </div>
     </div>
 
+    @if(isset($service) && !$canRecordOffering)
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-warning d-flex align-items-center" role="alert">
+                <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
+                <div>
+                    <strong>Offering Recording Restricted</strong>
+                    <p class="mb-0">{{ $timeRestrictionMessage }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
     <div class="row">
         <div class="col-12">
             <div class="card border-0 shadow-sm">
                 <div class="card-body">
                     <form action="{{ route('evangelism-leader.branch-offerings.store') }}" method="POST">
                         @csrf
+                        <input type="hidden" id="canRecordOffering" value="{{ isset($service) && $canRecordOffering ? '1' : '0' }}">
+                        <input type="hidden" id="timeRestrictionMessage" value="{{ $timeRestrictionMessage ?? '' }}">
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="service_id" class="form-label">Link to Service (Optional)</label>
@@ -112,7 +128,7 @@
 
                         <div class="d-flex justify-content-end gap-2">
                             <a href="{{ route('evangelism-leader.branch-offerings.index') }}" class="btn btn-secondary">Cancel</a>
-                            <button type="submit" class="btn btn-primary">
+                            <button type="submit" class="btn btn-primary" id="submitOfferingBtn" @if(isset($service) && !$canRecordOffering) disabled @endif>
                                 <i class="fas fa-save me-1"></i> Record Offering
                             </button>
                         </div>
@@ -122,6 +138,47 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const serviceSelect = document.getElementById('service_id');
+    
+    if (form && serviceSelect) {
+        form.addEventListener('submit', function(e) {
+            // Check if offering can be recorded when service is selected
+            if (serviceSelect.value) {
+                const canRecord = document.getElementById('canRecordOffering')?.value === '1';
+                if (!canRecord) {
+                    e.preventDefault();
+                    const message = document.getElementById('timeRestrictionMessage')?.value || 'Offering cannot be recorded before the service date/time.';
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Time Restriction',
+                        text: message,
+                        confirmButtonText: 'OK'
+                    });
+                    return false;
+                }
+            }
+        });
+        
+        // Update restriction when service is changed
+        serviceSelect.addEventListener('change', function() {
+            // Reload page with new service_id to check restrictions
+            if (this.value) {
+                const url = new URL(window.location);
+                url.searchParams.set('service_id', this.value);
+                window.location.href = url.toString();
+            } else {
+                const url = new URL(window.location);
+                url.searchParams.delete('service_id');
+                window.location.href = url.toString();
+            }
+        });
+    }
+});
+</script>
 @endsection
 
 

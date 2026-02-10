@@ -84,6 +84,13 @@
                                     <label for="community_id">Community (Optional)</label>
                                 </div>
                             </div>
+                            <div class="col-md-4">
+                                <div class="form-floating border border-success rounded-3">
+                                    <input type="text" name="envelope_number" id="envelope_number" class="form-control text-success fw-bold" value="{{ old('envelope_number', $member->envelope_number) }}" placeholder="e.g. 024">
+                                    <label for="envelope_number" class="text-success"><i class="fas fa-envelope-open-text me-1"></i>Envelope Number (Jumuiya ID)</label>
+                                </div>
+                                <small class="text-success ms-1 fw-bold small"><i class="fas fa-info-circle me-1"></i>Unique number within the fellowship (Jumuiya)</small>
+                            </div>
                             <div class="col-md-6">
                                 <div class="form-floating">
                                     <input type="text" class="form-control" name="phone_number" id="phone_number" value="{{ old('phone_number', $member->phone_number) }}" required>
@@ -166,6 +173,97 @@
                                 <div class="form-floating">
                                     <input type="text" class="form-control" name="other_tribe" id="other_tribe" value="{{ old('other_tribe', $member->other_tribe) }}">
                                     <label for="other_tribe">Other Tribe</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Baptism Information -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-primary text-white py-3">
+                        <h5 class="mb-0"><i class="fas fa-tint me-2"></i>Baptism Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-4">
+                            <div class="col-md-4">
+                                <div class="form-floating">
+                                    <select class="form-select" name="baptism_status" id="baptism_status">
+                                        <option value="">Select...</option>
+                                        <option value="baptized" {{ old('baptism_status', $member->baptism_status) == 'baptized' ? 'selected' : '' }}>Baptized</option>
+                                        <option value="not_baptized" {{ old('baptism_status', $member->baptism_status) == 'not_baptized' ? 'selected' : '' }}>Not Baptized</option>
+                                    </select>
+                                    <label for="baptism_status">Baptism Status</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4" id="baptismDateWrapper" style="{{ old('baptism_status', $member->baptism_status) == 'baptized' ? '' : 'display:none;' }}">
+                                <div class="form-floating">
+                                    <input type="date" class="form-control" name="baptism_date" id="baptism_date" value="{{ old('baptism_date', $member->baptism_date ? $member->baptism_date->format('Y-m-d') : '') }}">
+                                    <label for="baptism_date">Baptism Date</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4" id="baptismLocationWrapper" style="{{ old('baptism_status', $member->baptism_status) == 'baptized' ? '' : 'display:none;' }}">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control" name="baptism_location" id="baptism_location" value="{{ old('baptism_location', $member->baptism_location) }}" placeholder="Church name">
+                                    <label for="baptism_location">Baptism Location/Church</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4" id="baptizedByWrapper" style="{{ old('baptism_status', $member->baptism_status) == 'baptized' ? '' : 'display:none;' }}">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control" name="baptized_by" id="baptized_by" value="{{ old('baptized_by', $member->baptized_by) }}" placeholder="Pastor name">
+                                    <label for="baptized_by">Baptized By</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4" id="baptismCertificateWrapper" style="{{ old('baptism_status', $member->baptism_status) == 'baptized' ? '' : 'display:none;' }}">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control" name="baptism_certificate_number" id="baptism_certificate_number" value="{{ old('baptism_certificate_number', $member->baptism_certificate_number) }}" placeholder="Certificate number">
+                                    <label for="baptism_certificate_number">Baptism Certificate Number (Optional)</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Social Welfare Status -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-danger text-white py-3">
+                        <h5 class="mb-0"><i class="fas fa-hand-holding-heart me-2"></i>Hali ya Ustawi wa Jamii (Welfare Status)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-4">
+                            <div class="col-md-4">
+                                <div class="form-floating">
+                                    <select class="form-select" name="orphan_status" id="orphan_status">
+                                        <option value="not_orphan" {{ old('orphan_status', $member->orphan_status) == 'not_orphan' ? 'selected' : '' }}>Si Yatima (Not Orphan)</option>
+                                        <option value="father_deceased" {{ old('orphan_status', $member->orphan_status) == 'father_deceased' ? 'selected' : '' }}>Baba amefariki (Father Deceased)</option>
+                                        <option value="mother_deceased" {{ old('orphan_status', $member->orphan_status) == 'mother_deceased' ? 'selected' : '' }}>Mama amefariki (Mother Deceased)</option>
+                                        <option value="both_deceased" {{ old('orphan_status', $member->orphan_status) == 'both_deceased' ? 'selected' : '' }}>Wote wamefariki (Both Deceased)</option>
+                                    </select>
+                                    <label for="orphan_status">Hali ya Uyathima (Orphan Status)</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check form-switch pt-2">
+                                    <input class="form-check-input" type="checkbox" id="disability_status" name="disability_status" value="1" {{ old('disability_status', $member->disability_status) ? 'checked' : '' }}>
+                                    <label class="form-check-label fw-bold" for="disability_status">Ana Ulemavu? (Has Disability?)</label>
+                                </div>
+                                <div id="disabilityTypeWrapper" class="mt-2" style="{{ old('disability_status', $member->disability_status) ? '' : 'display:none;' }}">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" name="disability_type" id="disability_type" value="{{ old('disability_type', $member->disability_type) }}" placeholder="Nature of disability">
+                                        <label for="disability_type">Aina ya Ulemavu (Type)</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check form-switch pt-2">
+                                    <input class="form-check-input" type="checkbox" id="vulnerable_status" name="vulnerable_status" value="1" {{ old('vulnerable_status', $member->vulnerable_status) ? 'checked' : '' }}>
+                                    <label class="form-check-label fw-bold" for="vulnerable_status">Hali Ngumu/Dhaifu? (Vulnerable?)</label>
+                                </div>
+                                <div id="vulnerableTypeWrapper" class="mt-2" style="{{ old('vulnerable_status', $member->vulnerable_status) ? '' : 'display:none;' }}">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" name="vulnerable_type" id="vulnerable_type" value="{{ old('vulnerable_type', $member->vulnerable_type) }}" placeholder="e.g. Poverty, Chronic Illness">
+                                        <label for="vulnerable_type">Aina ya Changamoto (Type)</label>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -270,6 +368,76 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 weddingDateWrapper.style.display = 'none';
             }
+        });
+    }
+    
+    // Welfare status change handlers
+    const disabilityStatus = document.getElementById('disability_status');
+    if (disabilityStatus) {
+        disabilityStatus.addEventListener('change', function() {
+            const wrapper = document.getElementById('disabilityTypeWrapper');
+            if (wrapper) wrapper.style.display = this.checked ? '' : 'none';
+        });
+    }
+    
+    const vulnerableStatus = document.getElementById('vulnerable_status');
+    if (vulnerableStatus) {
+        vulnerableStatus.addEventListener('change', function() {
+            const wrapper = document.getElementById('vulnerableTypeWrapper');
+            if (wrapper) wrapper.style.display = this.checked ? '' : 'none';
+        });
+    }
+
+    // Envelope Number Real-time Validation
+    const envelopeInput = document.getElementById('envelope_number');
+    const communitySelectForEnvelope = document.getElementById('community_id');
+    const memberId = '{{ $member->id }}';
+    
+    if (envelopeInput && communitySelectForEnvelope) {
+        const checkEnvelope = function() {
+            const envelope = envelopeInput.value.trim();
+            const communityId = communitySelectForEnvelope.value;
+            
+            // Remove existing feedback
+            const existingFeedback = envelopeInput.parentNode.querySelector('.envelope-feedback');
+            if (existingFeedback) existingFeedback.remove();
+            envelopeInput.classList.remove('is-invalid', 'is-valid');
+            
+            if (!envelope || !communityId) return;
+
+            fetch(`/members/check-envelope?envelope=${encodeURIComponent(envelope)}&community_id=${communityId}&exclude_id=${memberId}`, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const feedback = document.createElement('small');
+                feedback.className = `envelope-feedback d-block mt-1 fw-bold ${data.available ? 'text-success' : 'text-danger'}`;
+                feedback.innerHTML = `<i class="fas fa-${data.available ? 'check' : 'times'}-circle me-1"></i>${data.message}`;
+                envelopeInput.parentNode.appendChild(feedback);
+                
+                if (data.available) {
+                    envelopeInput.classList.add('is-valid');
+                } else {
+                    envelopeInput.classList.add('is-invalid');
+                }
+            })
+            .catch(err => console.error('Error checking envelope:', err));
+        };
+
+        envelopeInput.addEventListener('blur', checkEnvelope);
+        communitySelectForEnvelope.addEventListener('change', checkEnvelope);
+    }
+
+    // Baptism status change handler
+    const baptismStatus = document.getElementById('baptism_status');
+    if (baptismStatus) {
+        baptismStatus.addEventListener('change', function() {
+            const baptized = this.value === 'baptized';
+            const wrappers = ['baptismDateWrapper', 'baptismLocationWrapper', 'baptizedByWrapper', 'baptismCertificateWrapper'];
+            wrappers.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.style.display = baptized ? 'block' : 'none';
+            });
         });
     }
     

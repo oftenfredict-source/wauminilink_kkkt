@@ -14,7 +14,12 @@ class CommunityOffering extends Model
         'community_id',
         'service_id',
         'service_type',
+        'offering_type',
         'amount',
+        'amount_umoja',
+        'amount_jengo',
+        'amount_ahadi',
+        'amount_other',
         'offering_date',
         'collection_method',
         'reference_number',
@@ -33,8 +38,20 @@ class CommunityOffering extends Model
         'rejected_at',
     ];
 
+    const TYPE_UMOJA = 'sadaka_umoja';
+    const TYPE_JENGO = 'sadaka_jengo';
+    const TYPE_AHADI = 'sadaka_ahadi';
+    const TYPE_TITHE = 'tithe';
+    const TYPE_OTHER = 'other';
+    const TYPE_GENERAL = 'general';
+    const TYPE_COMBO = 'sunday_offering';
+
     protected $casts = [
         'amount' => 'decimal:2',
+        'amount_umoja' => 'decimal:2',
+        'amount_jengo' => 'decimal:2',
+        'amount_ahadi' => 'decimal:2',
+        'amount_other' => 'decimal:2',
         'offering_date' => 'date',
         'handover_to_evangelism_at' => 'datetime',
         'handover_to_secretary_at' => 'datetime',
@@ -70,19 +87,19 @@ class CommunityOffering extends Model
     {
         return $this->belongsTo(User::class, 'rejected_by');
     }
-    
+
     // Scopes for easy filtering
-    
+
     public function scopePendingEvangelism($query)
     {
         return $query->where('status', 'pending_evangelism');
     }
-    
+
     public function scopePendingSecretary($query)
     {
         return $query->where('status', 'pending_secretary');
     }
-    
+
     public function scopeCompleted($query)
     {
         return $query->where('status', 'completed');
@@ -102,5 +119,10 @@ class CommunityOffering extends Model
     {
         return $query->whereNotNull('service_id')
             ->whereIn('service_type', ['prayer_meeting', 'bible_study', 'youth_service', 'women_fellowship', 'men_fellowship']);
+    }
+
+    public function items()
+    {
+        return $this->hasMany(CommunityOfferingItem::class);
     }
 }

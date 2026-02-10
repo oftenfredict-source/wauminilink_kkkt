@@ -18,7 +18,7 @@ class BaptismApplicationController extends Controller
     public function index()
     {
         $user = auth()->user();
-        
+
         if (!$user->isEvangelismLeader() && !$user->isAdmin()) {
             abort(403, 'Unauthorized access.');
         }
@@ -42,7 +42,7 @@ class BaptismApplicationController extends Controller
     public function create()
     {
         $user = auth()->user();
-        
+
         if (!$user->isEvangelismLeader() && !$user->isAdmin()) {
             abort(403, 'Unauthorized access.');
         }
@@ -70,7 +70,7 @@ class BaptismApplicationController extends Controller
     public function store(Request $request)
     {
         $user = auth()->user();
-        
+
         if (!$user->isEvangelismLeader() && !$user->isAdmin()) {
             abort(403, 'Unauthorized access.');
         }
@@ -80,32 +80,33 @@ class BaptismApplicationController extends Controller
             'full_name' => 'required|string|max:255',
             'gender' => 'required|in:male,female',
             'date_of_birth' => 'required|date|before:today',
+            'place_of_birth' => 'nullable|string|max:255',
             'age' => 'nullable|integer|min:0|max:150', // Age is auto-calculated, but we'll validate it if provided
             'phone_number' => 'nullable|string|max:20', // Optional for children, required for adults (handled in custom validation)
             'email' => 'nullable|email|max:255',
             'residential_address' => 'required|string|max:500',
             'church_branch_id' => 'nullable|exists:campuses,id',
             'community_id' => 'required|exists:communities,id',
-            
-            // Spiritual Information
-            'previously_baptized' => 'required|boolean',
-            'previous_church_name' => 'nullable|required_if:previously_baptized,1|string|max:255',
-            'previous_baptism_date' => 'nullable|required_if:previously_baptized,1|date|before:today',
-            'attended_baptism_classes' => 'required|boolean',
+
+            // Spiritual Information (only required for adults)
+            'previously_baptized' => 'nullable|boolean',
+            'previous_church_name' => 'nullable|string|max:255',
+            'previous_baptism_date' => 'nullable|date|before:today',
+            'attended_baptism_classes' => 'nullable|boolean',
             'church_attendance_duration' => 'nullable|string|max:100',
             'pastor_catechist_name' => 'nullable|string|max:255',
-            
+
             // Family Information
-            'marital_status' => 'nullable|in:single,married,divorced,widowed',
-            'parent_guardian_name' => 'nullable|string|max:255',
-            'guardian_phone' => 'nullable|string|max:20',
-            'guardian_email' => 'nullable|email|max:255',
+            'father_name' => 'nullable|string|max:255',
+            'mother_name' => 'nullable|string|max:255',
+            'godparent1_name' => 'nullable|string|max:255',
+            'godparent2_name' => 'nullable|string|max:255',
             'family_religious_background' => 'nullable|string|max:1000',
-            
+
             // Application Statement
             'reason_for_baptism' => 'required|string|min:20|max:2000',
             'declaration_agreed' => 'required|accepted',
-            
+
             // Attachments
             'photo' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'recommendation_letter' => 'nullable|file|mimes:pdf,doc,docx|max:5120',
@@ -123,7 +124,7 @@ class BaptismApplicationController extends Controller
             if (isset($validated['attended_baptism_classes'])) {
                 $validated['attended_baptism_classes'] = (bool) $validated['attended_baptism_classes'];
             }
-            
+
             // Handle file uploads
             $photoPath = null;
             $recommendationLetterPath = null;
@@ -152,15 +153,31 @@ class BaptismApplicationController extends Controller
 
             // Validate based on age
             if ($age < 18) {
-                // Child applicant: parent/guardian required, phone/email optional
-                if (empty($validated['parent_guardian_name'])) {
-                    return back()->with('error', 'Parent/Guardian name is required for applicants under 18 years old.')
+                // Child applicant: father/mother required, phone/email optional
+                if (empty($validated['father_name']) || empty($validated['mother_name'])) {
+                    return back()->with('error', 'Father\'s and Mother\'s names are required for child applicants.')
                         ->withInput();
                 }
                 // Don't require phone_number for children
                 // Don't save marital_status for children
                 $validated['marital_status'] = null;
+
+                // For children, spiritual fields are typically N/A
+                $validated['previously_baptized'] = 0;
+                $validated['attended_baptism_classes'] = 0;
             } else {
+                // Adult applicant: spiritual info required
+                if (!isset($validated['previously_baptized']) || !isset($validated['attended_baptism_classes'])) {
+                    return back()->with('error', 'Spiritual Information is required for adult applicants.')
+                        ->withInput();
+                }
+
+                if ($validated['previously_baptized'] == 1) {
+                    if (empty($validated['previous_church_name']) || empty($validated['previous_baptism_date'])) {
+                        return back()->with('error', 'Please provide details of your previous baptism.')
+                            ->withInput();
+                    }
+                }
                 // Adult applicant: phone required, marital status allowed
                 if (empty($validated['phone_number'])) {
                     return back()->with('error', 'Phone number is required for adult applicants.')
@@ -173,6 +190,7 @@ class BaptismApplicationController extends Controller
                 'full_name' => $validated['full_name'],
                 'gender' => $validated['gender'],
                 'date_of_birth' => $validated['date_of_birth'],
+                'place_of_birth' => $validated['place_of_birth'] ?? null,
                 'age' => $age,
                 'phone_number' => $validated['phone_number'] ?? null, // Nullable for children
                 'email' => $validated['email'] ?? null,
@@ -186,9 +204,10 @@ class BaptismApplicationController extends Controller
                 'church_attendance_duration' => $validated['church_attendance_duration'] ?? null,
                 'pastor_catechist_name' => $validated['pastor_catechist_name'] ?? null,
                 'marital_status' => $validated['marital_status'] ?? null,
-                'parent_guardian_name' => $validated['parent_guardian_name'] ?? null,
-                'guardian_phone' => $validated['guardian_phone'] ?? null,
-                'guardian_email' => $validated['guardian_email'] ?? null,
+                'father_name' => $validated['father_name'] ?? null,
+                'mother_name' => $validated['mother_name'] ?? null,
+                'godparent1_name' => $validated['godparent1_name'] ?? null,
+                'godparent2_name' => $validated['godparent2_name'] ?? null,
                 'family_religious_background' => $validated['family_religious_background'] ?? null,
                 'reason_for_baptism' => $validated['reason_for_baptism'],
                 'declaration_agreed' => true,
@@ -224,7 +243,7 @@ class BaptismApplicationController extends Controller
     public function show(BaptismApplication $baptismApplication)
     {
         $user = auth()->user();
-        
+
         // Check authorization
         if ($user->isEvangelismLeader()) {
             if ($baptismApplication->evangelism_leader_id !== $user->id) {
@@ -247,7 +266,7 @@ class BaptismApplicationController extends Controller
     public function pending()
     {
         $user = auth()->user();
-        
+
         if (!$user->isPastor() && !$user->isAdmin()) {
             abort(403, 'Unauthorized access. Only Pastors can review applications.');
         }
@@ -266,7 +285,7 @@ class BaptismApplicationController extends Controller
     public function approve(Request $request, BaptismApplication $baptismApplication)
     {
         $user = auth()->user();
-        
+
         if (!$user->isPastor() && !$user->isAdmin()) {
             abort(403, 'Unauthorized access.');
         }
@@ -294,8 +313,8 @@ class BaptismApplicationController extends Controller
             'scheduled_date' => $baptismApplication->scheduled_baptism_date
         ]);
 
-        return back()->with('success', 'Application approved successfully' . 
-            ($baptismApplication->scheduled_baptism_date ? ' and scheduled for ' . $baptismApplication->scheduled_baptism_date->format('F d, Y') : '') . '.');
+        return back()->with('success', 'Application approved successfully' .
+            ($baptismApplication->scheduled_baptism_date ? ' and scheduled for ' . \Carbon\Carbon::parse($baptismApplication->scheduled_baptism_date)->format('F d, Y') : '') . '.');
     }
 
     /**
@@ -304,7 +323,7 @@ class BaptismApplicationController extends Controller
     public function reject(Request $request, BaptismApplication $baptismApplication)
     {
         $user = auth()->user();
-        
+
         if (!$user->isPastor() && !$user->isAdmin()) {
             abort(403, 'Unauthorized access.');
         }
@@ -341,7 +360,7 @@ class BaptismApplicationController extends Controller
     public function schedule(Request $request, BaptismApplication $baptismApplication)
     {
         $user = auth()->user();
-        
+
         if (!$user->isPastor() && !$user->isAdmin()) {
             abort(403, 'Unauthorized access.');
         }
@@ -364,7 +383,7 @@ class BaptismApplicationController extends Controller
             'scheduled_date' => $baptismApplication->scheduled_baptism_date
         ]);
 
-        return back()->with('success', 'Baptism scheduled for ' . $baptismApplication->scheduled_baptism_date->format('F d, Y') . '.');
+        return back()->with('success', 'Baptism scheduled for ' . Carbon::parse($baptismApplication->scheduled_baptism_date)->format('F d, Y') . '.');
     }
 
     /**
@@ -373,7 +392,7 @@ class BaptismApplicationController extends Controller
     public function complete(BaptismApplication $baptismApplication)
     {
         $user = auth()->user();
-        
+
         if (!$user->isPastor() && !$user->isAdmin()) {
             abort(403, 'Unauthorized access.');
         }

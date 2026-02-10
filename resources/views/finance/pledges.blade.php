@@ -227,8 +227,8 @@
                     <select class="form-select form-select-sm select2-member" id="member_id" name="member_id">
                         <option value="">All Members</option>
                         @foreach($members as $member)
-                            <option value="{{ $member->id }}" {{ request('member_id') == $member->id ? 'selected' : '' }}>
-                                {{ $member->full_name }} ({{ $member->member_id }})
+                            <option value="{{ $member->id }}" {{ request('member_id') == $member->id ? 'selected' : '' }} data-envelope="{{ $member->envelope_number }}">
+                                {{ $member->full_name }} ({{ $member->member_id }}) @if($member->envelope_number) [Env: {{ $member->envelope_number }}] @endif
                             </option>
                         @endforeach
                     </select>
@@ -436,11 +436,22 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="member_id" class="form-label">Member *</label>
-                                <select class="form-select select2-member-modal" id="member_id" name="member_id" required>
+                                <label for="envelope_lookup" class="form-label">Search by Envelope Number</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-primary text-white"><i class="fas fa-envelope-open-text"></i></span>
+                                    <input type="text" class="form-control" id="envelope_lookup" placeholder="Enter Envelope #">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="modal_member_id" class="form-label">Member *</label>
+                                <select class="form-select select2-member-modal" id="modal_member_id" name="member_id" required>
                                     <option value="">Select Member</option>
                                     @foreach($members as $member)
-                                        <option value="{{ $member->id }}">{{ $member->full_name }} ({{ $member->member_id }})</option>
+                                        <option value="{{ $member->id }}" data-envelope="{{ $member->envelope_number }}">
+                                            {{ $member->full_name }} ({{ $member->member_id }}) @if($member->envelope_number) [Env: {{ $member->envelope_number }}] @endif
+                                        </option>
                                     @endforeach
                                 </select>
                             </div>
@@ -803,6 +814,35 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 
                 return false;
+            }
+        });
+    }
+
+    // Envelope Number Lookup Logic
+    const envelopeLookup = document.getElementById('envelope_lookup');
+    const memberSelect = $('#modal_member_id');
+
+    if (envelopeLookup) {
+        envelopeLookup.addEventListener('change', function() {
+            const val = this.value.trim();
+            if (!val) return;
+
+            let found = false;
+            memberSelect.find('option').each(function() {
+                const env = $(this).data('envelope');
+                if (env && env.toString() === val) {
+                    memberSelect.val($(this).val()).trigger('change');
+                    found = true;
+                    return false; // break
+                }
+            });
+
+            if (found) {
+                envelopeLookup.classList.remove('is-invalid');
+                envelopeLookup.classList.add('is-valid');
+            } else {
+                envelopeLookup.classList.add('is-invalid');
+                envelopeLookup.classList.remove('is-valid');
             }
         });
     }

@@ -17,6 +17,8 @@ use App\Services\TranslationService;
 use App\View\Composers\LanguageComposer;
 use App\Session\DatabaseSessionHandler;
 
+use Illuminate\Pagination\Paginator;
+
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -39,11 +41,11 @@ class AppServiceProvider extends ServiceProvider
         // Only apply subdirectory logic for production/staging environments
         $appEnv = env('APP_ENV', 'local');
         $skipAutoDetection = env('APP_SKIP_SUBDIRECTORY_AUTO_DETECT', false);
-        
+
         // Handle subdirectory hosting (e.g., /demo/)
         // This ensures asset() helper includes the subdirectory in URLs
         $subdirectory = env('APP_SUBDIRECTORY', '');
-        
+
         // Auto-detect subdirectory from request if not set in env
         // Skip auto-detection if:
         // 1. Already set in env
@@ -62,7 +64,7 @@ class AppServiceProvider extends ServiceProvider
                         $subdirectory = rtrim($scriptPath, '/');
                     }
                 }
-                
+
                 // Fallback: try to detect from request URI
                 if (empty($subdirectory)) {
                     $path = parse_url(request()->getRequestUri(), PHP_URL_PATH);
@@ -77,7 +79,7 @@ class AppServiceProvider extends ServiceProvider
                 }
             }
         }
-        
+
         // Set asset URL to include subdirectory
         if (!empty($subdirectory)) {
             $appUrl = config('app.url');
@@ -86,7 +88,7 @@ class AppServiceProvider extends ServiceProvider
                 $appUrl = rtrim($appUrl, '/') . $subdirectory;
             }
             URL::forceRootUrl($appUrl);
-            
+
             // Also update the public disk URL to include subdirectory
             config(['filesystems.disks.public.url' => $appUrl . '/storage']);
         } else {
@@ -101,28 +103,31 @@ class AppServiceProvider extends ServiceProvider
             // When APP_ENV is 'local' and no subdirectory, Laravel will auto-detect the URL
             // This allows artisan serve to work correctly with http://127.0.0.1:8000
         }
-        
+
         // Extend the session manager to use our custom database handler
         Session::extend('database', function ($app) {
             $connection = $app['db']->connection($app['config']['session.connection']);
             $table = $app['config']['session.table'];
             $lifetime = $app['config']['session.lifetime'];
             $encrypter = $app->bound('encrypter') ? $app['encrypter'] : null;
-            
+
             return new DatabaseSessionHandler($connection, $table, $lifetime, $encrypter);
         });
-        
+
         // Register SMS notification channel
         Notification::extend('sms', function ($app) {
             return new SmsChannel($app->make(SmsService::class));
         });
-        
+
         // Register Blade directive for auto-translation
         Blade::directive('trans', function ($expression) {
             return "<?php echo autoTranslate($expression); ?>";
         });
-        
+
         // Register view composer for all views to provide translation helper
         View::composer('*', LanguageComposer::class);
+
+        // Use Bootstrap 5 for pagination
+        Paginator::useBootstrapFive();
     }
 }

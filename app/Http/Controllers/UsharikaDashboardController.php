@@ -61,8 +61,15 @@ class UsharikaDashboardController extends Controller
             ];
         }
 
-        // Total statistics across all branches
-        $totalMembers = Member::whereIn('campus_id', $branches->pluck('id')->merge([$mainCampus->id]))->count();
+        // Total statistics across all branches (including children who are church members)
+        $campusIds = $branches->pluck('id')->merge([$mainCampus->id]);
+        $adultMembers = Member::whereIn('campus_id', $campusIds)->count();
+        $childMembers = \App\Models\Child::where('is_church_member', true)
+            ->whereHas('member', function($query) use ($campusIds) {
+                $query->whereIn('campus_id', $campusIds);
+            })
+            ->count();
+        $totalMembers = $adultMembers + $childMembers;
         $newMembersThisMonth = Member::whereIn('campus_id', $branches->pluck('id')->merge([$mainCampus->id]))
             ->whereMonth('created_at', Carbon::now()->month)
             ->whereYear('created_at', Carbon::now()->year)
@@ -91,7 +98,14 @@ class UsharikaDashboardController extends Controller
      */
     private function getCampusStatistics($campus)
     {
-        $totalMembers = Member::where('campus_id', $campus->id)->count();
+        $adultMembers = Member::where('campus_id', $campus->id)->count();
+        $childMembers = \App\Models\Child::where('is_church_member', true)
+            ->whereHas('member', function($query) use ($campus) {
+                $query->where('campus_id', $campus->id);
+            })
+            ->count();
+        $totalMembers = $adultMembers + $childMembers;
+        
         $totalLeaders = Leader::where('campus_id', $campus->id)
             ->where('is_active', true)
             ->count();

@@ -2,13 +2,13 @@
   <table class="table table-striped align-middle">
     <thead>
       <tr>
-        <th>Member ID</th>
-        <th>Full Name</th>
-        <th>Phone</th>
-        <th>Email</th>
-        <th>Gender</th>
-        <th>Region</th>
-        <th>Actions</th>
+        <th>{{ __('common.member_id') }}</th>
+        <th>{{ __('common.full_name') }}</th>
+        <th>{{ __('common.phone') }}</th>
+        <th>{{ __('common.email') }}</th>
+        <th>{{ __('common.gender') }}</th>
+        <th>{{ __('common.region') }}</th>
+        <th>{{ __('common.actions') }}</th>
       </tr>
     </thead>
     <tbody>
@@ -21,11 +21,11 @@
         <td>{{ ucfirst($m->gender) }}</td>
         <td>{{ $m->region }}</td>
         <td>
-          <button class="btn btn-sm btn-outline-danger" onclick="archiveMember({{ $m->id }})">Archive</button>
+          <button class="btn btn-sm btn-outline-danger" onclick="archiveMember({{ $m->id }})">{{ __('common.archive') }}</button>
         </td>
       </tr>
       @empty
-      <tr><td colspan="7" class="text-center text-muted">No members found.</td></tr>
+      <tr><td colspan="7" class="text-center text-muted">{{ __('common.no_members_found') }}</td></tr>
       @endforelse
     </tbody>
   </table>
@@ -33,7 +33,7 @@
 
 <script>
 function archiveMember(id){
-  const reason = prompt('Please enter a reason for archiving this member:');
+  const reason = prompt('{{ __('common.enter_archive_reason') }}');
   if(!reason) return;
   
   // Get fresh CSRF token from meta tag
@@ -50,8 +50,8 @@ function archiveMember(id){
     },
     body: JSON.stringify({ reason })
   }).then(r=>r.json()).then(res=>{
-    if(res.success){ location.reload(); } else { alert(res.message || 'Failed.'); }
-  }).catch(()=>alert('Request failed'));
+    if(res.success){ location.reload(); } else { alert(res.message || '{{ __('common.failed') }}'); }
+  }).catch(()=>alert('{{ __('common.request_failed') }}'));
 }
 </script>
 

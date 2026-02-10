@@ -19,7 +19,7 @@ class LeaderController extends Controller
                 abort(403, 'Unauthorized. Only Pastors and Secretaries can manage leadership positions.');
             }
             return $next($request);
-        })->except(['index', 'show']);
+        })->except(['index', 'show', 'showChangePassword', 'updatePassword']);
     }
 
     /**
@@ -46,7 +46,7 @@ class LeaderController extends Controller
         $leaders = $query->get();
 
         // Filter out leaders without members (data integrity issue)
-        $leaders = $leaders->filter(function($leader) {
+        $leaders = $leaders->filter(function ($leader) {
             return $leader->member !== null;
         });
 
@@ -56,7 +56,7 @@ class LeaderController extends Controller
             $assignedCampuses = \App\Models\Campus::whereIn('evangelism_leader_id', $evangelismLeaders->pluck('id'))
                 ->get()
                 ->keyBy('evangelism_leader_id');
-            
+
             // Add assigned campus info to each evangelism leader
             foreach ($evangelismLeaders as $leader) {
                 if ($assignedCampuses->has($leader->id)) {
@@ -79,11 +79,11 @@ class LeaderController extends Controller
         // Get members - filtered by branch
         $userCampus = auth()->user()->getCampus();
         $query = Member::orderBy('full_name');
-        
+
         // Check if campus_id is specified in request (for branch leader assignment)
         $targetCampusId = request()->get('campus_id');
         $targetCampus = null;
-        
+
         if ($targetCampusId && (auth()->user()->isUsharikaAdmin() || (auth()->user()->getCampus() && auth()->user()->getCampus()->is_main_campus))) {
             // Usharika admin assigning leader to specific branch
             $query->where('campus_id', $targetCampusId);
@@ -95,10 +95,10 @@ class LeaderController extends Controller
         } else {
             $targetCampus = $userCampus;
         }
-        
+
         $members = $query->get();
         $positions = $this->getPositionOptions();
-        
+
         return view('leaders.create', compact('members', 'positions', 'userCampus', 'targetCampus'));
     }
 
@@ -109,7 +109,7 @@ class LeaderController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'member_id' => 'required|exists:members,id',
-            'position' => 'required|string|in:pastor,assistant_pastor,secretary,assistant_secretary,treasurer,assistant_treasurer,elder,deacon,deaconess,youth_leader,children_leader,worship_leader,choir_leader,usher_leader,evangelism_leader,prayer_leader,other',
+            'position' => 'required|string|in:pastor,assistant_pastor,secretary,elder,deacon,deaconess,youth_leader,children_leader,worship_leader,choir_leader,usher_leader,evangelism_leader,parish_worker,prayer_leader,other',
             'position_title' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'appointment_date' => 'required|date',
@@ -141,7 +141,7 @@ class LeaderController extends Controller
         // Determine campus_id for leader
         $userCampus = auth()->user()->getCampus();
         $campusId = null;
-        
+
         if ($userCampus && !$userCampus->is_main_campus) {
             // Branch user - assign to their branch
             $campusId = $userCampus->id;
@@ -157,18 +157,18 @@ class LeaderController extends Controller
                 $campusId = $userCampus->id;
             }
         }
-        
+
         $leaderData = $request->all();
         $leaderData['campus_id'] = $campusId;
-        
+
         $leader = Leader::create($leaderData);
-        
+
         // Load member relationship for notification
         $leader->load('member');
 
         // Automatically create or update user account for the assigned leader
         $userAccount = $this->createOrUpdateUserAccount($leader);
-        
+
         // Send database notification to the appointed leader
         if ($leader->member) {
             $leader->member->notify(new \App\Notifications\LeaderAppointmentNotification($leader));
@@ -181,14 +181,14 @@ class LeaderController extends Controller
         if ($userAccount) {
             $successMessage .= ' User account created/updated.';
         }
-        
+
         // Add SMS status to message
         if ($smsResult && $smsResult['sent']) {
             $successMessage .= ' Login credentials sent via SMS.';
         } elseif ($smsResult && !$smsResult['sent']) {
             $successMessage .= ' Note: SMS could not be sent. ' . ($smsResult['reason'] ?? 'Please check member phone number and SMS settings.');
         }
-        
+
         return redirect()->route('leaders.index')
             ->with('success', $successMessage);
     }
@@ -209,7 +209,7 @@ class LeaderController extends Controller
     {
         $members = Member::orderBy('full_name')->get();
         $positions = $this->getPositionOptions();
-        
+
         return view('leaders.edit', compact('leader', 'members', 'positions'));
     }
 
@@ -220,7 +220,7 @@ class LeaderController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'member_id' => 'required|exists:members,id',
-            'position' => 'required|string|in:pastor,assistant_pastor,secretary,assistant_secretary,treasurer,assistant_treasurer,elder,deacon,deaconess,youth_leader,children_leader,worship_leader,choir_leader,usher_leader,evangelism_leader,prayer_leader,other',
+            'position' => 'required|string|in:pastor,assistant_pastor,secretary,elder,deacon,deaconess,youth_leader,children_leader,worship_leader,choir_leader,usher_leader,evangelism_leader,parish_worker,prayer_leader,other',
             'position_title' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'appointment_date' => 'required|date',
@@ -258,17 +258,17 @@ class LeaderController extends Controller
         $memberChanged = $leader->member_id !== $request->member_id;
         $wasActive = $leader->is_active;
         $isNowActive = $request->is_active ?? $leader->is_active;
-        
+
         $leader->update($request->all());
-        
+
         // Reload leader with member relationship
         $leader->load('member');
-        
+
         // If leader was deactivated, check if user should be updated to member role
         if ($wasActive && !$isNowActive) {
             $this->updateUserRoleIfNoActivePositions($leader->member_id);
         }
-        
+
         // Update user account if position or member changed and leader is active
         if (($positionChanged || $memberChanged) && $isNowActive) {
             $this->createOrUpdateUserAccount($leader);
@@ -285,7 +285,7 @@ class LeaderController extends Controller
     {
         $memberId = $leader->member_id;
         $leader->delete();
-        
+
         // Update user role if member has no active leadership positions
         $this->updateUserRoleIfNoActivePositions($memberId);
 
@@ -300,7 +300,7 @@ class LeaderController extends Controller
     {
         $memberId = $leader->member_id;
         $leader->update(['is_active' => false]);
-        
+
         // Update user role if member has no active leadership positions
         $this->updateUserRoleIfNoActivePositions($memberId);
 
@@ -314,7 +314,7 @@ class LeaderController extends Controller
     public function reactivate(Leader $leader)
     {
         $leader->update(['is_active' => true]);
-        
+
         // Update user account when reactivated
         $leader->load('member');
         $this->createOrUpdateUserAccount($leader);
@@ -329,30 +329,30 @@ class LeaderController extends Controller
     public function reports()
     {
         $leaders = Leader::with('member')->get();
-        
+
         // Group by position
         $leadersByPosition = $leaders->groupBy('position');
-        
+
         // Active vs Inactive
         $activeLeaders = $leaders->where('is_active', true);
         $inactiveLeaders = $leaders->where('is_active', false);
-        
+
         // By appointment year
-        $leadersByYear = $leaders->groupBy(function($leader) {
+        $leadersByYear = $leaders->groupBy(function ($leader) {
             return $leader->appointment_date->year;
         });
-        
+
         // Recent appointments (last 6 months)
         $recentAppointments = $leaders->where('appointment_date', '>=', now()->subMonths(6));
-        
+
         // Expiring terms (next 3 months)
         $expiringTerms = $leaders->where('end_date', '>=', now())
             ->where('end_date', '<=', now()->addMonths(3));
-        
+
         return view('leaders.reports', compact(
-            'leaders', 
-            'leadersByPosition', 
-            'activeLeaders', 
+            'leaders',
+            'leadersByPosition',
+            'activeLeaders',
             'inactiveLeaders',
             'leadersByYear',
             'recentAppointments',
@@ -366,17 +366,17 @@ class LeaderController extends Controller
     public function exportCsv()
     {
         $leaders = Leader::with('member')->get();
-        
+
         $filename = 'leadership_report_' . date('Y-m-d_H-i-s') . '.csv';
-        
+
         $headers = [
             'Content-Type' => 'text/csv',
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ];
-        
-        $callback = function() use ($leaders) {
+
+        $callback = function () use ($leaders) {
             $file = fopen('php://output', 'w');
-            
+
             // CSV Headers
             fputcsv($file, [
                 'Member ID',
@@ -390,7 +390,7 @@ class LeaderController extends Controller
                 'Description',
                 'Notes'
             ]);
-            
+
             // CSV Data
             foreach ($leaders as $leader) {
                 fputcsv($file, [
@@ -406,10 +406,10 @@ class LeaderController extends Controller
                     $leader->notes ?? ''
                 ]);
             }
-            
+
             fclose($file);
         };
-        
+
         return response()->stream($callback, 200, $headers);
     }
 
@@ -421,7 +421,7 @@ class LeaderController extends Controller
         $leaders = Leader::with('member')->get();
         $leadersByPosition = $leaders->groupBy('position');
         $activeLeaders = $leaders->where('is_active', true);
-        
+
         // For now, return a simple HTML view that can be printed as PDF
         // In a real application, you'd use a PDF library like DomPDF or TCPDF
         return view('leaders.reports-pdf', compact('leaders', 'leadersByPosition', 'activeLeaders'));
@@ -433,13 +433,13 @@ class LeaderController extends Controller
     public function identityCard(Leader $leader)
     {
         $leader->load('member');
-        
+
         // Get church information from settings or use defaults
         $churchName = \App\Services\SettingsService::get('church_name', 'Waumini Church');
         $churchAddress = \App\Services\SettingsService::get('church_address', 'Dar es Salaam, Tanzania');
         $churchPhone = \App\Services\SettingsService::get('church_phone', '+255 XXX XXX XXX');
         $churchEmail = \App\Services\SettingsService::get('church_email', 'info@waumini.org');
-        
+
         return view('leaders.identity-card', compact('leader', 'churchName', 'churchAddress', 'churchPhone', 'churchEmail'));
     }
 
@@ -449,13 +449,13 @@ class LeaderController extends Controller
     public function bulkIdentityCards()
     {
         $leaders = Leader::with('member')->active()->get();
-        
+
         // Get church information from settings or use defaults
         $churchName = \App\Services\SettingsService::get('church_name', 'Waumini Church');
         $churchAddress = \App\Services\SettingsService::get('church_address', 'Dar es Salaam, Tanzania');
         $churchPhone = \App\Services\SettingsService::get('church_phone', '+255 XXX XXX XXX');
         $churchEmail = \App\Services\SettingsService::get('church_email', 'info@waumini.org');
-        
+
         return view('leaders.bulk-identity-cards', compact('leaders', 'churchName', 'churchAddress', 'churchPhone', 'churchEmail'));
     }
 
@@ -465,17 +465,17 @@ class LeaderController extends Controller
     public function positionIdentityCards($position)
     {
         $leaders = Leader::with('member')->where('position', $position)->active()->get();
-        
+
         if ($leaders->isEmpty()) {
             return redirect()->back()->with('error', 'No active leaders found for this position.');
         }
-        
+
         // Get church information from settings or use defaults
         $churchName = \App\Services\SettingsService::get('church_name', 'Waumini Church');
         $churchAddress = \App\Services\SettingsService::get('church_address', 'Dar es Salaam, Tanzania');
         $churchPhone = \App\Services\SettingsService::get('church_phone', '+255 XXX XXX XXX');
         $churchEmail = \App\Services\SettingsService::get('church_email', 'info@waumini.org');
-        
+
         return view('leaders.bulk-identity-cards', compact('leaders', 'churchName', 'churchAddress', 'churchPhone', 'churchEmail'));
     }
 
@@ -495,7 +495,7 @@ class LeaderController extends Controller
 
             // Map leader position to user role
             $role = $this->mapPositionToRole($leader->position);
-            
+
             if (!$role) {
                 \Log::info('Leadership position does not require user account', [
                     'position' => $leader->position,
@@ -507,10 +507,10 @@ class LeaderController extends Controller
             // Extract lastname from full_name (assuming last word is lastname)
             $nameParts = explode(' ', trim($member->full_name));
             $lastname = !empty($nameParts) ? strtoupper(end($nameParts)) : 'MEMBER';
-            
+
             // Check if user account already exists
             $user = \App\Models\User::where('member_id', $member->id)->first();
-            
+
             if ($user) {
                 // Update existing user account with new role
                 $user->update([
@@ -518,14 +518,14 @@ class LeaderController extends Controller
                     'campus_id' => $leader->campus_id ?? $member->campus_id,
                     'can_approve_finances' => in_array($role, ['pastor', 'admin']),
                 ]);
-                
+
                 \Log::info('User account updated for leader', [
                     'member_id' => $member->id,
                     'user_id' => $user->id,
                     'role' => $role,
                     'position' => $leader->position,
                 ]);
-                
+
                 return [
                     'user' => $user,
                     'username' => $user->email,
@@ -544,7 +544,7 @@ class LeaderController extends Controller
                     'campus_id' => $leader->campus_id ?? $member->campus_id,
                     'can_approve_finances' => in_array($role, ['pastor', 'admin']),
                 ]);
-                
+
                 \Log::info('User account created for leader', [
                     'member_id' => $member->id,
                     'user_id' => $user->id,
@@ -552,7 +552,7 @@ class LeaderController extends Controller
                     'role' => $role,
                     'position' => $leader->position,
                 ]);
-                
+
                 return [
                     'user' => $user,
                     'username' => $member->member_id,
@@ -575,12 +575,17 @@ class LeaderController extends Controller
      */
     private function mapPositionToRole($position)
     {
-        return match($position) {
+        return match ($position) {
             'pastor', 'assistant_pastor' => 'pastor',
-            'secretary', 'assistant_secretary' => 'secretary',
-            'treasurer', 'assistant_treasurer' => 'treasurer',
+            'secretary' => 'secretary',
             'evangelism_leader' => 'evangelism_leader',
+            'parish_worker' => 'parish_worker',
             'elder' => 'elder',
+            'treasurer', 'assistant_treasurer', 'assistant_secretary' => match ($position) {
+                    'treasurer', 'assistant_treasurer' => 'treasurer',
+                    'assistant_secretary' => 'secretary',
+                    default => null
+                },
             default => null // Positions like deacon, deaconess, youth_leader, etc. don't require user accounts
         };
     }
@@ -594,22 +599,22 @@ class LeaderController extends Controller
             // Check if member has any active leadership positions
             $activePositions = Leader::where('member_id', $memberId)
                 ->where('is_active', true)
-                ->where(function($query) {
+                ->where(function ($query) {
                     $query->whereNull('end_date')
-                          ->orWhere('end_date', '>=', now()->toDateString());
+                        ->orWhere('end_date', '>=', now()->toDateString());
                 })
                 ->get();
 
             // If no active positions, update user role to 'member'
             if ($activePositions->isEmpty()) {
                 $user = \App\Models\User::where('member_id', $memberId)->first();
-                
+
                 if ($user) {
                     $user->update([
                         'role' => 'member',
                         'can_approve_finances' => false,
                     ]);
-                    
+
                     \Log::info('User role updated to member (no active leadership positions)', [
                         'member_id' => $memberId,
                         'user_id' => $user->id,
@@ -618,31 +623,32 @@ class LeaderController extends Controller
                 }
             } else {
                 // Member still has active positions, update to the highest priority role
-                $highestPriorityPosition = $activePositions->sortBy(function($leader) {
+                $highestPriorityPosition = $activePositions->sortBy(function ($leader) {
                     $priority = [
                         'pastor' => 1,
                         'assistant_pastor' => 2,
                         'secretary' => 3,
-                        'assistant_secretary' => 4,
-                        'treasurer' => 5,
-                        'assistant_treasurer' => 6,
-                        'evangelism_leader' => 7,
-                        'elder' => 8,
+                        'parish_worker' => 4,
+                        'evangelism_leader' => 5,
+                        'elder' => 6,
+                        'assistant_secretary' => 7,
+                        'treasurer' => 8,
+                        'assistant_treasurer' => 9,
                     ];
                     return $priority[$leader->position] ?? 99;
                 })->first();
-                
+
                 $role = $this->mapPositionToRole($highestPriorityPosition->position);
-                
+
                 if ($role) {
                     $user = \App\Models\User::where('member_id', $memberId)->first();
-                    
+
                     if ($user) {
                         $user->update([
                             'role' => $role,
                             'can_approve_finances' => in_array($role, ['pastor', 'admin']),
                         ]);
-                        
+
                         \Log::info('User role updated based on active leadership positions', [
                             'member_id' => $memberId,
                             'user_id' => $user->id,
@@ -714,25 +720,25 @@ class LeaderController extends Controller
 
             // Get church name from settings (use same default as member registration)
             $churchName = SettingsService::get('church_name', 'KKKT Ushirika wa Longuo');
-            
+
             // Build the message
             $message = "Hongera {$leader->member->full_name}! Umechaguliwa rasmi kuwa {$leader->position_display} wa kanisa la {$churchName}. ";
-            
+
             // Add login credentials if user account was created/updated
             if ($userAccount) {
                 $message .= "Akaunti yako imeundwa. Ingia kwa: Username: {$userAccount['username']}, Password: {$userAccount['password']}. ";
                 $message .= "Tafadhali badilisha password baada ya kuingia. ";
             }
-            
+
             $message .= "Mungu akupe hekima, ujasiri na neema katika kutimiza wajibu huu wa kiroho. Tunaamini uongozi wako utaleta umoja, upendo, na maendeleo katika huduma ya Bwana.";
-            
+
             // Send SMS using the same method as member registration (sendDebug)
             $smsService = app(SmsService::class);
             $resp = $smsService->sendDebug($phoneNumber, $message);
-            
+
             $smsSent = $resp['ok'] ?? false;
             $smsError = $resp['reason'] ?? ($resp['error'] ?? null);
-            
+
             \Log::info('Leader appointment SMS attempt', [
                 'leader_id' => $leader->id,
                 'leader_name' => $leader->member->full_name,
@@ -782,6 +788,54 @@ class LeaderController extends Controller
     }
 
     /**
+     * Show change password form
+     */
+    public function showChangePassword()
+    {
+        return view('leaders.change-password');
+    }
+
+    /**
+     * Update user password
+     */
+    public function updatePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => ['required', 'string'],
+            'new_password' => ['required', 'string', 'min:6', 'confirmed'],
+        ]);
+
+        $user = auth()->user();
+
+        // Verify current password
+        if (!\Hash::check($request->current_password, $user->password)) {
+            return back()->withErrors(['current_password' => 'The current password is incorrect.']);
+        }
+
+        // Update password
+        $user->password = \Hash::make($request->new_password);
+        $user->save();
+
+        // Log the password change
+        try {
+            \App\Models\ActivityLog::create([
+                'user_id' => $user->id,
+                'action' => 'password_changed',
+                'description' => 'User changed their password',
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+                'route' => 'leader.password.update',
+                'method' => 'POST',
+            ]);
+        } catch (\Exception $e) {
+            // Silently continue if table doesn't exist
+        }
+
+        return redirect()->route('leader.change-password')
+            ->with('success', 'Your password has been changed successfully!');
+    }
+
+    /**
      * Get available position options
      */
     private function getPositionOptions()
@@ -790,10 +844,8 @@ class LeaderController extends Controller
             'pastor' => 'Pastor',
             'assistant_pastor' => 'Assistant Pastor',
             'secretary' => 'Secretary',
-            'assistant_secretary' => 'Assistant Secretary',
-            'treasurer' => 'Treasurer',
-            'assistant_treasurer' => 'Assistant Treasurer',
             'elder' => 'Church Elder',
+            'parish_worker' => 'Parish Worker',
             'deacon' => 'Deacon',
             'deaconess' => 'Deaconess',
             'youth_leader' => 'Youth Leader',

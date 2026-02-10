@@ -12,7 +12,9 @@ class MarriageBlessingRequest extends Model
 
     protected $fillable = [
         'husband_full_name',
+        'husband_date_of_birth',
         'wife_full_name',
+        'wife_date_of_birth',
         'phone_number',
         'email',
         'church_branch_id',
@@ -30,11 +32,14 @@ class MarriageBlessingRequest extends Model
         'status',
         'pastor_comments',
         'scheduled_blessing_date',
+        'scheduled_meeting_date',
         'submitted_at',
         'reviewed_at',
     ];
 
     protected $casts = [
+        'husband_date_of_birth' => 'date',
+        'wife_date_of_birth' => 'date',
         'marriage_date' => 'date',
         'scheduled_blessing_date' => 'date',
         'both_spouses_members' => 'boolean',
@@ -42,6 +47,7 @@ class MarriageBlessingRequest extends Model
         'declaration_agreed' => 'boolean',
         'submitted_at' => 'datetime',
         'reviewed_at' => 'datetime',
+        'scheduled_meeting_date' => 'datetime',
     ];
 
     // Relationships

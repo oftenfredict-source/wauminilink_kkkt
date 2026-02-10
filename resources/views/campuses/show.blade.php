@@ -51,9 +51,13 @@
                         <div>
                             <h6 class="text-muted mb-2">{{ autoTranslate('Total Members') }}</h6>
                             <h2 class="mb-0">{{ number_format($totalMembers) }}</h2>
-                            @if($campus->is_main_campus && $subCampusMemberCount > 0)
+                            @if($campus->is_main_campus && ($subCampusMemberCount > 0 || $subCampusChildMemberCount > 0))
                                 <small class="text-muted">
-                                    {{ number_format($memberCount) }} direct + {{ number_format($subCampusMemberCount) }} from sub campuses
+                                    {{ number_format($memberCount + $childMemberCount) }} direct ({{ $memberCount }} adults, {{ $childMemberCount }} children) + {{ number_format($subCampusMemberCount + $subCampusChildMemberCount) }} from sub campuses
+                                </small>
+                            @elseif($childMemberCount > 0)
+                                <small class="text-muted">
+                                    {{ number_format($memberCount) }} adults, {{ number_format($childMemberCount) }} children
                                 </small>
                             @endif
                         </div>
@@ -216,7 +220,15 @@
                                             @endif
                                         </td>
                                         <td>
-                                            <span class="badge bg-primary">{{ $community->members()->count() }}</span>
+                                            @php
+                                                $communityMemberCount = $community->members()->count();
+                                                $communityChildCount = $community->memberChildren()->count();
+                                                $communityTotal = $communityMemberCount + $communityChildCount;
+                                            @endphp
+                                            <span class="badge bg-primary">{{ $communityTotal }}</span>
+                                            @if($communityChildCount > 0)
+                                                <small class="text-muted d-block">({{ $communityMemberCount }} adults, {{ $communityChildCount }} children)</small>
+                                            @endif
                                         </td>
                                         <td>
                                             @if($community->is_active)
@@ -283,7 +295,15 @@
                                     </td>
                                     <td><span class="badge bg-secondary">{{ $subCampus->code }}</span></td>
                                     <td>
-                                        <span class="badge bg-primary">{{ $subCampus->members()->count() }}</span>
+                                        @php
+                                            $subMemberCount = $subCampus->members()->count();
+                                            $subChildCount = $subCampus->memberChildren()->count();
+                                            $subTotal = $subMemberCount + $subChildCount;
+                                        @endphp
+                                        <span class="badge bg-primary">{{ $subTotal }}</span>
+                                        @if($subChildCount > 0)
+                                            <small class="text-muted d-block">({{ $subMemberCount }} adults, {{ $subChildCount }} children)</small>
+                                        @endif
                                     </td>
                                     <td>
                                         @if($subCampus->is_active)
@@ -305,6 +325,114 @@
                 </div>
             </div>
             @endif
+
+            <!-- Campus Members Section -->
+            <div class="card mb-4 border-0 shadow-sm">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <div>
+                        <i class="fas fa-users me-2"></i>{{ autoTranslate('Campus Members') }}
+                        <span class="badge bg-white text-dark ms-2 fw-bold">{{ $memberCount + $childMemberCount }}</span>
+                        @if($childMemberCount > 0)
+                            <small class="ms-2">({{ $memberCount }} adults, {{ $childMemberCount }} children)</small>
+                        @endif
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if(($campusMembers && $campusMembers->count() > 0) || ($campusChildMembers && $campusChildMembers->count() > 0))
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>{{ autoTranslate('Name') }}</th>
+                                        <th>{{ autoTranslate('Member ID') }}</th>
+                                        <th>{{ autoTranslate('Type') }}</th>
+                                        <th>{{ autoTranslate('Phone') }}</th>
+                                        <th>{{ autoTranslate('Email') }}</th>
+                                        <th>{{ autoTranslate('Community') }}</th>
+                                        <th>{{ autoTranslate('Parent/Guardian') }}</th>
+                                        <th>{{ autoTranslate('Actions') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {{-- Regular Adult Members --}}
+                                    @foreach($campusMembers as $member)
+                                        <tr>
+                                            <td><strong>{{ $member->full_name }}</strong></td>
+                                            <td><span class="badge bg-secondary">{{ $member->member_id }}</span></td>
+                                            <td>
+                                                @if($member->membership_type === 'temporary')
+                                                    <span class="badge bg-warning">{{ autoTranslate('Temporary') }}</span>
+                                                @else
+                                                    <span class="badge bg-primary">{{ autoTranslate('Adult') }}</span>
+                                                @endif
+                                            </td>
+                                            <td>{{ $member->phone_number ?? '—' }}</td>
+                                            <td>{{ $member->email ?? '—' }}</td>
+                                            <td>
+                                                @if($member->community)
+                                                    <span class="badge bg-info">{{ $member->community->name }}</span>
+                                                @else
+                                                    <span class="text-muted">—</span>
+                                                @endif
+                                            </td>
+                                            <td>—</td>
+                                            <td>
+                                                <a href="{{ route('members.view') }}?search={{ $member->member_id }}" class="btn btn-sm btn-info" title="{{ autoTranslate('View Member') }}">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                    {{-- Children who are church members --}}
+                                    @foreach($campusChildMembers as $child)
+                                        <tr>
+                                            <td><strong>{{ $child->full_name }}</strong></td>
+                                            <td>
+                                                @if($child->member && $child->member->member_id)
+                                                    <span class="badge bg-secondary">{{ $child->member->member_id }}-CH</span>
+                                                @else
+                                                    <span class="badge bg-info">{{ autoTranslate('Child') }}</span>
+                                                @endif
+                                            </td>
+                                            <td><span class="badge bg-success">{{ autoTranslate('Child Member') }}</span></td>
+                                            <td>{{ $child->phone_number ?? ($child->member->phone_number ?? '—') }}</td>
+                                            <td>{{ $child->member->email ?? '—' }}</td>
+                                            <td>
+                                                @if($child->community)
+                                                    <span class="badge bg-info">{{ $child->community->name }}</span>
+                                                @else
+                                                    <span class="text-muted">—</span>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                @if($child->member)
+                                                    <a href="{{ route('members.view') }}?search={{ $child->member->member_id }}" class="text-decoration-none">
+                                                        {{ $child->member->full_name }}
+                                                    </a>
+                                                @else
+                                                    {{ $child->parent_name ?? '—' }}
+                                                @endif
+                                            </td>
+                                            <td>
+                                                @if($child->member)
+                                                    <a href="{{ route('members.view') }}?search={{ $child->member->member_id }}" class="btn btn-sm btn-info" title="{{ autoTranslate('View Parent') }}">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @else
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-users fa-2x mb-2 d-block"></i>
+                            <p class="mb-0">{{ autoTranslate('No members assigned to this campus yet.') }}</p>
+                        </div>
+                    @endif
+                </div>
+            </div>
         </div>
 
         <!-- Sidebar -->

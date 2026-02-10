@@ -246,8 +246,9 @@
 <div class="modal fade" id="addOfferingModal" tabindex="-1" aria-labelledby="addOfferingModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content stylish-modal">
-            <form action="{{ route('finance.offerings.store') }}" method="POST">
+            <form action="{{ route('finance.offerings.store') }}" method="POST" id="addOfferingForm">
                 @csrf
+                <input type="hidden" name="items_json" id="items_json">
                 <div class="modal-header stylish-modal-header" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
                     <div class="d-flex align-items-center">
                         <div class="modal-icon-wrapper me-3">
@@ -265,12 +266,20 @@
                 <div class="modal-body">
                     <div class="row g-3">
                         <div class="col-md-6">
+                            <label for="envelope_lookup" class="form-label">Search by Envelope Number</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-success text-white"><i class="fas fa-envelope-open-text"></i></span>
+                                <input type="text" class="form-control" id="envelope_lookup" placeholder="Enter Envelope #">
+                            </div>
+                            <small class="text-muted">Type and press Tab to auto-select member</small>
+                        </div>
+                        <div class="col-md-6">
                             <label for="member_id" class="form-label">Member (Optional)</label>
                             <select class="form-select select2-member-modal @error('member_id') is-invalid @enderror" id="member_id" name="member_id">
                                 <option value="">General Member Offering</option>
                                 @foreach($members as $member)
-                                    <option value="{{ $member->id }}" {{ old('member_id') == $member->id ? 'selected' : '' }}>
-                                        {{ $member->full_name }} ({{ $member->member_id }})
+                                    <option value="{{ $member->id }}" {{ old('member_id') == $member->id ? 'selected' : '' }} data-envelope="{{ $member->envelope_number }}">
+                                        {{ $member->full_name }} ({{ $member->member_id }}) @if($member->envelope_number) [Env: {{ $member->envelope_number }}] @endif
                                     </option>
                                 @endforeach
                             </select>
@@ -291,6 +300,8 @@
                             <select class="form-select @error('offering_type') is-invalid @enderror" id="offering_type" name="offering_type" required>
                                 <option value="">Select Type</option>
                                 <option value="general" {{ old('offering_type') == 'general' ? 'selected' : '' }}>General Offering</option>
+                                <option value="sadaka_umoja" {{ old('offering_type') == 'sadaka_umoja' ? 'selected' : '' }}>Sadaka ya Umoja</option>
+                                <option value="sadaka_jengo" {{ old('offering_type') == 'sadaka_jengo' ? 'selected' : '' }}>Sadaka ya Jengo</option>
                                 <option value="special" {{ old('offering_type') == 'special' ? 'selected' : '' }}>Special</option>
                                 <option value="thanksgiving" {{ old('offering_type') == 'thanksgiving' ? 'selected' : '' }}>Thanksgiving</option>
                                 <option value="building_fund" {{ old('offering_type') == 'building_fund' ? 'selected' : '' }}>Building Fund</option>
@@ -300,6 +311,36 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
+
+                        <!-- Envelope Breakdown Section (Matches Community Style) -->
+                        <div id="envelope_breakdown_section" class="col-12 mb-3 p-3 bg-light border rounded" style="display: none;">
+                            <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                                <h6 class="mb-0 fw-bold text-success"><i class="fas fa-list-ol me-2"></i>Member Breakdown</h6>
+                                <button type="button" class="btn btn-sm btn-success" id="add_envelope_row_btn_finance">
+                                    <i class="fas fa-plus me-1"></i>Add Member
+                                </button>
+                            </div>
+                            <div class="alert alert-info py-2 mb-3 small">
+                                <i class="fas fa-info-circle me-1"></i> Enter envelope numbers for batch entry. Individual records will be created for each member.
+                            </div>
+                            
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered bg-white" id="envelope_items_table_finance">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th style="width: 150px;">Envelope #</th>
+                                            <th>Member Name</th>
+                                            <th style="width: 180px;">Amount (TZS)</th>
+                                            <th style="width: 40px;"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="envelope_items_body_finance">
+                                        <!-- Rows added via JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
                         <div class="col-md-6" id="custom_offering_type_group" style="display: none !important;">
                             <label for="custom_offering_type" class="form-label">Custom Offering Type <span class="text-danger">*</span></label>
                             <input type="text" class="form-control @error('custom_offering_type') is-invalid @enderror" id="custom_offering_type" name="custom_offering_type" 
@@ -683,6 +724,150 @@ document.addEventListener('DOMContentLoaded', function() {
             updateCustomOfferingTypeVisibility();
         }
     });
+
+    // Envelope Number Lookup Logic
+    const envelopeLookup = document.getElementById('envelope_lookup');
+    const memberSelect = $('#member_id');
+
+    if (envelopeLookup) {
+        envelopeLookup.addEventListener('change', function() {
+            const val = this.value.trim();
+            if (!val) return;
+
+            let found = false;
+            memberSelect.find('option').each(function() {
+                const env = $(this).data('envelope');
+                if (env && env.toString() === val) {
+                    memberSelect.val($(this).val()).trigger('change');
+                    found = true;
+                    return false; // break
+                }
+            });
+
+            if (found) {
+                envelopeLookup.classList.remove('is-invalid');
+                envelopeLookup.classList.add('is-valid');
+            } else {
+                envelopeLookup.classList.add('is-invalid');
+                envelopeLookup.classList.remove('is-valid');
+            }
+        });
+    }
+
+    // --- Batch Offering Logic (Finance) ---
+    const financeOfferingType = document.getElementById('offering_type');
+    const financeEnvelopeSection = document.getElementById('envelope_breakdown_section');
+    const financeItemsBody = document.getElementById('envelope_items_body_finance');
+    const financeAddRowBtn = document.getElementById('add_envelope_row_btn_finance');
+    const financeAmountInput = document.getElementById('amount');
+    const financeItemsJsonInput = document.getElementById('items_json');
+    const financeForm = document.getElementById('addOfferingForm');
+
+    function toggleBatchSection() {
+        const type = financeOfferingType.value;
+        // Types that trigger the member breakdown
+        if (type === 'sadaka_umoja' || type === 'sadaka_jengo') {
+            financeEnvelopeSection.style.display = 'block';
+            financeAmountInput.setAttribute('readonly', 'readonly');
+            // Add first row if empty
+            if (financeItemsBody.children.length === 0) {
+                addBatchRow();
+            }
+        } else {
+            financeEnvelopeSection.style.display = 'none';
+            financeAmountInput.removeAttribute('readonly');
+        }
+    }
+
+    financeOfferingType.addEventListener('change', toggleBatchSection);
+
+    function addBatchRow() {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><input type="text" class="form-control form-control-sm batch-envelope-input" placeholder="Env #" required></td>
+            <td>
+                <input type="text" class="form-control form-control-sm batch-member-name" placeholder="Member Name" readonly>
+                <input type="hidden" class="batch-member-id">
+            </td>
+            <td><input type="number" step="0.01" min="0" class="form-control form-control-sm batch-amount-input" placeholder="0.00" required></td>
+            <td class="text-center">
+                <button type="button" class="btn btn-sm btn-outline-danger batch-remove-row"><i class="fas fa-trash"></i></button>
+            </td>
+        `;
+        financeItemsBody.appendChild(tr);
+
+        const envInput = tr.querySelector('.batch-envelope-input');
+        const amtInput = tr.querySelector('.batch-amount-input');
+        const removeBtn = tr.querySelector('.batch-remove-row');
+
+        envInput.addEventListener('change', function() { lookupBatchMember(this); });
+        amtInput.addEventListener('input', calculateBatchTotal);
+        removeBtn.addEventListener('click', function() {
+            tr.remove();
+            calculateBatchTotal();
+        });
+    }
+
+    financeAddRowBtn.addEventListener('click', addBatchRow);
+
+    function lookupBatchMember(input) {
+        const env = input.value.trim();
+        const row = input.closest('tr');
+        const nameInput = row.querySelector('.batch-member-name');
+        const idInput = row.querySelector('.batch-member-id');
+
+        if (!env) return;
+
+        nameInput.value = 'Searching...';
+        fetch(`/member/lookup?envelope_number=${env}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.exists) {
+                    nameInput.value = data.name;
+                    idInput.value = data.id;
+                    input.classList.remove('is-invalid');
+                    input.classList.add('is-valid');
+                } else {
+                    nameInput.value = 'Member not found';
+                    idInput.value = '';
+                    input.classList.add('is-invalid');
+                }
+            })
+            .catch(() => {
+                nameInput.value = 'Error';
+            });
+    }
+
+    function calculateBatchTotal() {
+        if (financeEnvelopeSection.style.display === 'none') return;
+        let total = 0;
+        document.querySelectorAll('.batch-amount-input').forEach(input => {
+            const val = parseFloat(input.value);
+            if (!isNaN(val)) total += val;
+        });
+        financeAmountInput.value = total.toFixed(2);
+    }
+
+    if (financeForm) {
+        financeForm.addEventListener('submit', function(e) {
+            if (financeEnvelopeSection.style.display !== 'none') {
+                const items = [];
+                financeItemsBody.querySelectorAll('tr').forEach(row => {
+                    const memberId = row.querySelector('.batch-member-id').value;
+                    const amount = row.querySelector('.batch-amount-input').value;
+                    if (memberId && amount) {
+                        items.push({ member_id: memberId, amount: amount });
+                    }
+                });
+                if (items.length === 0) {
+                    e.preventDefault();
+                    Swal.fire('Error', 'Please add at least one member with an amount.', 'error');
+                    return;
+                }
+                financeItemsJsonInput.value = JSON.stringify(items);
+            }
+        });
+    }
 });
 
 // Offering verification is now handled by pastor approval system

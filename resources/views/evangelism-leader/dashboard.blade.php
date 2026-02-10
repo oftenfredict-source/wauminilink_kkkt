@@ -88,7 +88,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="text-muted mb-2">Pending Offerings</h6>
+                            <h6 class="text-muted mb-2">Submitted Offerings</h6>
                             <h2 class="mb-0">{{ number_format($pendingOfferings ?? 0) }}</h2>
                             <small class="text-muted">TZS {{ number_format($pendingOfferingsAmount ?? 0, 2) }}</small>
                         </div>
@@ -152,6 +152,12 @@
                             <a href="{{ route('evangelism-leader.finance.index') }}" class="btn btn-warning w-100 h-100 d-flex flex-column align-items-center justify-content-center py-3">
                                 <i class="fas fa-coins fa-2x mb-2"></i>
                                 <span>Finance Management</span>
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ route('departments.index') }}" class="btn btn-dark w-100 h-100 d-flex flex-column align-items-center justify-content-center py-3">
+                                <i class="fas fa-layer-group fa-2x mb-2"></i>
+                                <span>Church Departments</span>
                             </a>
                         </div>
                         <div class="col-md-3">

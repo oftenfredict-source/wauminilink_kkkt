@@ -64,8 +64,14 @@ class EvangelismLeaderController extends Controller
             abort(404, 'Campus not found for this evangelism leader.');
         }
 
-        // Get statistics
-        $totalMembers = Member::where('campus_id', $campus->id)->count();
+        // Get statistics (including children who are church members)
+        $adultMembers = Member::where('campus_id', $campus->id)->count();
+        $childMembers = \App\Models\Child::where('is_church_member', true)
+            ->whereHas('member', function($query) use ($campus) {
+                $query->where('campus_id', $campus->id);
+            })
+            ->count();
+        $totalMembers = $adultMembers + $childMembers;
         $totalCommunities = Community::where('campus_id', $campus->id)->count();
         $pendingTasks = EvangelismTask::where('evangelism_leader_id', $user->id)
             ->where('status', 'pending')
@@ -74,9 +80,14 @@ class EvangelismLeaderController extends Controller
             ->whereIn('status', ['open', 'in_progress'])
             ->count();
         
-        // Get pending offerings count
-        $pendingOfferings = CommunityOffering::where('status', 'pending_evangelism')->count();
-        $pendingOfferingsAmount = CommunityOffering::where('status', 'pending_evangelism')->sum('amount');
+        // Get pending offerings count (only for communities in this campus)
+        $communityIds = Community::where('campus_id', $campus->id)->pluck('id');
+        $pendingOfferings = CommunityOffering::whereIn('community_id', $communityIds)
+            ->where('status', 'pending_evangelism')
+            ->count();
+        $pendingOfferingsAmount = CommunityOffering::whereIn('community_id', $communityIds)
+            ->where('status', 'pending_evangelism')
+            ->sum('amount');
 
         // Get recent reports
         $recentReports = EvangelismReport::where('evangelism_leader_id', $user->id)

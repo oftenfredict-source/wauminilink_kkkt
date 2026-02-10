@@ -17,6 +17,7 @@ class BranchOffering extends Model
         'offering_date',
         'collection_method',
         'reference_number',
+        'church_elder_id',
         'evangelism_leader_id',
         'secretary_id',
         'status',
@@ -41,6 +42,11 @@ class BranchOffering extends Model
         return $this->belongsTo(Campus::class);
     }
 
+    public function churchElder()
+    {
+        return $this->belongsTo(User::class, 'church_elder_id');
+    }
+
     public function service()
     {
         return $this->belongsTo(SundayService::class, 'service_id');
@@ -60,19 +66,19 @@ class BranchOffering extends Model
     {
         return $this->belongsTo(User::class, 'rejected_by');
     }
-    
+
     // Scopes
-    
+
     public function scopePendingSecretary($query)
     {
         return $query->where('status', 'pending_secretary');
     }
-    
+
     public function scopeCompleted($query)
     {
         return $query->where('status', 'completed');
     }
-    
+
     public function scopeRejected($query)
     {
         return $query->where('status', 'rejected');

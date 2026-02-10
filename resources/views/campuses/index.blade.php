@@ -66,15 +66,35 @@
                                     @endif
                                 </td>
                                 <td>
-                                    <span class="badge bg-success">{{ $campus->members()->count() }}</span>
+                                    @php
+                                        $adultCount = $campus->members()->count();
+                                        $childCount = $campus->memberChildren()->count();
+                                        $totalCount = $adultCount + $childCount;
+                                    @endphp
+                                    @if($totalCount > 0)
+                                        <a href="{{ route('campuses.show', $campus) }}" class="text-decoration-none" title="Click to view members">
+                                            <span class="badge bg-success">{{ $totalCount }}</span>
+                                        </a>
+                                    @else
+                                        <span class="badge bg-secondary">0</span>
+                                    @endif
+                                    @if($childCount > 0)
+                                        <br><small class="text-muted">({{ $adultCount }} adults, {{ $childCount }} children)</small>
+                                    @elseif($adultCount > 0)
+                                        <br><small class="text-muted">({{ $adultCount }} adult{{ $adultCount > 1 ? 's' : '' }})</small>
+                                    @endif
                                     @if($campus->is_main_campus && $campus->subCampuses->count() > 0)
                                         @php
-                                            $subCampusMemberCount = $campus->subCampuses->sum(function($sub) {
+                                            $subCampusAdultCount = $campus->subCampuses->sum(function($sub) {
                                                 return $sub->members()->count();
                                             });
+                                            $subCampusChildCount = $campus->subCampuses->sum(function($sub) {
+                                                return $sub->memberChildren()->count();
+                                            });
+                                            $subCampusTotalCount = $subCampusAdultCount + $subCampusChildCount;
                                         @endphp
-                                        @if($subCampusMemberCount > 0)
-                                            <br><small class="text-muted">+ {{ $subCampusMemberCount }} from sub campuses</small>
+                                        @if($subCampusTotalCount > 0)
+                                            <br><small class="text-muted">+ {{ $subCampusTotalCount }} from sub campuses</small>
                                         @endif
                                     @endif
                                 </td>

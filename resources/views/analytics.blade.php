@@ -1,1501 +1,564 @@
 @extends('layouts.index')
 
 @section('content')
-<div class="container-fluid px-4">
-    <!-- Page Header -->
-    <div class="card border-0 shadow-sm mb-4 analytics-hero">
-        <div class="card-body p-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
-            <div class="d-flex align-items-center gap-2">
-                <div class="hero-icon d-flex align-items-center justify-content-center rounded-2">
-                    <i class="fas fa-chart-line"></i>
+<div class="container-fluid px-4 py-4">
+    <!-- Premium Header with Glassmorphism -->
+    <div class="analytics-header mb-4 p-4 rounded-4 shadow-sm position-relative overflow-hidden">
+        <div class="header-content position-relative z-index-2 d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="header-icon-glow rounded-3 d-flex align-items-center justify-content-center">
+                    <i class="fas fa-chart-line fa-lg"></i>
                 </div>
                 <div>
-                    <h1 class="h5 mb-0 text-dark fw-semibold">Analytics Dashboard</h1>
-                    <p class="mb-0 small text-muted">Comprehensive insights and trends</p>
+                    <h1 class="h3 mb-0 fw-bold text-white">Analytics Dashboard</h1>
+                    <p class="mb-0 text-white-50 opacity-75">Visualizing church growth and ministry impact</p>
                 </div>
             </div>
+            
+            <!-- Global Filter Bar -->
+            <div class="filter-glass p-2 rounded-3 d-flex align-items-center gap-2 flex-wrap">
+                <form id="analyticsFilterForm" method="GET" class="d-flex align-items-center gap-2 mb-0">
+                    <select name="filter" id="filterType" class="form-select form-select-sm bg-transparent text-white border-white-25">
+                        <option value="year" {{ $filter === 'year' ? 'selected' : '' }} class="bg-dark">Yearly View</option>
+                        <option value="custom" {{ $filter === 'custom' ? 'selected' : '' }} class="bg-dark">Custom Range</option>
+                    </select>
+
+                    <div id="yearPicker" class="{{ $filter === 'year' ? '' : 'd-none' }}">
+                        <select name="year" class="form-select form-select-sm bg-transparent text-white border-white-25">
+                            @foreach($availableYears as $y)
+                                <option value="{{ $y }}" {{ $year == $y ? 'selected' : '' }} class="bg-dark">{{ $y }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div id="customPicker" class="d-flex gap-2 {{ $filter === 'custom' ? '' : 'd-none' }}">
+                        <input type="date" name="start_date" value="{{ $startDate }}" class="form-control form-control-sm bg-transparent text-white border-white-25 px-2">
+                        <span class="text-white-50 align-self-center">-</span>
+                        <input type="date" name="end_date" value="{{ $endDate }}" class="form-control form-control-sm bg-transparent text-white border-white-25 px-2">
+                    </div>
+
+                    <button type="submit" class="btn btn-sm btn-light-glass px-3">
+                        <i class="fas fa-sync-alt me-1"></i> Update
+                    </button>
+                </form>
+            </div>
         </div>
+        <div class="header-bg-glow"></div>
     </div>
 
-    <!-- Financial Analytics Section -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card shadow-sm border-0 mb-4 rounded-3">
-                <div class="card-header section-header-primary py-2 rounded-top">
-                    <h6 class="mb-0 fw-semibold" style="color: #ffffff !important;">
-                        <i class="fas fa-dollar-sign me-2" style="color: #ffffff !important;"></i>Financial Analytics
-                    </h6>
+    <!-- Navigation Tabs -->
+    <ul class="nav nav-pills custom-tabs mb-4 gap-2" id="analyticsTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active rounded-pill px-4" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button" role="tab">
+                <i class="fas fa-th-large me-2"></i>Overview
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link rounded-pill px-4" id="financial-tab" data-bs-toggle="tab" data-bs-target="#financial" type="button" role="tab">
+                <i class="fas fa-dollar-sign me-2"></i>Financial
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link rounded-pill px-4" id="members-tab" data-bs-toggle="tab" data-bs-target="#members" type="button" role="tab">
+                <i class="fas fa-users me-2"></i>Demographics
+            </button>
+        </li>
+
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="tab-content" id="analyticsTabsContent">
+        <!-- Overview Tab -->
+        <div class="tab-pane fade show active" id="overview" role="tabpanel">
+            <div class="row g-4 mb-4">
+                <!-- KPI Summary Cards -->
+                <div class="col-md-3">
+                    <div class="glass-card p-4 h-100 border-start border-primary border-4 rounded-3">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <p class="text-muted small mb-1 fw-semibold text-uppercase">Net Income</p>
+                                <h3 class="mb-0 fw-bold {{ $financialData['totals']['net_income'] >= 0 ? 'text-success' : 'text-danger' }}">
+                                    {{ number_format($financialData['totals']['net_income']) }}
+                                </h3>
+                            </div>
+                            <div class="badge-icon bg-soft-primary"><i class="fas fa-wallet"></i></div>
+                        </div>
+                        <div class="mt-3 small text-muted">For selected period</div>
+                    </div>
                 </div>
-                <div class="card-body section-body">
-                    <!-- Financial Summary Cards -->
-                    <div class="row mb-4 g-3">
-                        <div class="col-12 col-md-6 col-lg-3">
-                            <div class="card border-0 shadow-sm h-100 analytics-kpi">
-                                <div class="card-body">
-                                    <div class="d-flex align-items-center">
-                                        <div class="flex-grow-1">
-                                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                                Total Tithes
-                                            </div>
-                                            <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                                TZS {{ number_format($financialData['totals']['tithes'], 2) }}
-                                            </div>
-                                        </div>
-                                        <div class="ms-3">
-                                            <i class="fas fa-money-bill-wave fa-2x text-primary opacity-75"></i>
-                                        </div>
-                                    </div>
-                                </div>
+                <div class="col-md-3">
+                    <div class="glass-card p-4 h-100 border-start border-success border-4 rounded-3">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <p class="text-muted small mb-1 fw-semibold text-uppercase">New Registrations</p>
+                                <h3 class="mb-0 fw-bold">{{ number_format($memberData['totals']['total']) }}</h3>
                             </div>
+                            <div class="badge-icon bg-soft-success"><i class="fas fa-user-plus"></i></div>
                         </div>
-                        <div class="col-12 col-md-6 col-lg-3">
-                            <div class="card border-0 shadow-sm h-100 analytics-kpi">
-                                <div class="card-body">
-                                    <div class="d-flex align-items-center">
-                                        <div class="flex-grow-1">
-                                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                                Total Offerings
-                                            </div>
-                                            <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                                TZS {{ number_format($financialData['totals']['offerings'], 2) }}
-                                            </div>
-                                        </div>
-                                        <div class="ms-3">
-                                            <i class="fas fa-hand-holding-usd fa-2x text-success opacity-75"></i>
-                                        </div>
-                                    </div>
-                                </div>
+                        <div class="mt-3 small text-muted">Adults & Children combined</div>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="glass-card p-4 h-100 border-start border-warning border-4 rounded-3">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <p class="text-muted small mb-1 fw-semibold text-uppercase">Total Events</p>
+                                <h3 class="mb-0 fw-bold">{{ $eventData['events']['total'] + $eventData['celebrations']['total'] }}</h3>
                             </div>
+                            <div class="badge-icon bg-soft-warning"><i class="fas fa-star"></i></div>
                         </div>
-                        <div class="col-12 col-md-6 col-lg-3">
-                            <div class="card border-0 shadow-sm h-100 analytics-kpi">
-                                <div class="card-body">
-                                    <div class="d-flex align-items-center">
-                                        <div class="flex-grow-1">
-                                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                                                Total Donations
-                                            </div>
-                                            <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                                TZS {{ number_format($financialData['totals']['donations'], 2) }}
-                                            </div>
-                                        </div>
-                                        <div class="ms-3">
-                                            <i class="fas fa-heart fa-2x text-info opacity-75"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                        <div class="mt-3 small text-muted">Special events & celebrations</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-lg-8">
+                    <div class="glass-card p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h5 class="mb-0 fw-bold">Combined Growth Trend</h5>
+                            <span class="badge bg-soft-primary text-primary px-3 rounded-pill">{{ $year ?? 'Period' }} Trend</span>
                         </div>
-                        <div class="col-12 col-md-6 col-lg-3">
-                            <div class="card border-0 shadow-sm h-100 analytics-kpi">
-                                <div class="card-body">
-                                    <div class="d-flex align-items-center">
-                                        <div class="flex-grow-1">
-                                            <div class="text-xs font-weight-bold text-uppercase mb-1 kpi-net {{ $financialData['totals']['net_income'] >= 0 ? 'text-success' : 'text-danger' }}">
-                                                Net Income
-                                            </div>
-                                            <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                                TZS {{ number_format($financialData['totals']['net_income'], 2) }}
-                                            </div>
-                                        </div>
-                                        <div class="ms-3">
-                                            <i class="fas fa-chart-line fa-2x {{ $financialData['totals']['net_income'] >= 0 ? 'text-success' : 'text-danger' }} opacity-75"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                        <div style="height: 350px;">
+                            <canvas id="overviewGrowthChart"></canvas>
                         </div>
                     </div>
-
-                    <!-- Monthly Financial Trends Chart -->
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <div class="card shadow-sm rounded-3">
-                                <div class="card-header bg-light header-overlay">
-                                    <h6 class="mb-0 font-weight-bold">
-                                        <i class="fas fa-chart-area me-2"></i>Monthly Financial Trends (Last 12 Months)
-                                    </h6>
-                                </div>
-                                <div class="card-body">
-                                    <div class="chart-container">
-                                        <canvas id="monthlyFinancialChart"></canvas>
-                                    </div>
-                                </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="glass-card p-4 h-100">
+                        <h5 class="mb-4 fw-bold">Income Distribution</h5>
+                        <div style="height: 300px;">
+                            <canvas id="overviewIncomeDoughnut"></canvas>
+                        </div>
+                        <div class="mt-4">
+                            <div class="d-flex justify-content-between mb-2 small">
+                                <span class="text-muted"><i class="fas fa-circle text-primary me-2"></i>Tithes</span>
+                                <span class="fw-bold">{{ number_format($financialData['totals']['tithes']) }}</span>
                             </div>
+                            <div class="d-flex justify-content-between mb-2 small">
+                                <span class="text-muted"><i class="fas fa-circle text-success me-2"></i>Offerings</span>
+                                <span class="fw-bold">{{ number_format($financialData['totals']['offerings']) }}</span>
+                            </div>
+                            <!-- Donations removed -->
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
 
-                    <!-- Financial Breakdown Charts -->
-                    <div class="row g-3">
-                        <div class="col-12 col-lg-6">
-                            <div class="card shadow-sm rounded-3">
-                                <div class="card-header bg-light header-overlay">
-                                    <h6 class="mb-0 font-weight-bold">
-                                        <i class="fas fa-chart-pie me-2"></i>Income Sources Distribution
-                                    </h6>
-                                </div>
-                                <div class="card-body">
-                                    <div class="chart-container">
-                                        <canvas id="incomeSourcesChart"></canvas>
-                                    </div>
-                                </div>
-                            </div>
+        <!-- Financial Tab -->
+        <div class="tab-pane fade" id="financial" role="tabpanel">
+            <div class="glass-card p-4 mb-4">
+                <h5 class="mb-4 fw-bold">Detailed Financial Performance</h5>
+                <div style="height: 400px;">
+                    <canvas id="detailedFinancialChart"></canvas>
+                </div>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="glass-card p-4">
+                        <h5 class="mb-4 fw-bold">5-Year Revenue Trend</h5>
+                        <div style="height: 300px;">
+                            <canvas id="yearlyRevenueChart"></canvas>
                         </div>
-                        <div class="col-12 col-lg-6">
-                            <div class="card shadow-sm rounded-3">
-                                <div class="card-header bg-light header-overlay">
-                                    <h6 class="mb-0 font-weight-bold">
-                                        <i class="fas fa-chart-bar me-2"></i>Yearly Financial Overview (Last 5 Years)
-                                    </h6>
-                                </div>
-                                <div class="card-body">
-                                    <div class="chart-container">
-                                        <canvas id="yearlyFinancialChart"></canvas>
-                                    </div>
-                                </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="glass-card p-4">
+                        <h5 class="mb-4 fw-bold">Expense VS Income</h5>
+                        <div style="height: 300px;">
+                            <canvas id="incomeExpenseComparison"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Demographics Tab -->
+        <div class="tab-pane fade" id="members" role="tabpanel">
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="glass-card p-4">
+                        <h5 class="mb-4 fw-bold">Age Group Distribution</h5>
+                        <div style="height: 400px;">
+                            <canvas id="ageDistributionChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="glass-card p-4">
+                        <h5 class="mb-4 fw-bold">Gender & Membership</h5>
+                        <div class="row g-4">
+                            <div class="col-12" style="height: 250px;">
+                                <canvas id="genderPieChart"></canvas>
+                            </div>
+                            <div class="col-12" style="height: 250px;">
+                                <canvas id="memberTypePieChart"></canvas>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Member Analytics Section -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card shadow-sm border-0 mb-4 rounded-3">
-                <div class="card-header section-header-success py-2 rounded-top">
-                    <h6 class="mb-0 fw-semibold" style="color: #ffffff !important;">
-                        <i class="fas fa-users me-2" style="color: #ffffff !important;"></i>Member Analytics
-                    </h6>
-                </div>
-                <div class="card-body section-body">
-                    <!-- Member Summary Cards -->
-                    <div class="row mb-4 g-3">
-                        <div class="col-12 col-md-6 col-lg-3">
-                            <div class="card border-left-primary shadow-sm h-100">
-                                <div class="card-body">
-                                    <div class="d-flex align-items-center">
-                                        <div class="flex-grow-1">
-                                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                                Total Members
-                                            </div>
-                                            <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                                {{ number_format($memberData['totals']['total']) }}
-                                            </div>
-                                        </div>
-                                        <div class="ms-3">
-                                            <i class="fas fa-users fa-2x text-primary opacity-75"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-12 col-md-6 col-lg-3">
-                            <div class="card border-left-info shadow-sm h-100">
-                                <div class="card-body">
-                                    <div class="d-flex align-items-center">
-                                        <div class="flex-grow-1">
-                                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                                                Male Members
-                                            </div>
-                                            <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                                {{ number_format($memberData['totals']['male']) }}
-                                            </div>
-                                            <small class="text-muted">
-                                                {{ $memberData['totals']['total'] > 0 ? round(($memberData['totals']['male'] / $memberData['totals']['total']) * 100, 1) : 0 }}% of total
-                                            </small>
-                                        </div>
-                                        <div class="ms-3">
-                                            <i class="fas fa-male fa-2x text-info opacity-75"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-12 col-md-6 col-lg-3">
-                            <div class="card border-left-warning shadow-sm h-100">
-                                <div class="card-body">
-                                    <div class="d-flex align-items-center">
-                                        <div class="flex-grow-1">
-                                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                                                Female Members
-                                            </div>
-                                            <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                                {{ number_format($memberData['totals']['female']) }}
-                                            </div>
-                                            <small class="text-muted">
-                                                {{ $memberData['totals']['total'] > 0 ? round(($memberData['totals']['female'] / $memberData['totals']['total']) * 100, 1) : 0 }}% of total
-                                            </small>
-                                        </div>
-                                        <div class="ms-3">
-                                            <i class="fas fa-female fa-2x text-warning opacity-75"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-12 col-md-6 col-lg-3">
-                            <div class="card border-left-success shadow-sm h-100">
-                                <div class="card-body">
-                                    <div class="d-flex align-items-center">
-                                        <div class="flex-grow-1">
-                                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                                Children
-                                            </div>
-                                            <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                                {{ number_format($memberData['totals']['children']) }}
-                                            </div>
-                                        </div>
-                                        <div class="ms-3">
-                                            <i class="fas fa-child fa-2x text-success opacity-75"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+        <!-- Attendance Tab -->
 
-                    <!-- Member Charts -->
-                    <div class="row mb-4 g-3">
-                        <div class="col-12 col-lg-6">
-                            <div class="card shadow-sm rounded-3">
-                                <div class="card-header bg-light header-overlay">
-                                    <h6 class="mb-0 font-weight-bold">
-                                        <i class="fas fa-chart-line me-2"></i>Monthly Registration Trends
-                                    </h6>
-                                </div>
-                                <div class="card-body">
-                                    <div class="chart-container">
-                                        <canvas id="monthlyRegistrationsChart"></canvas>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-12 col-lg-6">
-                            <div class="card shadow-sm rounded-3">
-                                <div class="card-header bg-light header-overlay">
-                                    <h6 class="mb-0 font-weight-bold">
-                                        <i class="fas fa-chart-pie me-2"></i>Member Type Distribution
-                                    </h6>
-                                </div>
-                                <div class="card-body">
-                                    <div class="chart-container">
-                                        <canvas id="memberTypeChart"></canvas>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row g-3">
-                        <div class="col-12 col-lg-6">
-                            <div class="card shadow-sm rounded-3">
-                                <div class="card-header bg-light header-overlay">
-                                    <h6 class="mb-0 font-weight-bold">
-                                        <i class="fas fa-chart-bar me-2"></i>Age Group Distribution
-                                    </h6>
-                                </div>
-                                <div class="card-body">
-                                    <div class="chart-container">
-                                        <canvas id="ageGroupChart"></canvas>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-12 col-lg-6">
-                            <div class="card shadow-sm rounded-3">
-                                <div class="card-header bg-light header-overlay">
-                                    <h6 class="mb-0 font-weight-bold">
-                                        <i class="fas fa-chart-bar me-2"></i>Membership Type Distribution
-                                    </h6>
-                                </div>
-                                <div class="card-body">
-                                    <div class="chart-container">
-                                        <canvas id="membershipTypeChart"></canvas>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Attendance Analytics Section -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card shadow-sm border-0 mb-4 rounded-3">
-                <div class="card-header section-header-info py-2 rounded-top">
-                    <h6 class="mb-0 fw-semibold" style="color: #ffffff !important;">
-                        <i class="fas fa-user-check me-2" style="color: #ffffff !important;"></i>Attendance Analytics
-                    </h6>
-                </div>
-                <div class="card-body section-body">
-                    <!-- Attendance Summary -->
-                    <div class="row mb-4 g-3">
-                        <div class="col-12 col-md-6 col-lg-4">
-                            <div class="card border-left-primary shadow-sm h-100">
-                                <div class="card-body">
-                                    <div class="d-flex align-items-center">
-                                        <div class="flex-grow-1">
-                                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                                Total Attendance
-                                            </div>
-                                            <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                                {{ number_format($attendanceData['total']) }}
-                                            </div>
-                                        </div>
-                                        <div class="ms-3">
-                                            <i class="fas fa-clipboard-check fa-2x text-primary opacity-75"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-12 col-md-6 col-lg-4">
-                            <div class="card border-left-success shadow-sm h-100">
-                                <div class="card-body">
-                                    <div class="d-flex align-items-center">
-                                        <div class="flex-grow-1">
-                                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                                Average per Service
-                                            </div>
-                                            <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                                {{ number_format($attendanceData['average_attendance'], 1) }}
-                                            </div>
-                                        </div>
-                                        <div class="ms-3">
-                                            <i class="fas fa-chart-line fa-2x text-success opacity-75"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-12 col-md-6 col-lg-4">
-                            <div class="card border-left-info shadow-sm h-100">
-                                <div class="card-body">
-                                    <div class="d-flex align-items-center">
-                                        <div class="flex-grow-1">
-                                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                                                Service Types
-                                            </div>
-                                            <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                                {{ $attendanceData['service_types']->count() }}
-                                            </div>
-                                        </div>
-                                        <div class="ms-3">
-                                            <i class="fas fa-list fa-2x text-info opacity-75"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Attendance Charts -->
-                    <div class="row mb-4 g-3">
-                        <div class="col-12 col-lg-6">
-                            <div class="card shadow-sm rounded-3">
-                                <div class="card-header bg-light header-overlay">
-                                    <h6 class="mb-0 font-weight-bold">
-                                        <i class="fas fa-chart-line me-2"></i>Monthly Attendance Trends
-                                    </h6>
-                                </div>
-                                <div class="card-body">
-                                    <div class="chart-container">
-                                        <canvas id="monthlyAttendanceChart"></canvas>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-12 col-lg-6">
-                            <div class="card shadow-sm rounded-3">
-                                <div class="card-header bg-light header-overlay">
-                                    <h6 class="mb-0 font-weight-bold">
-                                        <i class="fas fa-chart-pie me-2"></i>Service Type Distribution
-                                    </h6>
-                                </div>
-                                <div class="card-body">
-                                    <div class="chart-container">
-                                        <canvas id="serviceTypeChart"></canvas>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Top Attendees -->
-                    @if($attendanceData['top_attendees']->count() > 0)
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="card shadow-sm rounded-3">
-                                <div class="card-header bg-light header-overlay">
-                                    <h6 class="mb-0 font-weight-bold">
-                                        <i class="fas fa-star me-2"></i>Top Attendees (Last 30 Days)
-                                    </h6>
-                                </div>
-                                <div class="card-body">
-                                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-                                        <table class="table table-sm table-hover">
-                                            <thead>
-                                                <tr>
-                                                    <th>Rank</th>
-                                                    <th>Member Name</th>
-                                                    <th class="text-end">Attendance Count</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                @foreach($attendanceData['top_attendees'] as $index => $attendee)
-                                                <tr>
-                                                    <td>
-                                                        @if($index == 0)
-                                                            <span class="badge bg-warning text-dark">🥇</span>
-                                                        @elseif($index == 1)
-                                                            <span class="badge bg-secondary">🥈</span>
-                                                        @elseif($index == 2)
-                                                            <span class="badge bg-info">🥉</span>
-                                                        @else
-                                                            <strong>#{{ $index + 1 }}</strong>
-                                                        @endif
-                                                    </td>
-                                                    <td>
-                                                        {{ $attendee['name'] ?? 'Unknown' }}
-                                                        @if(isset($attendee['type']) && $attendee['type'] === 'child')
-                                                            <span class="badge bg-info ms-2">Child</span>
-                                                        @endif
-                                                    </td>
-                                                    <td class="text-end">
-                                                        <span class="badge bg-primary">{{ $attendee['attendance_count'] ?? 0 }}</span>
-                                                    </td>
-                                                </tr>
-                                                @endforeach
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    @endif
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Event Analytics Section -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card shadow-sm border-0 rounded-3">
-                <div class="card-header section-header-warning py-2 rounded-top">
-                    <h6 class="mb-0 fw-semibold" style="color: #ffffff !important;">
-                        <i class="fas fa-calendar-alt me-2" style="color: #ffffff !important;"></i>Event Analytics
-                    </h6>
-                </div>
-                <div class="card-body section-body">
-                    <!-- Event Summary Cards -->
-                    <div class="row mb-4 g-3">
-                        <div class="col-12 col-md-6 col-lg-3">
-                            <div class="card border-left-primary shadow-sm h-100">
-                                <div class="card-body">
-                                    <div class="d-flex align-items-center">
-                                        <div class="flex-grow-1">
-                                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                                Total Events
-                                            </div>
-                                            <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                                {{ number_format($eventData['events']['total']) }}
-                                            </div>
-                                        </div>
-                                        <div class="ms-3">
-                                            <i class="fas fa-calendar fa-2x text-primary opacity-75"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-12 col-md-6 col-lg-3">
-                            <div class="card border-left-success shadow-sm h-100">
-                                <div class="card-body">
-                                    <div class="d-flex align-items-center">
-                                        <div class="flex-grow-1">
-                                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                                Upcoming Events
-                                            </div>
-                                            <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                                {{ number_format($eventData['events']['upcoming']) }}
-                                            </div>
-                                        </div>
-                                        <div class="ms-3">
-                                            <i class="fas fa-calendar-check fa-2x text-success opacity-75"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-12 col-md-6 col-lg-3">
-                            <div class="card border-left-info shadow-sm h-100">
-                                <div class="card-body">
-                                    <div class="d-flex align-items-center">
-                                        <div class="flex-grow-1">
-                                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                                                Total Celebrations
-                                            </div>
-                                            <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                                {{ number_format($eventData['celebrations']['total']) }}
-                                            </div>
-                                        </div>
-                                        <div class="ms-3">
-                                            <i class="fas fa-birthday-cake fa-2x text-info opacity-75"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-12 col-md-6 col-lg-3">
-                            <div class="card border-left-warning shadow-sm h-100">
-                                <div class="card-body">
-                                    <div class="d-flex align-items-center">
-                                        <div class="flex-grow-1">
-                                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                                                Upcoming Celebrations
-                                            </div>
-                                            <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                                {{ number_format($eventData['celebrations']['upcoming']) }}
-                                            </div>
-                                        </div>
-                                        <div class="ms-3">
-                                            <i class="fas fa-gift fa-2x text-warning opacity-75"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Monthly Event Trends -->
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="card shadow-sm rounded-3">
-                                <div class="card-header bg-light header-overlay">
-                                    <h6 class="mb-0 font-weight-bold">
-                                        <i class="fas fa-chart-area me-2"></i>Monthly Events & Celebrations Trends
-                                    </h6>
-                                </div>
-                                <div class="card-body">
-                                    <div class="chart-container">
-                                        <canvas id="monthlyEventsChart"></canvas>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 </div>
 
+<style>
+/* Modern Theme Variables */
+:root {
+    --primary: #4f46e5;
+    --success: #10b981;
+    --info: #0ea5e9;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --dark: #1e293b;
+    --glass-bg: rgba(255, 255, 255, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.3);
+}
+
+body {
+    background-color: #f8fafc;
+}
+
+/* Glassmorphism Cards */
+.glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.glass-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* Premium Header */
+.analytics-header {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    color: white;
+}
+
+.header-icon-glow {
+    width: 48px;
+    height: 48px;
+    background: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 20px rgba(79, 70, 229, 0.4);
+}
+
+.header-bg-glow {
+    position: absolute;
+    top: -50%;
+    right: -10%;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 70%);
+    pointer-events: none;
+}
+
+.filter-glass {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.btn-light-glass {
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.btn-light-glass:hover {
+    background: white;
+    color: #4338ca;
+}
+
+/* Custom Tabs */
+.custom-tabs .nav-link {
+    background: white;
+    color: var(--dark);
+    font-weight: 600;
+    border: 1px solid #e2e8f0;
+    transition: all 0.3s ease;
+}
+
+.custom-tabs .nav-link.active {
+    background: var(--primary) !important;
+    color: white !important;
+    border-color: var(--primary);
+    box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.3);
+}
+
+.custom-tabs .nav-link:hover:not(.active) {
+    background: #f1f5f9;
+}
+
+/* Icons & Badges */
+.badge-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    font-size: 1.2rem;
+}
+
+.bg-soft-primary { background: #eef2ff; color: #4f46e5; }
+.bg-soft-success { background: #ecfdf5; color: #10b981; }
+.bg-soft-info { background: #f0f9ff; color: #0ea5e9; }
+.bg-soft-warning { background: #fffbeb; color: #f59e0b; }
+
+/* Table Styling */
+.custom-table thead th {
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    padding-bottom: 1.5rem;
+}
+
+.rank-circle {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.8rem;
+}
+
+.rank-1 { background: #fef3c7; color: #92400e; }
+.rank-2 { background: #f1f5f9; color: #475569; }
+.rank-3 { background: #ffedd5; color: #9a3412; }
+
+/* Scrollbar theme */
+.table-responsive::-webkit-scrollbar {
+    height: 6px;
+}
+.table-responsive::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+</style>
+
 <!-- Chart.js -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Chart.js default configuration
-    Chart.defaults.responsive = true;
-    Chart.defaults.maintainAspectRatio = false;
-    Chart.defaults.plugins.legend.position = 'bottom';
+    const filterSelect = document.getElementById('filterType');
+    const yearPicker = document.getElementById('yearPicker');
+    const customPicker = document.getElementById('customPicker');
+
+    filterSelect.addEventListener('change', function() {
+        if (this.value === 'year') {
+            yearPicker.classList.remove('d-none');
+            customPicker.classList.add('d-none');
+        } else {
+            yearPicker.classList.add('d-none');
+            customPicker.classList.remove('d-none');
+        }
+    });
+
+    // Chart Defaults
+    Chart.defaults.font.family = "'Inter', system-ui, -apple-system, sans-serif";
+    Chart.defaults.color = "#64748b";
     
-    // Color palette
-    const colors = {
-        primary: '#4e73df',
-        success: '#1cc88a',
-        info: '#36b9cc',
-        warning: '#f6c23e',
-        danger: '#e74a3b',
-        secondary: '#858796',
-        purple: '#6f42c1',
-        pink: '#e91e63'
-    };
-
-    // Monthly Financial Trends Chart
-    const monthlyFinancialCtx = document.getElementById('monthlyFinancialChart');
-    if (monthlyFinancialCtx) {
-        const monthlyFinancialData = @json($financialData['monthly_trends']);
-        new Chart(monthlyFinancialCtx, {
-            type: 'line',
-            data: {
-                labels: monthlyFinancialData.map(d => d.month),
-                datasets: [
-                    {
-                        label: 'Tithes',
-                        data: monthlyFinancialData.map(d => d.tithes),
-                        borderColor: colors.primary,
-                        backgroundColor: colors.primary + '20',
-                        tension: 0.4,
-                        fill: true
-                    },
-                    {
-                        label: 'Offerings',
-                        data: monthlyFinancialData.map(d => d.offerings),
-                        borderColor: colors.success,
-                        backgroundColor: colors.success + '20',
-                        tension: 0.4,
-                        fill: true
-                    },
-                    {
-                        label: 'Donations',
-                        data: monthlyFinancialData.map(d => d.donations),
-                        borderColor: colors.info,
-                        backgroundColor: colors.info + '20',
-                        tension: 0.4,
-                        fill: true
-                    },
-                    {
-                        label: 'Expenses',
-                        data: monthlyFinancialData.map(d => d.expenses),
-                        borderColor: colors.danger,
-                        backgroundColor: colors.danger + '20',
-                        tension: 0.4,
-                        fill: true
-                    },
-                    {
-                        label: 'Net Income',
-                        data: monthlyFinancialData.map(d => d.net),
-                        borderColor: colors.warning,
-                        backgroundColor: colors.warning + '20',
-                        tension: 0.4,
-                        borderWidth: 3,
-                        borderDash: [5, 5]
-                    }
-                ]
+    // Overview Growth Chart
+    const growthCtx = document.getElementById('overviewGrowthChart').getContext('2d');
+    new Chart(growthCtx, {
+        type: 'line',
+        data: {
+            labels: @json(collect($financialData['monthly_trends'])->pluck('month')),
+            datasets: [{
+                label: 'Income',
+                data: @json(collect($financialData['monthly_trends'])->pluck('income')),
+                borderColor: '#4f46e5',
+                backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                fill: true,
+                tension: 0.4
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    },
-                    tooltip: {
-                        mode: 'index',
-                        intersect: false
-                    }
+            {
+                label: 'Members',
+                data: @json(collect($memberData['monthly_registrations'])->pluck('count')),
+                borderColor: '#10b981',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'top' } },
+            scales: {
+                y: { grid: { borderDash: [2, 2] } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+
+    // Income Doughnut
+    const incomeCtx = document.getElementById('overviewIncomeDoughnut').getContext('2d');
+    new Chart(incomeCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Tithes', 'Offerings'],
+            datasets: [{
+                data: [{{ $financialData['totals']['tithes'] }}, {{ $financialData['totals']['offerings'] }}],
+                backgroundColor: ['#4f46e5', '#10b981', '#0ea5e9'],
+                borderWidth: 0,
+                cutout: '70%'
+            }]
+        },
+        options: {
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } }
+        }
+    });
+
+    // Detailed Financial Chart
+    const financialCtx = document.getElementById('detailedFinancialChart').getContext('2d');
+    new Chart(financialCtx, {
+        type: 'bar',
+        data: {
+            labels: @json(collect($financialData['monthly_trends'])->pluck('month')),
+            datasets: [
+                {
+                    label: 'Tithes',
+                    data: @json(collect($financialData['monthly_trends'])->pluck('tithes')),
+                    backgroundColor: '#4f46e5'
                 },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return 'TZS ' + value.toLocaleString();
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    }
-
-    // Income Sources Distribution Chart
-    const incomeSourcesCtx = document.getElementById('incomeSourcesChart');
-    if (incomeSourcesCtx) {
-        const totals = @json($financialData['totals']);
-        new Chart(incomeSourcesCtx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Tithes', 'Offerings', 'Donations'],
-                datasets: [{
-                    data: [totals.tithes, totals.offerings, totals.donations],
-                    backgroundColor: [colors.primary, colors.success, colors.info]
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return context.label + ': TZS ' + context.parsed.toLocaleString();
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    }
-
-    // Yearly Financial Chart
-    const yearlyFinancialCtx = document.getElementById('yearlyFinancialChart');
-    if (yearlyFinancialCtx) {
-        const yearlyData = @json($financialData['yearly_trends']);
-        new Chart(yearlyFinancialCtx, {
-            type: 'bar',
-            data: {
-                labels: yearlyData.map(d => d.year),
-                datasets: [
-                    {
-                        label: 'Income',
-                        data: yearlyData.map(d => d.income),
-                        backgroundColor: colors.success
-                    },
-                    {
-                        label: 'Expenses',
-                        data: yearlyData.map(d => d.expenses),
-                        backgroundColor: colors.danger
-                    },
-                    {
-                        label: 'Net',
-                        data: yearlyData.map(d => d.net),
-                        backgroundColor: colors.warning
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    }
+                {
+                    label: 'Offerings',
+                    data: @json(collect($financialData['monthly_trends'])->pluck('offerings')),
+                    backgroundColor: '#10b981'
                 },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return 'TZS ' + value.toLocaleString();
-                            }
-                        }
-                    }
+                {
+                    label: 'Expenses',
+                    data: @json(collect($financialData['monthly_trends'])->pluck('expenses')),
+                    backgroundColor: '#ef4444'
                 }
+            ]
+        },
+        options: {
+            maintainAspectRatio: false,
+            scales: {
+                y: { stacked: false },
+                x: { stacked: false }
             }
-        });
-    }
+        }
+    });
 
-    // Monthly Registrations Chart
-    const monthlyRegistrationsCtx = document.getElementById('monthlyRegistrationsChart');
-    if (monthlyRegistrationsCtx) {
-        const monthlyRegData = @json($memberData['monthly_registrations']);
-        new Chart(monthlyRegistrationsCtx, {
-            type: 'line',
-            data: {
-                labels: monthlyRegData.map(d => d.month),
-                datasets: [{
-                    label: 'New Members',
-                    data: monthlyRegData.map(d => d.count),
-                    borderColor: colors.primary,
-                    backgroundColor: colors.primary + '20',
-                    tension: 0.4,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            stepSize: 1
-                        }
-                    }
-                }
-            }
-        });
-    }
+    // Age Distribution
+    const ageCtx = document.getElementById('ageDistributionChart').getContext('2d');
+    new Chart(ageCtx, {
+        type: 'bar',
+        data: {
+            labels: @json(collect($memberData['age_groups'])->keys()),
+            datasets: [{
+                label: 'Members',
+                data: @json(collect($memberData['age_groups'])->values()),
+                backgroundColor: ['#4f46e5', '#7c3aed', '#10b981', '#0ea5e9', '#f59e0b', '#ef4444'],
+                borderRadius: 8
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } }
+        }
+    });
 
-    // Member Type Chart
-    const memberTypeCtx = document.getElementById('memberTypeChart');
-    if (memberTypeCtx) {
-        const memberTypes = @json($memberData['member_types']);
-        new Chart(memberTypeCtx, {
-            type: 'pie',
-            data: {
-                labels: Object.keys(memberTypes),
-                datasets: [{
-                    data: Object.values(memberTypes),
-                    backgroundColor: [colors.primary, colors.success, colors.info, colors.warning, colors.danger]
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false
+    // Gender Chart
+    const genderCtx = document.getElementById('genderPieChart').getContext('2d');
+    new Chart(genderCtx, {
+        type: 'pie',
+        data: {
+            labels: ['Male', 'Female'],
+            datasets: [{
+                data: [{{ $memberData['totals']['male'] }}, {{ $memberData['totals']['female'] }}],
+                backgroundColor: ['#4f46e5', '#f472b6'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            maintainAspectRatio: false,
+            plugins: { 
+                title: { display: true, text: 'Gender Distribution', position: 'top' },
+                legend: { position: 'bottom' }
             }
-        });
-    }
+        }
+    });
 
-    // Age Group Chart
-    const ageGroupCtx = document.getElementById('ageGroupChart');
-    if (ageGroupCtx) {
-        const ageGroups = @json($memberData['age_groups']);
-        new Chart(ageGroupCtx, {
-            type: 'bar',
-            data: {
-                labels: Object.keys(ageGroups),
-                datasets: [{
-                    label: 'Members',
-                    data: Object.values(ageGroups),
-                    backgroundColor: colors.primary
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            stepSize: 1
-                        }
-                    }
-                }
+    // Member types
+    const memberTypeCtx = document.getElementById('memberTypePieChart').getContext('2d');
+    new Chart(memberTypeCtx, {
+        type: 'pie',
+        data: {
+            labels: @json(collect($memberData['member_types'])->keys()),
+            datasets: [{
+                data: @json(collect($memberData['member_types'])->values()),
+                backgroundColor: ['#4f46e5', '#10b981', '#0ea5e9', '#f59e0b'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            maintainAspectRatio: false,
+            plugins: { 
+                title: { display: true, text: 'Membership Type', position: 'top' },
+                legend: { position: 'bottom' }
             }
-        });
-    }
+        }
+    });
 
-    // Membership Type Chart
-    const membershipTypeCtx = document.getElementById('membershipTypeChart');
-    if (membershipTypeCtx) {
-        const membershipTypes = @json($memberData['membership_types']);
-        new Chart(membershipTypeCtx, {
-            type: 'doughnut',
-            data: {
-                labels: Object.keys(membershipTypes),
-                datasets: [{
-                    data: Object.values(membershipTypes),
-                    backgroundColor: [colors.primary, colors.success, colors.warning]
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false
-            }
-        });
-    }
+    // Attendance Trend
 
-    // Monthly Attendance Chart
-    const monthlyAttendanceCtx = document.getElementById('monthlyAttendanceChart');
-    if (monthlyAttendanceCtx) {
-        const monthlyAttData = @json($attendanceData['monthly_trends']);
-        new Chart(monthlyAttendanceCtx, {
-            type: 'line',
-            data: {
-                labels: monthlyAttData.map(d => d.month),
-                datasets: [{
-                    label: 'Attendance',
-                    data: monthlyAttData.map(d => d.count),
-                    borderColor: colors.info,
-                    backgroundColor: colors.info + '20',
-                    tension: 0.4,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            stepSize: 1
-                        }
-                    }
-                }
-            }
-        });
-    }
 
-    // Service Type Chart
-    const serviceTypeCtx = document.getElementById('serviceTypeChart');
-    if (serviceTypeCtx) {
-        const serviceTypes = @json($attendanceData['service_types']);
-        new Chart(serviceTypeCtx, {
-            type: 'pie',
-            data: {
-                labels: Object.keys(serviceTypes),
-                datasets: [{
-                    data: Object.values(serviceTypes),
-                    backgroundColor: [colors.primary, colors.success, colors.info, colors.warning]
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false
-            }
-        });
-    }
+    // Yearly Revenue Chart
+    const yearlyRevCtx = document.getElementById('yearlyRevenueChart').getContext('2d');
+    new Chart(yearlyRevCtx, {
+        type: 'bar',
+        data: {
+            labels: @json(collect($financialData['yearly_trends'])->pluck('year')),
+            datasets: [{
+                label: 'Income',
+                data: @json(collect($financialData['yearly_trends'])->pluck('income')),
+                backgroundColor: '#10b981'
+            }]
+        },
+        options: {
+            maintainAspectRatio: false
+        }
+    });
 
-    // Monthly Events Chart
-    const monthlyEventsCtx = document.getElementById('monthlyEventsChart');
-    if (monthlyEventsCtx) {
-        const monthlyEventsData = @json($eventData['monthly_trends']);
-        new Chart(monthlyEventsCtx, {
-            type: 'bar',
-            data: {
-                labels: monthlyEventsData.map(d => d.month),
-                datasets: [
-                    {
-                        label: 'Events',
-                        data: monthlyEventsData.map(d => d.events),
-                        backgroundColor: colors.primary
-                    },
-                    {
-                        label: 'Celebrations',
-                        data: monthlyEventsData.map(d => d.celebrations),
-                        backgroundColor: colors.success
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            stepSize: 1
-                        }
-                    }
-                }
-            }
-        });
-    }
+    // Income vs Expense Comparison
+    const comparisonCtx = document.getElementById('incomeExpenseComparison').getContext('2d');
+    new Chart(comparisonCtx, {
+        type: 'pie',
+        data: {
+            labels: ['Total Income', 'Total Expenses'],
+            datasets: [{
+                data: [
+                    {{ $financialData['totals']['tithes'] + $financialData['totals']['offerings'] }},
+                    {{ $financialData['totals']['expenses'] }}
+                ],
+                backgroundColor: ['#10b981', '#ef4444'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            maintainAspectRatio: false
+        }
+    });
 });
 </script>
-
-<style>
-/* Hero */
-.analytics-hero{
-    background: white;
-}
-.analytics-hero .hero-icon{
-    width:48px; height:48px; background: rgba(0,123,255,.1); color:#007bff; font-size:20px; border: 2px solid #007bff;
-}
-.text-white-75{
-    color: rgba(255,255,255,.75) !important;
-}
-
-/* Section headers */
-.section-header-primary{ position:relative; background: linear-gradient(135deg, #4e73df 0%, #3b5bcc 100%) !important; color:#fff !important; }
-.section-header-success{ position:relative; background: linear-gradient(135deg, #1cc88a 0%, #16a36f 100%) !important; color:#fff !important; }
-.section-header-info{ position:relative; background: linear-gradient(135deg, #36b9cc 0%, #2aa2b3 100%) !important; color:#fff !important; }
-.section-header-warning{ position:relative; background: linear-gradient(135deg, #f6c23e 0%, #d6a62f 100%) !important; color:#fff !important; }
-
-.section-header-primary::before,
-.section-header-success::before,
-.section-header-info::before{
-    content:''; position:absolute; inset:0; background: rgba(0,0,0,.06);
-    border-top-left-radius: .5rem; border-top-right-radius: .5rem;
-}
-
-.section-header-primary h6,
-.section-header-success h6,
-.section-header-info h6,
-.section-header-warning h6{ 
-    color:#fff !important; 
-}
-
-.section-header-primary h6 *,
-.section-header-success h6 *,
-.section-header-info h6 *,
-.section-header-warning h6 * {
-    color:#fff !important;
-}
-
-.section-header-primary,
-.section-header-success,
-.section-header-info,
-.section-header-warning {
-    color:#fff !important;
-}
-
-.section-header-primary *,
-.section-header-success *,
-.section-header-info *,
-.section-header-warning * {
-    color:#fff !important;
-}
-
-.section-header-primary i,
-.section-header-success i,
-.section-header-info i,
-.section-header-warning i {
-    color:#fff !important;
-}
-
-/* Ensure text in headers is white, overriding any other styles */
-.card-header.section-header-primary,
-.card-header.section-header-success,
-.card-header.section-header-info,
-.card-header.section-header-warning {
-    color: #fff !important;
-}
-
-.card-header.section-header-primary h6,
-.card-header.section-header-success h6,
-.card-header.section-header-info h6,
-.card-header.section-header-warning h6 {
-    color: #fff !important;
-}
-
-.card-header.section-header-primary h6.fw-semibold,
-.card-header.section-header-success h6.fw-semibold,
-.card-header.section-header-info h6.fw-semibold,
-.card-header.section-header-warning h6.fw-semibold {
-    color: #fff !important;
-}
-
-/* Force all text content to be white */
-.section-header-primary,
-.section-header-success,
-.section-header-info,
-.section-header-warning {
-    color: #ffffff !important;
-}
-
-.section-header-primary h6,
-.section-header-success h6,
-.section-header-info h6,
-.section-header-warning h6 {
-    color: #ffffff !important;
-}
-
-/* Target the actual text nodes */
-.section-header-primary h6,
-.section-header-success h6,
-.section-header-info h6,
-.section-header-warning h6 {
-    color: #ffffff !important;
-    -webkit-text-fill-color: #ffffff !important;
-}
-
-/* Override any Bootstrap card-header default styles */
-.card-header.section-header-primary *,
-.card-header.section-header-success *,
-.card-header.section-header-info *,
-.card-header.section-header-warning * {
-    color: #ffffff !important;
-}
-
-.section-body{ background:#fff; }
-
-/* KPI cards */
-.analytics-kpi{ border-radius: .75rem; transition: transform .15s ease, box-shadow .15s ease; }
-.analytics-kpi:hover{ transform: translateY(-2px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.08) !important; }
-.analytics-kpi .h5{ letter-spacing: .2px; color: #212529; font-weight: 700; }
-.analytics-kpi .text-xs{ font-size: 0.7rem; font-weight: 600; letter-spacing: 0.5px; }
-.analytics-kpi .text-muted{ font-size: 0.75rem; }
-.kpi-net.text-success{ color:#1cc88a !important; }
-.kpi-net.text-danger{ color:#e74a3b !important; }
-
-/* Cards */
-.card.rounded-3{ border-radius: .75rem; }
-.card .card-header{ border-top-left-radius: .75rem !important; border-top-right-radius: .75rem !important; }
-
-/* Charts */
-.chart-container{ position: relative; height: 320px; }
-
-/* Light header overlay for sub-card headers */
-.header-overlay{ 
-    position: relative; 
-    background-color: #f8f9fa !important;
-}
-.header-overlay::before{
-    content:''; position:absolute; inset:0; z-index: 0;
-    background: linear-gradient(180deg, rgba(0,0,0,.03), rgba(0,0,0,.01));
-    border-top-left-radius: .75rem; border-top-right-radius: .75rem;
-}
-.header-overlay h6,
-.header-overlay h6 * {
-    position: relative;
-    z-index: 1;
-    color: #212529 !important;
-    font-weight: 700 !important;
-    font-size: 1rem !important;
-    letter-spacing: 0.01em;
-}
-.header-overlay i {
-    position: relative;
-    z-index: 1;
-    color: #495057 !important;
-    opacity: 0.9;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .container-fluid {
-        padding-left: 0.75rem !important;
-        padding-right: 0.75rem !important;
-    }
-    
-    /* Hero section mobile */
-    .analytics-hero .card-body {
-        padding: 1rem !important;
-    }
-    
-    .analytics-hero .h5 {
-        font-size: 1rem !important;
-    }
-    
-    .analytics-hero .small {
-        font-size: 0.8rem !important;
-    }
-    
-    .hero-icon {
-        width: 40px !important;
-        height: 40px !important;
-        font-size: 18px !important;
-    }
-    
-    /* Section headers mobile */
-    .section-header-primary,
-    .section-header-success,
-    .section-header-info,
-    .section-header-warning {
-        padding: 0.75rem !important;
-    }
-    
-    .section-header-primary h6,
-    .section-header-success h6,
-    .section-header-info h6,
-    .section-header-warning h6 {
-        font-size: 0.9rem !important;
-        margin-bottom: 0 !important;
-    }
-    
-    /* Card body padding */
-    .card-body {
-        padding: 1rem !important;
-    }
-    
-    .section-body {
-        padding: 1rem !important;
-    }
-    
-    /* KPI Cards - ensure full width on mobile */
-    .col-lg-3.col-md-6,
-    .col-lg-4.col-md-6 {
-        flex: 0 0 100% !important;
-        max-width: 100% !important;
-        margin-bottom: 1rem;
-    }
-    
-    /* KPI card content */
-    .analytics-kpi .card-body {
-        padding: 1rem !important;
-    }
-    
-    .analytics-kpi .h5 {
-        font-size: 1.25rem !important;
-    }
-    
-    .analytics-kpi .text-xs {
-        font-size: 0.7rem !important;
-    }
-    
-    /* Icons */
-    .fa-2x {
-        font-size: 1.5em !important;
-    }
-    
-    /* Charts */
-    .chart-container{ 
-        height: 280px !important;
-    }
-    
-    /* Chart columns - stack on mobile */
-    .col-lg-6 {
-        flex: 0 0 100% !important;
-        max-width: 100% !important;
-        margin-bottom: 1.5rem;
-    }
-    
-    /* Tables */
-    .table-responsive {
-        font-size: 0.875rem;
-        -webkit-overflow-scrolling: touch;
-        overflow-x: auto;
-        overflow-y: auto;
-    }
-    
-    .table th,
-    .table td {
-        padding: 0.5rem 0.5rem;
-        white-space: normal;
-        min-width: 80px;
-    }
-    
-    .table th {
-        font-size: 0.8rem;
-        font-weight: 600;
-        position: sticky;
-        top: 0;
-        background-color: #f8f9fa;
-        z-index: 10;
-    }
-    
-    /* Header overlays */
-    .header-overlay h6 {
-        font-size: 0.9rem !important;
-    }
-    
-    /* General text adjustments */
-    h6 {
-        font-size: 0.9rem;
-    }
-    
-    .h5 {
-        font-size: 1.15rem !important;
-    }
-}
-
-@media (max-width: 576px) {
-    .container-fluid {
-        padding-left: 0.5rem !important;
-        padding-right: 0.5rem !important;
-    }
-    
-    /* Hero section extra small */
-    .analytics-hero .card-body {
-        padding: 0.75rem !important;
-    }
-    
-    .analytics-hero .h5 {
-        font-size: 0.95rem !important;
-    }
-    
-    .analytics-hero .small {
-        font-size: 0.75rem !important;
-    }
-    
-    .hero-icon {
-        width: 36px !important;
-        height: 36px !important;
-        font-size: 16px !important;
-    }
-    
-    /* Section headers */
-    .section-header-primary,
-    .section-header-success,
-    .section-header-info,
-    .section-header-warning {
-        padding: 0.625rem !important;
-    }
-    
-    .section-header-primary h6,
-    .section-header-success h6,
-    .section-header-info h6,
-    .section-header-warning h6 {
-        font-size: 0.85rem !important;
-    }
-    
-    .section-header-primary i,
-    .section-header-success i,
-    .section-header-info i,
-    .section-header-warning i {
-        font-size: 0.9rem !important;
-    }
-    
-    /* Card body padding */
-    .card-body {
-        padding: 0.75rem !important;
-    }
-    
-    .section-body {
-        padding: 0.75rem !important;
-    }
-    
-    /* Full width cards on mobile */
-    .col-lg-3,
-    .col-lg-4,
-    .col-lg-6,
-    .col-md-6 {
-        flex: 0 0 100% !important;
-        max-width: 100% !important;
-        margin-bottom: 1rem;
-    }
-    
-    /* KPI Cards - better mobile layout */
-    .analytics-kpi .card-body {
-        padding: 0.875rem !important;
-    }
-    
-    .analytics-kpi .d-flex {
-        flex-wrap: wrap;
-    }
-    
-    .analytics-kpi .flex-grow-1 {
-        flex: 1 1 70% !important;
-        min-width: 0;
-    }
-    
-    .analytics-kpi .ms-3 {
-        margin-left: 0.5rem !important;
-        flex: 0 0 auto;
-    }
-    
-    .analytics-kpi .h5 {
-        font-size: 1.1rem !important;
-        line-height: 1.3;
-    }
-    
-    .analytics-kpi .text-xs {
-        font-size: 0.65rem !important;
-        line-height: 1.4;
-    }
-    
-    .analytics-kpi small.text-muted {
-        font-size: 0.7rem !important;
-        display: block;
-        margin-top: 0.25rem;
-    }
-    
-    /* Icons smaller */
-    .fa-2x {
-        font-size: 1.25em !important;
-    }
-    
-    /* Charts */
-    .chart-container{ 
-        height: 240px !important;
-    }
-    
-    /* Tables */
-    .table {
-        font-size: 0.75rem;
-    }
-    
-    .table-responsive {
-        max-height: 350px;
-        overflow-x: auto;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-    
-    .table th,
-    .table td {
-        padding: 0.5rem 0.375rem;
-        font-size: 0.75rem;
-        min-width: 70px;
-    }
-    
-    .table th {
-        font-size: 0.7rem;
-        white-space: nowrap;
-        position: sticky;
-        top: 0;
-        background-color: #f8f9fa;
-        z-index: 10;
-    }
-    
-    .table td {
-        word-break: break-word;
-    }
-    
-    /* Badges in tables */
-    .table .badge {
-        font-size: 0.65rem;
-        padding: 0.25rem 0.5rem;
-    }
-    
-    /* Header overlays */
-    .header-overlay {
-        padding: 0.625rem !important;
-    }
-    
-    .header-overlay h6 {
-        font-size: 0.85rem !important;
-    }
-    
-    .header-overlay i {
-        font-size: 0.8rem !important;
-    }
-    
-    /* General text */
-    .h5 {
-        font-size: 1.05rem !important;
-    }
-    
-    .h6 {
-        font-size: 0.85rem !important;
-    }
-    
-    .text-xs {
-        font-size: 0.65rem !important;
-    }
-    
-    /* Border left cards */
-    .border-left-primary,
-    .border-left-success,
-    .border-left-info,
-    .border-left-warning,
-    .border-left-danger {
-        border-left-width: 0.2rem !important;
-    }
-}
-
-.border-left-primary {
-    border-left: 0.25rem solid #4e73df !important;
-}
-
-.border-left-success {
-    border-left: 0.25rem solid #1cc88a !important;
-}
-
-.border-left-info {
-    border-left: 0.25rem solid #36b9cc !important;
-}
-
-.border-left-warning {
-    border-left: 0.25rem solid #f6c23e !important;
-}
-
-.border-left-danger {
-    border-left: 0.25rem solid #e74a3b !important;
-}
-
-.text-xs {
-    font-size: 0.7rem;
-}
-
-.card-header { font-weight: 600; }
-
-/* Ensure charts are responsive */
-.chart-container {
-    position: relative;
-    height: 300px;
-}
-
-@media (max-width: 576px) {
-    .chart-container {
-        height: 250px;
-    }
-}
-</style>
 @endsection

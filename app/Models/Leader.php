@@ -83,6 +83,7 @@ class Leader extends Model
             'choir_leader' => 'Kiongozi wa Kwaya',
             'usher_leader' => 'Kiongozi wa Wakaribishaji',
             'evangelism_leader' => 'Kiongozi wa Uinjilisti',
+            'parish_worker' => 'Mtendaji wa Usharika',
             'prayer_leader' => 'Kiongozi wa Maombi',
             'other' => $this->position_title ?? 'Kiongozi'
         ];
@@ -98,7 +99,7 @@ class Leader extends Model
         }
 
         $now = now()->toDateString();
-        
+
         if ($this->end_date && $this->end_date < $now) {
             return false;
         }

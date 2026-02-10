@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Storage;
 use App\Models\Member;
 use App\Models\Tithe;
 use App\Models\Offering;
+use App\Models\CommunityOffering;
 use App\Models\Donation;
 use App\Models\Pledge;
 use App\Models\PledgePayment;
@@ -34,7 +35,7 @@ class MemberDashboardController extends Controller
     public function index()
     {
         $user = Auth::user();
-        
+
         // Allow access if user has a member_id (includes members, church elders, evangelism leaders, etc.)
         // Church elders and other leadership roles are also members and should access their member portal
         if (!$user->member_id) {
@@ -43,7 +44,7 @@ class MemberDashboardController extends Controller
         }
 
         $member = $user->member;
-        
+
         if (!$member) {
             Auth::logout();
             return redirect()->route('login')->withErrors(['member' => 'Member record not found.']);
@@ -92,7 +93,7 @@ class MemberDashboardController extends Controller
         $totalTithes = Tithe::where('member_id', $member->id)
             ->approved()
             ->sum('amount');
-        
+
         $monthlyTithes = Tithe::where('member_id', $member->id)
             ->approved()
             ->whereYear('tithe_date', $currentYear)
@@ -103,7 +104,7 @@ class MemberDashboardController extends Controller
         $totalOfferings = Offering::where('member_id', $member->id)
             ->approved()
             ->sum('amount');
-        
+
         $monthlyOfferings = Offering::where('member_id', $member->id)
             ->approved()
             ->whereYear('offering_date', $currentYear)
@@ -114,16 +115,68 @@ class MemberDashboardController extends Controller
         $totalDonations = Donation::where('member_id', $member->id)
             ->approved()
             ->sum('amount');
-        
+
         $monthlyDonations = Donation::where('member_id', $member->id)
             ->approved()
             ->whereYear('donation_date', $currentYear)
             ->whereMonth('donation_date', $currentMonth)
+            ->whereMonth('donation_date', $currentMonth)
             ->sum('amount');
+
+        // Get Jengo offerings
+        $individualJengo = Offering::where('member_id', $member->id)
+            ->approved()
+            ->whereIn('offering_type', ['Sadaka ya Jengo', 'sadaka_jengo'])
+            ->sum('amount');
+
+        $communityJengo = CommunityOffering::where('church_elder_id', auth()->id())
+            ->sum('amount_jengo');
+
+        $totalJengo = $individualJengo + $communityJengo;
+
+        $individualMonthlyJengo = Offering::where('member_id', $member->id)
+            ->approved()
+            ->whereIn('offering_type', ['Sadaka ya Jengo', 'sadaka_jengo'])
+            ->whereYear('offering_date', $currentYear)
+            ->whereMonth('offering_date', $currentMonth)
+            ->sum('amount');
+
+        $communityMonthlyJengo = CommunityOffering::where('church_elder_id', auth()->id())
+            ->whereYear('offering_date', $currentYear)
+            ->whereMonth('offering_date', $currentMonth)
+            ->sum('amount_jengo');
+
+        $monthlyJengo = $individualMonthlyJengo + $communityMonthlyJengo;
+
+        // Get Umoja offerings
+        $individualUmoja = Offering::where('member_id', $member->id)
+            ->approved()
+            ->whereIn('offering_type', ['Sadaka ya Umoja', 'sadaka_umoja'])
+            ->sum('amount');
+
+        $communityUmoja = CommunityOffering::where('church_elder_id', auth()->id())
+            ->sum('amount_umoja');
+
+        $totalUmoja = $individualUmoja + $communityUmoja;
+
+        $individualMonthlyUmoja = Offering::where('member_id', $member->id)
+            ->approved()
+            ->whereIn('offering_type', ['Sadaka ya Umoja', 'sadaka_umoja'])
+            ->whereYear('offering_date', $currentYear)
+            ->whereMonth('offering_date', $currentMonth)
+            ->sum('amount');
+
+        $communityMonthlyUmoja = CommunityOffering::where('church_elder_id', $member->id)
+            ->whereYear('offering_date', $currentYear)
+            ->whereMonth('offering_date', $currentMonth)
+            ->sum('amount_umoja');
+
+        $monthlyUmoja = $individualMonthlyUmoja + $communityMonthlyUmoja;
+
 
         // Get pledges - use pledge_amount column
         $totalPledges = Pledge::where('member_id', $member->id)->sum('pledge_amount');
-        $totalPledgePayments = PledgePayment::whereHas('pledge', function($query) use ($member) {
+        $totalPledgePayments = PledgePayment::whereHas('pledge', function ($query) use ($member) {
             $query->where('member_id', $member->id);
         })->approved()->sum('amount');
         $remainingPledges = $totalPledges - $totalPledgePayments;
@@ -160,6 +213,10 @@ class MemberDashboardController extends Controller
             'recent_tithes' => $recentTithes,
             'recent_offerings' => $recentOfferings,
             'recent_donations' => $recentDonations,
+            'total_jengo' => $totalJengo,
+            'monthly_jengo' => $monthlyJengo,
+            'total_umoja' => $totalUmoja,
+            'monthly_umoja' => $monthlyUmoja,
         ];
     }
 
@@ -183,7 +240,7 @@ class MemberDashboardController extends Controller
                 ->whereIn('announcement_id', $announcements->pluck('id'))
                 ->pluck('announcement_id')
                 ->toArray();
-            
+
             foreach ($announcements as $announcement) {
                 $announcement->is_unread = !in_array($announcement->id, $viewedAnnouncementIds);
             }
@@ -221,14 +278,14 @@ class MemberDashboardController extends Controller
     public function information()
     {
         $user = Auth::user();
-        
+
         // Allow access if user has a member_id (includes members, church elders, evangelism leaders, etc.)
         if (!$user->member_id) {
             return redirect()->route('member.dashboard')->withErrors(['error' => 'Unauthorized access.']);
         }
 
         $member = $user->member;
-        
+
         return view('members.information', compact('member'));
     }
 
@@ -238,7 +295,7 @@ class MemberDashboardController extends Controller
     public function finance()
     {
         $user = Auth::user();
-        
+
         // Allow access if user has a member_id (includes members, church elders, evangelism leaders, etc.)
         if (!$user->member_id) {
             return redirect()->route('member.dashboard')->withErrors(['error' => 'Unauthorized access.']);
@@ -249,9 +306,11 @@ class MemberDashboardController extends Controller
 
         // Get all pledges with payments for detailed view
         $pledges = Pledge::where('member_id', $member->id)
-            ->with(['payments' => function($query) {
-                $query->approved()->orderBy('payment_date', 'desc');
-            }])
+            ->with([
+                'payments' => function ($query) {
+                    $query->approved()->orderBy('payment_date', 'desc');
+                }
+            ])
             ->orderBy('pledge_date', 'desc')
             ->get();
 
@@ -270,7 +329,7 @@ class MemberDashboardController extends Controller
     public function announcements()
     {
         $user = Auth::user();
-        
+
         // Allow access if user has a member_id (includes members, church elders, evangelism leaders, etc.)
         if (!$user->member_id) {
             return redirect()->route('member.dashboard')->withErrors(['error' => 'Unauthorized access.']);
@@ -310,9 +369,9 @@ class MemberDashboardController extends Controller
         // Get all active leaders with their member information
         $allLeaders = Leader::with('member')
             ->where('is_active', true)
-            ->where(function($query) {
+            ->where(function ($query) {
                 $query->whereNull('end_date')
-                      ->orWhere('end_date', '>=', now()->toDateString());
+                    ->orWhere('end_date', '>=', now()->toDateString());
             })
             ->orderBy('position')
             ->orderBy('appointment_date', 'desc')
@@ -320,9 +379,9 @@ class MemberDashboardController extends Controller
 
         // Get current member's leadership positions
         $memberLeadershipPositions = $member->activeLeadershipPositions()
-            ->where(function($query) {
+            ->where(function ($query) {
                 $query->whereNull('end_date')
-                      ->orWhere('end_date', '>=', now()->toDateString());
+                    ->orWhere('end_date', '>=', now()->toDateString());
             })
             ->get();
 
@@ -347,11 +406,11 @@ class MemberDashboardController extends Controller
     private function getUnreadAnnouncementsCount($member)
     {
         $activeAnnouncements = Announcement::active()->pluck('id');
-        
+
         $viewedAnnouncementIds = AnnouncementView::where('member_id', $member->id)
             ->whereIn('announcement_id', $activeAnnouncements)
             ->pluck('announcement_id');
-        
+
         return $activeAnnouncements->diff($viewedAnnouncementIds)->count();
     }
 
@@ -361,49 +420,49 @@ class MemberDashboardController extends Controller
     public function leaders()
     {
         $user = Auth::user();
-        
+
         // Allow access if user has a member_id (includes members, church elders, evangelism leaders, etc.)
         if (!$user->member_id) {
             return redirect()->route('member.dashboard')->withErrors(['error' => 'Unauthorized access.']);
         }
 
         $member = $user->member;
-        
+
         // Get member's campus and community
         $memberCampusId = $member->campus_id;
         $memberCommunityId = $member->community_id;
-        
+
         // Get all active leaders with their member information
         $allLeaders = Leader::with(['member', 'communities'])
             ->where('is_active', true)
-            ->where(function($query) {
+            ->where(function ($query) {
                 $query->whereNull('end_date')
-                      ->orWhere('end_date', '>=', now()->toDateString());
+                    ->orWhere('end_date', '>=', now()->toDateString());
             })
             ->get();
-        
+
         // Get senior pastors from users table (users with role='pastor' or can_approve_finances=true)
-        $seniorPastors = \App\Models\User::where(function($query) {
-                $query->where('role', 'pastor')
-                      ->orWhere(function($q) {
-                          $q->where('can_approve_finances', true)
-                            ->where('role', '!=', 'admin'); // Exclude admins
-                      });
-            })
+        $seniorPastors = \App\Models\User::where(function ($query) {
+            $query->where('role', 'pastor')
+                ->orWhere(function ($q) {
+                    $q->where('can_approve_finances', true)
+                        ->where('role', '!=', 'admin'); // Exclude admins
+                });
+        })
             ->whereNotNull('member_id') // Only include pastors who are also members
             ->with('member')
             ->get();
-        
+
         // Create pseudo-leader objects for senior pastors who aren't in the leaders table
         $seniorPastorLeaders = collect();
         foreach ($seniorPastors as $pastorUser) {
             if ($pastorUser->member) {
                 // Check if this pastor is already in the leaders list
-                $existsInLeaders = $allLeaders->contains(function($leader) use ($pastorUser) {
-                    return $leader->member_id === $pastorUser->member_id && 
-                           in_array($leader->position, ['pastor', 'assistant_pastor']);
+                $existsInLeaders = $allLeaders->contains(function ($leader) use ($pastorUser) {
+                    return $leader->member_id === $pastorUser->member_id &&
+                        in_array($leader->position, ['pastor', 'assistant_pastor']);
                 });
-                
+
                 // If not in leaders table, create a pseudo-leader object
                 if (!$existsInLeaders) {
                     $pseudoLeader = new class {
@@ -417,12 +476,13 @@ class MemberDashboardController extends Controller
                         public $is_active;
                         public $campus_id;
                         public $communities;
-                        
-                        public function isCurrentlyActive() {
+
+                        public function isCurrentlyActive()
+                        {
                             return true;
                         }
                     };
-                    
+
                     $pseudoLeader->id = 'pastor_' . $pastorUser->id;
                     $pseudoLeader->member_id = $pastorUser->member_id;
                     $pseudoLeader->member = $pastorUser->member;
@@ -433,32 +493,32 @@ class MemberDashboardController extends Controller
                     $pseudoLeader->is_active = true;
                     $pseudoLeader->campus_id = null;
                     $pseudoLeader->communities = collect();
-                    
+
                     $seniorPastorLeaders->push($pseudoLeader);
                 }
             }
         }
-        
+
         // Combine leaders from leaders table and senior pastors
         $allLeaders = $allLeaders->merge($seniorPastorLeaders);
-        
+
         // Filter leaders based on position and member's location
-        $leaders = $allLeaders->filter(function($leader) use ($memberCampusId, $memberCommunityId) {
+        $leaders = $allLeaders->filter(function ($leader) use ($memberCampusId, $memberCommunityId) {
             // Always show Pastor and Assistant Pastor
             if (in_array($leader->position, ['pastor', 'assistant_pastor'])) {
                 return true;
             }
-            
+
             // Always show Secretary and Assistant Secretary
             if (in_array($leader->position, ['secretary', 'assistant_secretary'])) {
                 return true;
             }
-            
+
             // For Evangelism Leaders: Only show if from same campus/branch
             if ($leader->position === 'evangelism_leader') {
                 return $leader->campus_id == $memberCampusId;
             }
-            
+
             // For Church Elders: Only show if assigned to member's community
             if ($leader->position === 'elder') {
                 if (!$memberCommunityId) {
@@ -468,16 +528,16 @@ class MemberDashboardController extends Controller
                 // The communities relationship returns communities where this leader is the church_elder_id
                 return $leader->communities->contains('id', $memberCommunityId);
             }
-            
+
             // For other positions, show all (or you can add more specific filtering)
             return true;
         })->values(); // Reset keys after filtering
 
         // Get current member's leadership positions
         $memberPositions = $member->activeLeadershipPositions()
-            ->where(function($query) {
+            ->where(function ($query) {
                 $query->whereNull('end_date')
-                      ->orWhere('end_date', '>=', now()->toDateString());
+                    ->orWhere('end_date', '>=', now()->toDateString());
             })
             ->get();
 
@@ -493,19 +553,19 @@ class MemberDashboardController extends Controller
     public function markNotificationAsRead($notificationId)
     {
         $user = Auth::user();
-        
+
         if (!$user) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
         // Check if notification belongs to user (either through member or directly)
         $notification = null;
-        
+
         if ($user->member_id && $user->member) {
             // Try to find notification through member
             $notification = $user->member->notifications()->where('id', $notificationId)->first();
         }
-        
+
         // If not found through member, try user notifications directly (for pastors, admins, etc.)
         if (!$notification) {
             $notification = $user->notifications()->where('id', $notificationId)->first();
@@ -525,7 +585,7 @@ class MemberDashboardController extends Controller
     public function showChangePassword()
     {
         $user = Auth::user();
-        
+
         // Allow access if user has a member_id (includes members, church elders, evangelism leaders, etc.)
         if (!$user->member_id) {
             return redirect()->route('member.dashboard')->withErrors(['error' => 'Unauthorized access.']);
@@ -540,7 +600,7 @@ class MemberDashboardController extends Controller
     public function updatePassword(Request $request)
     {
         $user = Auth::user();
-        
+
         // Allow access if user has a member_id (includes members, church elders, evangelism leaders, etc.)
         if (!$user->member_id) {
             return redirect()->route('member.dashboard')->withErrors(['error' => 'Unauthorized access.']);
@@ -584,14 +644,14 @@ class MemberDashboardController extends Controller
     public function settings()
     {
         $user = Auth::user();
-        
+
         // Allow access if user has a member_id (includes members, church elders, evangelism leaders, etc.)
         if (!$user->member_id) {
             return redirect()->route('member.dashboard')->withErrors(['error' => 'Unauthorized access.']);
         }
 
         $member = $user->member;
-        
+
         return view('members.settings', compact('member', 'user'));
     }
 
@@ -601,7 +661,7 @@ class MemberDashboardController extends Controller
     public function updateProfile(Request $request)
     {
         $user = Auth::user();
-        
+
         // Allow access if user has a member_id (includes members, church elders, evangelism leaders, etc.)
         if (!$user->member_id) {
             return redirect()->route('member.dashboard')->withErrors(['error' => 'Unauthorized access.']);
@@ -631,7 +691,7 @@ class MemberDashboardController extends Controller
         // Handle profile picture upload
         if ($request->hasFile('profile_picture')) {
             $file = $request->file('profile_picture');
-            
+
             // Delete old profile picture if exists (handle both old public path and storage path)
             if ($member->profile_picture) {
                 // Check if it's an old public path (assets/images/...)
@@ -646,7 +706,7 @@ class MemberDashboardController extends Controller
                     Storage::disk('public')->delete($member->profile_picture);
                 }
             }
-            
+
             // Save to storage/app/public/member/profile-pictures/ using Laravel Storage
             $profilePicturePath = $file->store('member/profile-pictures', 'public');
             $member->profile_picture = $profilePicturePath;
@@ -667,7 +727,7 @@ class MemberDashboardController extends Controller
 
         if ($updated) {
             $member->save();
-            
+
             \Log::info('Member profile updated', [
                 'user_id' => $user->id,
                 'member_id' => $member->id,

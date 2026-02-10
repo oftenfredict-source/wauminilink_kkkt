@@ -10,7 +10,7 @@
     }
 @endphp
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
         <meta charset="utf-8" />
         <meta http-equiv="X-UA-Compatible" content="IE=edge" />
@@ -28,6 +28,15 @@
         <!-- SweetAlert Helpers -->
         <script src="{{ asset('js/sweetalert-helpers.js') }}"></script>
         <style>
+            /* Global Century Gothic Font */
+            * {
+                font-family: "Century Gothic", "CenturyGothic", "AppleGothic", Arial, sans-serif !important;
+            }
+            
+            html, body {
+                font-family: "Century Gothic", "CenturyGothic", "AppleGothic", Arial, sans-serif !important;
+            }
+            
             /* Prevent horizontal scrolling - minimal approach */
             @media (max-width: 768px) {
                 html {
@@ -65,17 +74,17 @@
             /* Dynamic theme color application */
             @php
                 $themeColors = [
-                    'waumini' => '#17082d',
-                    'primary' => '#0d6efd',
-                    'secondary' => '#6c757d',
-                    'success' => '#198754',
+                    'waumini' => '#940000',
+                    'primary' => '#940000',
+                    'secondary' => '#b30000',
+                    'success' => '#28a745',
                     'danger' => '#dc3545',
                     'warning' => '#ffc107',
-                    'info' => '#0dcaf0'
+                    'info' => '#36b9cc'
                 ];
-                $selectedColor = $themeColors[$themeColor] ?? $themeColors['waumini'];
+                $selectedColor = $themeColors['waumini'];
                 // Use a different color for cards/buttons, but keep sidebar as #17082d
-                $cardColor = '#4a5568'; // Nice gray-blue color for cards
+                $cardColor = '#940000'; // Red color for cards
             @endphp
             
             /* Apply card color to primary elements (cards, buttons) */
@@ -107,7 +116,26 @@
             
             /* Sidebar theme color - keep original #17082d */
             .sb-sidenav {
-                background: linear-gradient(180deg, #17082d 0%, #17082ddd 100%) !important;
+                background: linear-gradient(180deg, #fff5f5 0%, #ffe0e0 100%) !important;
+            }
+
+            .sb-sidenav .nav-link {
+                color: #000000 !important;
+            }
+
+            .sb-sidenav .nav-link:hover {
+                background-color: #ffe0e0 !important;
+                color: #940000 !important; 
+            }
+
+            .sb-sidenav .sb-sidenav-menu-heading {
+                color: #ffffff !important;
+                background-color: #940000 !important;
+                margin: 0.5rem 0.5rem 0.25rem 0.5rem !important;
+                padding: 0.75rem 1rem !important;
+                border-radius: 4px !important;
+                font-weight: 700 !important;
+                letter-spacing: 0.5px !important;
             }
             
             /* Top navigation bar style based on sidebar_style setting */
@@ -126,13 +154,9 @@
                 .sb-topnav .btn-link {
                     color: #212529 !important;
                 }
-            @elseif($sidebarStyle === 'primary')
-                .sb-topnav {
-                    background: linear-gradient(180deg, {{ $selectedColor }} 0%, {{ $selectedColor }}dd 100%) !important;
-                }
             @else
                 .sb-topnav {
-                    background-color: #212529 !important;
+                    background-color: #000000 !important;
                 }
             @endif
             
@@ -143,7 +167,7 @@
             }
             .card-header.bg-primary .badge {
                 background-color: #f8f9fa !important;
-                color: #0d6efd !important;
+                color: #940000 !important;
             }
             .card-header.bg-primary i {
                 color: white !important;
@@ -154,6 +178,33 @@
             }
             
             /* Ensure all card headers have proper visibility */
+            .card-header.bg-primary {
+                background-color: #940000 !important;
+                background-image: none !important;
+            }
+            
+            .report-header-primary {
+                background: linear-gradient(135deg, #940000 0%, #7a0000 100%) !important;
+                color: #fff !important;
+            }
+
+            .report-header-neutral {
+                background: linear-gradient(135deg, #6c757d 0%, #495057 100%) !important;
+                color: #fff !important;
+            }
+            
+            .text-primary {
+                color: #940000 !important;
+            }
+            
+            .badge-primary, .bg-primary {
+                background-color: #940000 !important;
+            }
+            
+            .btn-primary {
+                background-color: #940000 !important;
+                border-color: #940000 !important;
+            }
             .card-header:not(.bg-primary):not(.bg-success):not(.bg-info):not(.bg-warning):not(.bg-danger):not(.bg-secondary):not(.report-header-primary):not(.report-header-success):not(.report-header-info):not(.report-header-warning):not(.report-header-neutral) {
                 min-height: 3rem !important;
                 display: flex !important;
@@ -200,7 +251,7 @@
             
             /* Ensure colored card headers keep their background colors */
             .card-header.bg-primary {
-                background-color: #0d6efd !important;
+                background-color: #940000 !important;
             }
             .card-header.bg-success {
                 background-color: #198754 !important;
@@ -260,7 +311,9 @@
             .card-header.bg-warning.text-white,
             .card-header.bg-danger.text-white,
             .card-header.bg-secondary.text-white {
+                background: linear-gradient(135deg, #940000 0%, #7a0000 100%) !important;
                 color: white !important;
+                border-bottom: none !important;
             }
             
             .card-header.bg-primary.text-white *,
@@ -296,7 +349,7 @@
             .card-header.bg-danger .badge.bg-white,
             .card-header.bg-secondary .badge.bg-white {
                 background-color: white !important;
-                color: #0d6efd !important;
+                color: #940000 !important;
                 font-weight: 700 !important;
                 box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
             }
@@ -304,7 +357,7 @@
             /* Custom btn-white class for better visibility on colored backgrounds */
             .btn-white {
                 background-color: white !important;
-                color: #0d6efd !important;
+                color: #940000 !important;
                 border: 1px solid rgba(0,0,0,0.1) !important;
             }
             
@@ -332,7 +385,7 @@
             .card-header.bg-danger .btn-white,
             .card-header.bg-secondary .btn-white {
                 background-color: white !important;
-                color: #0d6efd !important;
+                color: #940000 !important;
                 border-color: rgba(255,255,255,0.3) !important;
                 font-weight: 600 !important;
             }
@@ -604,11 +657,11 @@
             
             /* Custom sidebar styling */
             .sb-sidenav {
-                background-color: #17082d !important;
+                background: linear-gradient(180deg, #fff5f5 0%, #ffe0e0 100%) !important;
             }
             
             .sb-sidenav .nav-link {
-                color: white !important;
+                color: #000000 !important;
                 transition: all 0.3s ease;
             }
             
@@ -621,20 +674,20 @@
                 color: #ffffff !important;
                 font-weight: 700 !important;
                 text-transform: uppercase !important;
-                letter-spacing: 0.8px !important;
+                letter-spacing: 0.5px !important;
                 font-size: 0.75rem !important;
-                padding: 0.75rem 1rem 0.25rem 1rem !important;
-                background-color: rgba(255, 255, 255, 0.1) !important;
+                padding: 0.75rem 1rem !important;
+                background-color: #940000 !important;
                 border-radius: 4px !important;
                 margin: 0.5rem 0.5rem 0.25rem 0.5rem !important;
             }
             
             .sb-sidenav .sb-nav-link-icon {
-                color: white !important;
+                color: #000000 !important;
             }
             
             .sb-sidenav .sb-sidenav-collapse-arrow {
-                color: white !important;
+                color: #000000 !important;
             }
             
             /* Ensure all sidebar text is visible */
@@ -685,30 +738,30 @@
         }
             
             .sb-sidenav .nav-link {
-                color: #ffffff !important;
-                font-weight: 500 !important;
+                color: #000000 !important;
+                font-weight: 700 !important;
             }
             
             .sb-sidenav .nav-link:hover {
-                color: #ffffff !important;
-                background-color: rgba(255, 255, 255, 0.1) !important;
+                color: #940000 !important;
+                background-color: #ffe0e0 !important;
             }
             
             .sb-sidenav .sb-sidenav-footer {
-                background-color: rgba(255, 255, 255, 0.1) !important;
-                color: white !important;
+                background-color: #ffe0e0 !important;
+                color: #000000 !important;
             }
             
             /* Card header titles styling */
             .card-header {
-                color: white !important;
+                color: #000000 !important;
                 font-weight: 600;
             }
             
             /* Statistics card labels styling */
             .card .small.text-white-50 {
-                color: white !important;
-                font-weight: 500;
+                color: #000000 !important;
+                font-weight: 700;
             }
             
             /* Select2 styling */
@@ -1809,7 +1862,7 @@
             <!-- Sidebar Toggle - First on Mobile -->
             <button class="btn btn-link btn-sm order-first order-lg-0 me-3 me-lg-0" id="sidebarToggle" href="#!"><i class="fas fa-bars" style="color: #ffffff !important;"></i></button>
             <!-- Welcome Message -->
-            <div class="navbar-text me-auto ms-2 ms-md-3" style="font-size: 1.1rem; font-weight: 600; color: #ffffff !important; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);">
+            <div class="navbar-text me-auto ms-2 ms-md-3" style="font-size: 1.1rem; font-weight: 800; color: #ffffff !important;">
                 <strong>{{ SettingsService::get('church_name', 'KKKT Ushirika wa Longuo') }}</strong>
             </div>
 
@@ -1818,8 +1871,8 @@
                 <!-- Date and Time Display - Hidden on Mobile -->
                 <li class="nav-item d-none d-md-flex align-items-center me-2 me-md-3" id="dateTimeDisplay">
                     <div class="text-end" style="color: #ffffff !important;">
-                        <div id="currentDate" class="d-none d-md-block" style="font-size: 0.9rem; font-weight: 500; color: #ffffff !important;"></div>
-                        <div id="currentTime" class="d-none d-md-block" style="font-size: 1.1rem; font-weight: 600; color: #ffffff !important;"></div>
+                        <div id="currentDate" class="d-none d-md-block" style="font-size: 0.9rem; font-weight: 700; color: #ffffff !important;"></div>
+                        <div id="currentTime" class="d-none d-md-block" style="font-size: 1.1rem; font-weight: 800; color: #ffffff !important;"></div>
                     </div>
                 </li>
                 <!-- Notification Icon -->
@@ -1835,8 +1888,8 @@
                     </a>
                     <div class="dropdown-menu dropdown-menu-end notification-dropdown" style="width: 400px; max-height: 70vh; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.15); border: none;">
                         <div class="dropdown-header d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 16px 16px 0 0; padding: 1rem 1.5rem;">
-                            <h6 class="mb-0 fw-bold"><i class="fas fa-bell me-2"></i>Notifications</h6>
-                            <small class="opacity-75" id="lastUpdated">Just now</small>
+                            <h6 class="mb-0 fw-bold"><i class="fas fa-bell me-2"></i>{{ __('common.notifications') }}</h6>
+                            <small class="opacity-75" id="lastUpdated">{{ __('common.just_now') }}</small>
                         </div>
                         
                         <div class="notification-content" style="padding: 1rem 1.5rem; max-height: calc(70vh - 80px); overflow-y: auto;">
@@ -1844,7 +1897,7 @@
                             <div class="notification-section mb-3">
                                 <div class="section-header d-flex justify-content-between align-items-center mb-2">
                                     <h6 class="mb-0 fw-bold text-primary">
-                                        <i class="fas fa-calendar-alt me-2"></i>Special Events
+                                        <i class="fas fa-calendar-alt me-2"></i>{{ __('common.special_events') }}
                                     </h6>
                                     <span class="notification-count-badge bg-primary" id="eventsCount">0</span>
                                 </div>
@@ -1857,7 +1910,7 @@
                             <div class="notification-section mb-3">
                                 <div class="section-header d-flex justify-content-between align-items-center mb-2">
                                     <h6 class="mb-0 fw-bold text-warning">
-                                        <i class="fas fa-birthday-cake me-2"></i>Celebrations
+                                        <i class="fas fa-birthday-cake me-2"></i>{{ __('common.celebrations') }}
                                     </h6>
                                     <span class="notification-count-badge bg-warning" id="celebrationsCount">0</span>
                                 </div>
@@ -1870,7 +1923,7 @@
                             <div class="notification-section mb-3">
                                 <div class="section-header d-flex justify-content-between align-items-center mb-2">
                                     <h6 class="mb-0 fw-bold text-success">
-                                        <i class="fas fa-church me-2"></i>Services
+                                        <i class="fas fa-church me-2"></i>{{ __('common.sunday_services') }}
                                     </h6>
                                     <span class="notification-count-badge bg-success" id="servicesCount">0</span>
                                 </div>
@@ -1884,7 +1937,7 @@
                             <div class="notification-section mb-3">
                                 <div class="section-header d-flex justify-content-between align-items-center mb-2">
                                     <h6 class="mb-0 fw-bold text-warning">
-                                        <i class="fas fa-clock me-2"></i>Pending Approvals
+                                        <i class="fas fa-clock me-2"></i>{{ __('common.pending_approvals') }}
                                     </h6>
                                     <span class="notification-count-badge bg-warning" id="pendingApprovalsCount">0</span>
                                 </div>
@@ -1899,7 +1952,7 @@
                             <div class="notification-section mb-3">
                                 <div class="section-header d-flex justify-content-between align-items-center mb-2">
                                     <h6 class="mb-0 fw-bold text-success">
-                                        <i class="fas fa-dollar-sign me-2"></i>Payments Needing Verification
+                                        <i class="fas fa-dollar-sign me-2"></i>{{ __('common.payments_verification') }}
                                     </h6>
                                     <span class="notification-count-badge bg-success" id="paymentsNeedingVerificationCount">0</span>
                                 </div>
@@ -1911,7 +1964,7 @@
                             
                             <div class="text-center py-2 pb-3">
                                 <small class="text-muted">
-                                    <i class="fas fa-info-circle me-1"></i>Click on any item to view details
+                                    <i class="fas fa-info-circle me-1"></i>{{ __('common.click_to_view_details') }}
                                 </small>
                             </div>
                         </div>
@@ -1923,16 +1976,16 @@
                     <a class="nav-link dropdown-toggle" id="navbarDropdown" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="color: #ffffff !important;"><i class="fas fa-user fa-fw" style="color: #ffffff !important;"></i></a>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
                         @if(auth()->user()->isMember())
-                            <li><a class="dropdown-item" href="{{ route('member.settings') }}"><i class="fas fa-cog me-2"></i>Settings</a></li>
+                            <li><a class="dropdown-item" href="{{ route('member.settings') }}"><i class="fas fa-cog me-2"></i>{{ __('common.settings') }}</a></li>
                         @else
-                            <li><a class="dropdown-item" href="#!">Settings</a></li>
+                            <li><a class="dropdown-item" href="#!">{{ __('common.settings') }}</a></li>
                             <li><a class="dropdown-item" href="#!">Activity Log</a></li>
                         @endif
                         <li><hr class="dropdown-divider" /></li>
                         <li>
                             <a class="dropdown-item" href="{{ route('logout') }}" 
                                onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-                                <i class="fas fa-sign-out-alt me-2"></i>Logout
+                                <i class="fas fa-sign-out-alt me-2"></i>{{ __('common.logout') }}
                             </a>
                             <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
                                 @csrf
@@ -1944,37 +1997,37 @@
         </nav>
         <div id="layoutSidenav">
             <div id="layoutSidenav_nav">
-                <nav class="sb-sidenav accordion sb-sidenav-dark" id="sidenavAccordion">
+                <nav class="sb-sidenav accordion" id="sidenavAccordion">
                     <div class="sb-sidenav-menu">
                         <div class="nav">
                             @if(auth()->user()->isAdmin())
                             {{-- Admin Menu --}}
-                            <div class="sb-sidenav-menu-heading">Administration</div>
+                            <div class="sb-sidenav-menu-heading">{{ __('common.administration') }}</div>
                             <a class="nav-link" href="{{ route('admin.dashboard') }}">
                                 <div class="sb-nav-link-icon"><i class="fas fa-shield-alt"></i></div>
-                                Admin Dashboard
+                                {{ __('common.admin_dashboard') }}
                             </a>
                             <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapseAdmin" aria-expanded="false" aria-controls="collapseAdmin">
                                 <div class="sb-nav-link-icon"><i class="fas fa-cogs"></i></div>
-                                System Management
+                                {{ __('common.system_management') }}
                                 <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
                             </a>
                             <div class="collapse" id="collapseAdmin" aria-labelledby="headingAdmin" data-bs-parent="#sidenavAccordion">
                                 <nav class="sb-sidenav-menu-nested nav">
                                     <a class="nav-link" href="{{ route('admin.logs') }}">
-                                        <i class="fas fa-list-alt me-2"></i>Logs
+                                        <i class="fas fa-list-alt me-2"></i>{{ __('common.logs') }}
                                     </a>
                                     <a class="nav-link" href="{{ route('admin.sessions') }}">
-                                        <i class="fas fa-user-check me-2"></i>User Sessions
+                                        <i class="fas fa-user-check me-2"></i>{{ __('common.user_sessions') }}
                                     </a>
                                     <a class="nav-link" href="{{ route('admin.users') }}">
-                                        <i class="fas fa-users me-2"></i>Manage Users
+                                        <i class="fas fa-users me-2"></i>{{ __('common.manage_users') }}
                                     </a>
                                     <a class="nav-link" href="{{ route('admin.roles-permissions') }}">
-                                        <i class="fas fa-shield-alt me-2"></i>Roles & Permissions
+                                        <i class="fas fa-shield-alt me-2"></i>{{ __('common.roles_permissions') }}
                                     </a>
                                     <a class="nav-link" href="{{ route('admin.system-monitor') }}">
-                                        <i class="fas fa-server me-2"></i>System Monitor
+                                        <i class="fas fa-server me-2"></i>{{ __('common.system_monitor') }}
                                     </a>
                                 </nav>
                             </div>
@@ -1983,22 +2036,22 @@
                             {{-- Member Portal for Church Elders (they are also members) - Show FIRST --}}
                             @if(auth()->user()->isChurchElder() && auth()->user()->member)
                             {{-- Member Portal for Church Elders --}}
-                            <div class="sb-sidenav-menu-heading">Member Portal</div>
+                            <div class="sb-sidenav-menu-heading">{{ __('common.member_portal') }}</div>
                             <a class="nav-link" href="{{ route('member.dashboard') }}">
                                 <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
-                                Dashboard
+                                {{ __('common.dashboard') }}
                             </a>
                             <a class="nav-link" href="{{ route('member.information') }}">
                                 <div class="sb-nav-link-icon"><i class="fas fa-user-circle"></i></div>
-                                My Information
+                                {{ __('common.my_information') }}
                             </a>
                             <a class="nav-link" href="{{ route('member.finance') }}">
                                 <div class="sb-nav-link-icon"><i class="fas fa-wallet"></i></div>
-                                My Finance
+                                {{ __('common.my_finance') }}
                             </a>
                             <a class="nav-link" href="{{ route('member.announcements') }}">
                                 <div class="sb-nav-link-icon"><i class="fas fa-bullhorn"></i></div>
-                                Announcements
+                                {{ __('common.announcements') }}
                                 @php
                                     $member = auth()->user()->member ?? null;
                                     if ($member) {
@@ -2017,16 +2070,23 @@
                             </a>
                             <a class="nav-link" href="{{ route('member.leaders') }}">
                                 <div class="sb-nav-link-icon"><i class="fas fa-users-cog"></i></div>
-                                Leaders
+                                {{ __('common.leaders') }}
                             </a>
                             @endif
                             
                             @if(auth()->user()->isChurchElder())
                             {{-- Church Elder Menu --}}
-                            <div class="sb-sidenav-menu-heading">Church Elder</div>
+                            <div class="sb-sidenav-menu-heading">{{ __('common.church_elder') }}</div>
+                            <a class="nav-link" href="{{ route('church-elder.dashboard') }}">
+                                <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
+                                {{ __('common.dashboard') }}
+                            </a>
                             @php
                                 $elderCommunities = auth()->user()->elderCommunities();
                             @endphp
+                            
+
+                            
                             @if($elderCommunities->count() > 0)
                                 @foreach($elderCommunities as $elderCommunity)
                                 <a class="nav-link" href="#" data-bs-toggle="collapse" data-bs-target="#collapseCommunity{{ $elderCommunity->id }}" aria-expanded="true" aria-controls="collapseCommunity{{ $elderCommunity->id }}">
@@ -2037,7 +2097,7 @@
                                 <div class="collapse show" id="collapseCommunity{{ $elderCommunity->id }}" aria-labelledby="headingCommunity{{ $elderCommunity->id }}" data-bs-parent="#sidenavAccordion">
                                     <nav class="sb-sidenav-menu-nested nav">
                                         <a class="nav-link" href="{{ route('church-elder.community.show', $elderCommunity->id) }}">
-                                            <i class="fas fa-info-circle me-2"></i>Community Info
+                                            <i class="fas fa-info-circle me-2"></i>{{ __('common.community_info') }}
                                         </a>
                                         
                                         {{-- Finance Menu (Community-specific) --}}
@@ -2047,52 +2107,20 @@
                                         </a>
                                         <div class="collapse" id="collapseFinance{{ $elderCommunity->id }}" aria-labelledby="headingFinance{{ $elderCommunity->id }}" data-bs-parent="#collapseCommunity{{ $elderCommunity->id }}">
                                             <nav class="sb-sidenav-menu-nested nav">
-                                                {{-- Community Finance --}}
-                                                <a class="nav-link" href="{{ route('church-elder.finance.community', $elderCommunity->id) }}">
-                                                    <i class="fas fa-home me-2"></i>Community Finance
-                                                </a>
-                                                <a class="nav-link" href="{{ route('church-elder.offerings', $elderCommunity->id) }}">
-                                                    <i class="fas fa-money-bill-wave me-2"></i>Record Offerings
-                                                </a>
-                                                <a class="nav-link" href="{{ route('church-elder.offerings.all', $elderCommunity->id) }}">
-                                                    <i class="fas fa-list me-2"></i>All Offerings
-                                                </a>
                                                 <a class="nav-link" href="{{ route('church-elder.community-offerings.index', $elderCommunity->id) }}">
-                                                    <i class="fas fa-calendar-week me-2"></i>Mid-Week Offerings
+                                                    <i class="fas fa-calendar-week me-2"></i>{{ __('common.mid_week_offerings') }}
                                                 </a>
-                                                
-                                                {{-- General Finance Submenu --}}
-                                                <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapseGeneralFinance{{ $elderCommunity->id }}" aria-expanded="false" aria-controls="collapseGeneralFinance{{ $elderCommunity->id }}">
-                                                    <i class="fas fa-globe me-2"></i>General Finance
-                                                    <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
-                                                </a>
-                                                <div class="collapse" id="collapseGeneralFinance{{ $elderCommunity->id }}" aria-labelledby="headingGeneralFinance{{ $elderCommunity->id }}" data-bs-parent="#collapseFinance{{ $elderCommunity->id }}">
-                                                    <nav class="sb-sidenav-menu-nested nav">
-                                                        <a class="nav-link" href="{{ route('finance.dashboard') }}">
-                                                            <i class="fas fa-tachometer-alt me-2"></i>Finance Dashboard
-                                                        </a>
-                                                        <a class="nav-link" href="{{ route('finance.tithes') }}">
-                                                            <i class="fas fa-coins me-2"></i>Tithes
-                                                        </a>
-                                                        <a class="nav-link" href="{{ route('finance.offerings') }}">
-                                                            <i class="fas fa-gift me-2"></i>Offerings
-                                                        </a>
-                                                        <a class="nav-link" href="{{ route('finance.pledges') }}">
-                                                            <i class="fas fa-handshake me-2"></i>Pledges
-                                                        </a>
-                                                    </nav>
-                                                </div>
                                             </nav>
                                         </div>
                                         
                                         <a class="nav-link" href="{{ route('church-elder.tasks.index', $elderCommunity->id) }}">
-                                            <i class="fas fa-tasks me-2"></i>Tasks
+                                            <i class="fas fa-tasks me-2"></i>{{ __('common.tasks') }}
                                         </a>
                                         <a class="nav-link" href="{{ route('church-elder.issues.index', $elderCommunity->id) }}">
-                                            <i class="fas fa-exclamation-triangle me-2"></i>Issues
+                                            <i class="fas fa-exclamation-triangle me-2"></i>{{ __('common.issues') }}
                                         </a>
                                         <a class="nav-link" href="{{ route('church-elder.reports', $elderCommunity->id) }}">
-                                            <i class="fas fa-chart-bar me-2"></i>Community Reports
+                                            <i class="fas fa-chart-bar me-2"></i>{{ __('common.community_reports') }}
                                         </a>
                                     </nav>
                                 </div>
@@ -2103,22 +2131,22 @@
                             {{-- Member Portal for Evangelism Leaders (they are also members) - Show FIRST, same structure as Church Elders --}}
                             @if(auth()->user()->isEvangelismLeader() && auth()->user()->member)
                             {{-- Member Portal for Evangelism Leaders --}}
-                            <div class="sb-sidenav-menu-heading">Member Portal</div>
+                            <div class="sb-sidenav-menu-heading">{{ __('common.member_portal') }}</div>
                             <a class="nav-link" href="{{ route('member.dashboard') }}">
                                 <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
-                                Dashboard
+                                {{ __('common.dashboard') }}
                             </a>
                             <a class="nav-link" href="{{ route('member.information') }}">
                                 <div class="sb-nav-link-icon"><i class="fas fa-user-circle"></i></div>
-                                My Information
+                                {{ __('common.my_information') }}
                             </a>
                             <a class="nav-link" href="{{ route('member.finance') }}">
                                 <div class="sb-nav-link-icon"><i class="fas fa-wallet"></i></div>
-                                My Finance
+                                {{ __('common.my_finance') }}
                             </a>
                             <a class="nav-link" href="{{ route('member.announcements') }}">
                                 <div class="sb-nav-link-icon"><i class="fas fa-bullhorn"></i></div>
-                                Announcements
+                                {{ __('common.announcements') }}
                                 @php
                                     $member = auth()->user()->member ?? null;
                                     if ($member) {
@@ -2137,7 +2165,7 @@
                             </a>
                             <a class="nav-link" href="{{ route('member.leaders') }}">
                                 <div class="sb-nav-link-icon"><i class="fas fa-users-cog"></i></div>
-                                Leaders
+                                {{ __('common.leaders') }}
                             </a>
                             @endif
                             
@@ -2147,19 +2175,19 @@
                             <div class="sb-sidenav-menu-heading">Member Portal</div>
                             <a class="nav-link" href="{{ route('member.dashboard') }}">
                                 <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
-                                Dashboard
+                                {{ __('common.dashboard') }}
                             </a>
                             <a class="nav-link" href="{{ route('member.information') }}">
                                 <div class="sb-nav-link-icon"><i class="fas fa-user-circle"></i></div>
-                                My Information
+                                {{ __('common.my_information') }}
                             </a>
                             <a class="nav-link" href="{{ route('member.finance') }}">
                                 <div class="sb-nav-link-icon"><i class="fas fa-wallet"></i></div>
-                                My Finance
+                                {{ __('common.my_finance') }}
                             </a>
                             <a class="nav-link" href="{{ route('member.announcements') }}">
                                 <div class="sb-nav-link-icon"><i class="fas fa-bullhorn"></i></div>
-                                Announcements
+                                {{ __('common.announcements') }}
                                 @php
                                     $member = auth()->user()->member ?? null;
                                     if ($member) {
@@ -2178,56 +2206,63 @@
                             </a>
                             <a class="nav-link" href="{{ route('member.leaders') }}">
                                 <div class="sb-nav-link-icon"><i class="fas fa-users-cog"></i></div>
-                                Leaders
+                                {{ __('common.leaders') }}
                             </a>
-                            @elseif(!auth()->user()->isTreasurer() && !auth()->user()->isAdmin() && !auth()->user()->isChurchElder() && !auth()->user()->isEvangelismLeader())
-                            <div class="sb-sidenav-menu-heading">Main</div>
+                            @elseif(!auth()->user()->isTreasurer() && !auth()->user()->isAdmin() && !auth()->user()->isChurchElder() && !auth()->user()->isEvangelismLeader() && !auth()->user()->isParishWorker())
+                            <div class="sb-sidenav-menu-heading">{{ __('common.main') }}</div>
                             <a class="nav-link" href="{{ route('dashboard') }}">
                                 <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
-                                Dashboard
+                                {{ __('common.dashboard') }}
                             </a>
                             @endif
                             
                             @if(!auth()->user()->isTreasurer() || auth()->user()->isAdmin())
-                            @if(!auth()->user()->isMember() && !auth()->user()->isChurchElder() && !auth()->user()->isEvangelismLeader())
+                            @if(!auth()->user()->isMember() && !auth()->user()->isChurchElder() && !auth()->user()->isEvangelismLeader() && !auth()->user()->isParishWorker())
                             
-                            <div class="sb-sidenav-menu-heading">Management</div>
+                            <div class="sb-sidenav-menu-heading">{{ __('common.management') }}</div>
                             <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapseMembers" aria-expanded="false" aria-controls="collapseMembers">
                                 <div class="sb-nav-link-icon"><i class="fas fa-users"></i></div>
-                                Members
+                                {{ __('common.members') }}
                                 <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
                             </a>
                             <div class="collapse" id="collapseMembers" aria-labelledby="headingOne" data-bs-parent="#sidenavAccordion">
                                 <nav class="sb-sidenav-menu-nested nav">
                                     @if(auth()->user()->hasPermission('members.create') || auth()->user()->isAdmin())
                                     <a class="nav-link" href="{{ route('members.add') }}">
-                                        <i class="fas fa-user-plus me-2"></i>Add New Member
+                                        <i class="fas fa-user-plus me-2"></i>{{ __('common.add_new_member') }}
                                     </a>
                                     @endif
                                     @if(auth()->user()->hasPermission('members.view') || auth()->user()->isAdmin())
                                     <a class="nav-link" href="{{ route('members.view') }}">
-                                        <i class="fas fa-list me-2"></i>All Members
+                                        <i class="fas fa-list me-2"></i>{{ __('common.all_members') }}
                                     </a>
                                     @endif
                                 </nav>
                             </div>
+
+                            @if(auth()->user()->isAdmin() || auth()->user()->isPastor() || auth()->user()->isSecretary() || auth()->user()->isEvangelismLeader())
+                            <a class="nav-link" href="{{ route('departments.index') }}">
+                                <div class="sb-nav-link-icon"><i class="fas fa-layer-group"></i></div>
+                                {{ __('common.departments') }}
+                            </a>
+                            @endif
                             
                             <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapseLeadership" aria-expanded="false" aria-controls="collapseLeadership">
                                 <div class="sb-nav-link-icon"><i class="fas fa-user-tie"></i></div>
-                                Leadership
+                                {{ __('common.leadership') }}
                                 <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
                             </a>
                             <div class="collapse" id="collapseLeadership" aria-labelledby="headingOne" data-bs-parent="#sidenavAccordion">
                                 <nav class="sb-sidenav-menu-nested nav">
                                     <a class="nav-link" href="{{ route('leaders.index') }}">
-                                        <i class="fas fa-list me-2"></i>All Leaders
+                                        <i class="fas fa-list me-2"></i>{{ __('common.all_leaders') }}
                                     </a>
                                     <a class="nav-link" href="{{ route('leaders.reports') }}">
-                                        <i class="fas fa-chart-bar me-2"></i>Reports
+                                        <i class="fas fa-chart-bar me-2"></i>{{ __('common.reports') }}
                                     </a>
                                     @if(auth()->user()->canManageLeadership())
                                         <a class="nav-link" href="{{ route('leaders.create') }}">
-                                            <i class="fas fa-plus me-2"></i>Assign Position
+                                            <i class="fas fa-plus me-2"></i>{{ __('common.assign_position') }}
                                         </a>
                                     @endif
                                 </nav>
@@ -2239,28 +2274,28 @@
                             </a>
                             <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapseEvents" aria-expanded="false" aria-controls="collapseEvents">
                                 <div class="sb-nav-link-icon"><i class="fas fa-calendar-alt"></i></div>
-                                Events & Services
+                                {{ __('common.events_services') }}
                                 <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
                             </a>
                             <div class="collapse" id="collapseEvents" aria-labelledby="headingTwo" data-bs-parent="#sidenavAccordion">
                                 <nav class="sb-sidenav-menu-nested nav">
-                                    <a class="nav-link" href="{{ route('services.sunday.index') }}"><i class="fas fa-church me-2"></i>Services</a>
-                                    <a class="nav-link" href="{{ route('special.events.index') }}"><i class="fas fa-calendar-plus me-2"></i>Special Events</a>
-                                    <a class="nav-link" href="{{ route('promise-guests.index') }}"><i class="fas fa-user-check me-2"></i>Promise Guests</a>
-                                    <a class="nav-link" href="{{ route('celebrations.index') }}"><i class="fas fa-birthday-cake me-2"></i>Celebrations</a>
-                                    <a class="nav-link" href="{{ route('bereavement.index') }}"><i class="fas fa-heart-broken me-2"></i>Bereavement</a>
+                                    <a class="nav-link" href="{{ route('services.sunday.index') }}"><i class="fas fa-church me-2"></i>{{ __('common.sunday_services') }}</a>
+                                    <a class="nav-link" href="{{ route('special.events.index') }}"><i class="fas fa-calendar-plus me-2"></i>{{ __('common.special_events') }}</a>
+                                    <a class="nav-link" href="{{ route('promise-guests.index') }}"><i class="fas fa-user-check me-2"></i>{{ __('common.promise_guests') }}</a>
+                                    <a class="nav-link" href="{{ route('celebrations.index') }}"><i class="fas fa-birthday-cake me-2"></i>{{ __('common.celebrations') }}</a>
+                                    <a class="nav-link" href="{{ route('bereavement.index') }}"><i class="fas fa-heart-broken me-2"></i>{{ __('common.bereavement') }}</a>
                                 </nav>
                             </div>
                             @if(auth()->user()->isPastor() || auth()->user()->isAdmin())
                             <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapsePastorRequests" aria-expanded="false" aria-controls="collapsePastorRequests">
                                 <div class="sb-nav-link-icon"><i class="fas fa-file-signature"></i></div>
-                                Requests
+                                {{ __('common.requests') }}
                                 <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
                             </a>
                             <div class="collapse" id="collapsePastorRequests" aria-labelledby="headingPastorRequests" data-bs-parent="#sidenavAccordion">
                                 <nav class="sb-sidenav-menu-nested nav">
                                     <a class="nav-link" href="{{ route('pastor.baptism-applications.pending') }}">
-                                        <i class="fas fa-water me-2"></i>Baptism Applications
+                                        <i class="fas fa-water me-2"></i>{{ __('common.baptism_applications') }}
                                         @php
                                             try {
                                                 $pendingCount = \App\Models\BaptismApplication::where('status', 'pending')->count();
@@ -2273,7 +2308,7 @@
                                         @endif
                                     </a>
                                     <a class="nav-link" href="{{ route('pastor.return-to-fellowship-requests.pending') }}">
-                                        <i class="fas fa-door-open me-2"></i>Return to Fellowship
+                                        <i class="fas fa-door-open me-2"></i>{{ __('common.return_to_fellowship') }}
                                         @php
                                             try {
                                                 $pendingFellowshipCount = \App\Models\ReturnToFellowshipRequest::where('status', 'pending')->count();
@@ -2286,7 +2321,7 @@
                                         @endif
                                     </a>
                                     <a class="nav-link" href="{{ route('pastor.marriage-blessing-requests.pending') }}">
-                                        <i class="fas fa-heart me-2"></i>Marriage Blessing
+                                        <i class="fas fa-heart me-2"></i>{{ __('common.marriage_blessing') }}
                                         @php
                                             try {
                                                 $pendingBlessingCount = \App\Models\MarriageBlessingRequest::where('status', 'pending')->count();
@@ -2299,7 +2334,7 @@
                                         @endif
                                     </a>
                                     <a class="nav-link" href="{{ route('pastor.church-wedding-requests.pending') }}">
-                                        <i class="fas fa-rings-wedding me-2"></i>Church Wedding
+                                        <i class="fas fa-rings-wedding me-2"></i>{{ __('common.church_wedding') }}
                                         @php
                                             try {
                                                 $pendingWeddingCount = \App\Models\ChurchWeddingRequest::where('status', 'pending')->count();
@@ -2316,13 +2351,13 @@
                             
                             <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapsePastorTasksIssues" aria-expanded="false" aria-controls="collapsePastorTasksIssues">
                                 <div class="sb-nav-link-icon"><i class="fas fa-tasks"></i></div>
-                                Tasks & Issues
+                                {{ __('common.tasks_issues') }}
                                 <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
                             </a>
                             <div class="collapse" id="collapsePastorTasksIssues" aria-labelledby="headingPastorTasksIssues" data-bs-parent="#sidenavAccordion">
                                 <nav class="sb-sidenav-menu-nested nav">
                                     <a class="nav-link" href="{{ route('pastor.tasks.index') }}">
-                                        <i class="fas fa-tasks me-2"></i>All Tasks
+                                        <i class="fas fa-tasks me-2"></i>{{ __('common.all_tasks') }}
                                         @php
                                             try {
                                                 $totalTasks = \App\Models\EvangelismTask::count() + \App\Models\ChurchElderTask::count();
@@ -2335,7 +2370,7 @@
                                         @endif
                                     </a>
                                     <a class="nav-link" href="{{ route('pastor.issues.index') }}">
-                                        <i class="fas fa-exclamation-triangle me-2"></i>All Issues
+                                        <i class="fas fa-exclamation-triangle me-2"></i>{{ __('common.all_issues') }}
                                         @php
                                             try {
                                                 $totalIssues = \App\Models\EvangelismIssue::whereIn('status', ['open', 'in_progress'])->count() + \App\Models\ChurchElderIssue::whereIn('status', ['open', 'in_progress'])->count();
@@ -2348,7 +2383,7 @@
                                         @endif
                                     </a>
                                     <a class="nav-link" href="{{ route('pastor.reports.index') }}">
-                                        <i class="fas fa-file-alt me-2"></i>All Reports
+                                        <i class="fas fa-file-alt me-2"></i>{{ __('common.all_reports') }}
                                         @php
                                             try {
                                                 $totalReports = \App\Models\EvangelismReport::count();
@@ -2370,40 +2405,52 @@
                             {{-- For Treasurer: Show finance menu items directly without dropdown --}}
                             <a class="nav-link" href="{{ route('finance.dashboard') }}">
                                 <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
-                                Dashboard
+                                {{ __('common.dashboard') }}
                             </a>
                             @if(auth()->user()->canApproveFinances() || auth()->user()->isSecretary())
                             <a class="nav-link" href="{{ route('finance.approval.dashboard') }}">
                                 <div class="sb-nav-link-icon"><i class="fas fa-check-circle"></i></div>
-                                Approval Dashboard
+                                {{ __('common.approval_dashboard') }}
                             </a>
                             @endif
                             <a class="nav-link" href="{{ route('finance.tithes') }}">
                                 <div class="sb-nav-link-icon"><i class="fas fa-coins"></i></div>
-                                Tithes
+                                {{ __('common.tithes') }}
                             </a>
                             <a class="nav-link" href="{{ route('finance.offerings') }}">
                                 <div class="sb-nav-link-icon"><i class="fas fa-gift"></i></div>
-                                Offerings
+                                {{ __('common.offerings') }}
+                            </a>
+                            <a class="nav-link" href="{{ route('sunday-offering.index') }}">
+                                <div class="sb-nav-link-icon"><i class="fas fa-hand-holding-usd"></i></div>
+                                Sunday Collections
+                            </a>
+                            <a class="nav-link" href="{{ route('finance.weekly-campus-summary') }}">
+                                <div class="sb-nav-link-icon"><i class="fas fa-chart-bar"></i></div>
+                                Weekly Campus Summary
                             </a>
                             <a class="nav-link" href="{{ route('finance.pledges') }}">
                                 <div class="sb-nav-link-icon"><i class="fas fa-handshake"></i></div>
-                                Pledges
+                                {{ __('common.pledges') }}
+                            </a>
+                            <a class="nav-link" href="{{ route('finance.ahadi-pledges.index') }}">
+                                <div class="sb-nav-link-icon"><i class="fas fa-gift"></i></div>
+                                {{ __('common.ahadi_kwa_bwana') }}
                             </a>
                             <a class="nav-link" href="{{ route('finance.budgets') }}">
                                 <div class="sb-nav-link-icon"><i class="fas fa-wallet"></i></div>
-                                Budgets
+                                {{ __('common.budgets') }}
                             </a>
                             <a class="nav-link" href="{{ route('finance.expenses') }}">
                                 <div class="sb-nav-link-icon"><i class="fas fa-receipt"></i></div>
-                                Expenses
+                                {{ __('common.expenses') }}
                             </a>
-                            <div class="sb-sidenav-menu-heading">Account</div>
+                            <div class="sb-sidenav-menu-heading">{{ __('common.account') }}</div>
                             <a class="nav-link" href="{{ route('leader.change-password') }}">
                                 <div class="sb-nav-link-icon"><i class="fas fa-key"></i></div>
-                                Change Password
+                                {{ __('common.change_password') }}
                             </a>
-                            @elseif(!auth()->user()->isMember() && !auth()->user()->isChurchElder())
+                            @elseif(!auth()->user()->isMember() && !auth()->user()->isChurchElder() && !auth()->user()->isEvangelismLeader() && !auth()->user()->isParishWorker())
                             {{-- For other users (not treasurer, not member, not church elder): Show finance menu as collapsed dropdown --}}
                             {{-- Church Elders have Finance inside their community section --}}
                             <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapseFinance" aria-expanded="false" aria-controls="collapseFinance">
@@ -2413,97 +2460,102 @@
                             </a>
                             <div class="collapse" id="collapseFinance" aria-labelledby="headingThree" data-bs-parent="#sidenavAccordion">
                                 <nav class="sb-sidenav-menu-nested nav">
-                                    <a class="nav-link" href="{{ route('finance.dashboard') }}"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</a>
+                                    <a class="nav-link" href="{{ route('finance.dashboard') }}"><i class="fas fa-tachometer-alt me-2"></i>{{ __('common.dashboard') }}</a>
                                     @if(auth()->user()->canApproveFinances() || auth()->user()->isSecretary())
-                                    <a class="nav-link" href="{{ route('finance.approval.dashboard') }}"><i class="fas fa-check-circle me-2"></i>Approval Dashboard</a>
+                                    <a class="nav-link" href="{{ route('finance.approval.dashboard') }}"><i class="fas fa-check-circle me-2"></i>Approval {{ __('common.dashboard') }}</a>
                                     @endif
                                     <a class="nav-link" href="{{ route('finance.tithes') }}"><i class="fas fa-coins me-2"></i>Tithes</a>
                                     <a class="nav-link" href="{{ route('finance.offerings') }}"><i class="fas fa-gift me-2"></i>Offerings</a>
-                                    <a class="nav-link" href="{{ route('finance.pledges') }}"><i class="fas fa-handshake me-2"></i>Pledges</a>
+                                    <a class="nav-link" href="{{ route('sunday-offering.index') }}"><i class="fas fa-hand-holding-usd me-2"></i>Sunday Collections</a>
+                                    <a class="nav-link" href="{{ route('finance.weekly-campus-summary') }}"><i class="fas fa-chart-bar me-2"></i>Weekly Campus Summary</a>
+                                    <a class="nav-link" href="{{ route('finance.ahadi-pledges.index') }}"><i class="fas fa-gift me-2"></i>Ahadi kwa Bwana</a>
                                     <a class="nav-link" href="{{ route('finance.budgets') }}"><i class="fas fa-wallet me-2"></i>Budgets</a>
                                     <a class="nav-link" href="{{ route('finance.expenses') }}"><i class="fas fa-receipt me-2"></i>Expenses</a>
+                                    @if(auth()->user()->isSecretary() || auth()->user()->isPastor() || auth()->user()->isAdmin())
+                                    <a class="nav-link" href="{{ route('reports.general-secretary') }}"><i class="fas fa-star me-2"></i>Gen Sec Report</a>
+                                    @endif
                                 </nav>
                             </div>
                             @endif
                             
                             {{-- Evangelism Leader Menu (check FIRST before branch user) --}}
                             @if(auth()->user()->isEvangelismLeader())
-                            <div class="sb-sidenav-menu-heading">Evangelism Leader</div>
+                            <div class="sb-sidenav-menu-heading">{{ __('common.evangelism_leader') }}</div>
                             <a class="nav-link" href="{{ route('evangelism-leader.dashboard') }}">
                                 <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
-                                Dashboard
+                                {{ __('common.dashboard') }}
                             </a>
                             <a class="nav-link" href="{{ route('evangelism-leader.register-member') }}">
                                 <div class="sb-nav-link-icon"><i class="fas fa-user-plus"></i></div>
-                                Register Member
+                                {{ __('common.register_member') }}
                             </a>
                             <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapseEvangelismReports" aria-expanded="false" aria-controls="collapseEvangelismReports">
                                 <div class="sb-nav-link-icon"><i class="fas fa-file-alt"></i></div>
-                                Community Reports
+                                {{ __('common.community_reports') }}
                                 <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
                             </a>
                             <div class="collapse" id="collapseEvangelismReports" aria-labelledby="headingEvangelismReports" data-bs-parent="#sidenavAccordion">
                                 <nav class="sb-sidenav-menu-nested nav">
                                     <a class="nav-link" href="{{ route('evangelism-leader.reports.index') }}">
-                                        <i class="fas fa-list me-2"></i>All Reports
+                                        <i class="fas fa-list me-2"></i>{{ __('common.all_reports') }}
                                     </a>
                                     <a class="nav-link" href="{{ route('evangelism-leader.reports.create') }}">
-                                        <i class="fas fa-plus me-2"></i>Create Report
+                                        <i class="fas fa-plus me-2"></i>{{ __('common.create_report') }}
                                     </a>
                                 </nav>
                             </div>
                             <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapseEvangelismTasks" aria-expanded="false" aria-controls="collapseEvangelismTasks">
                                 <div class="sb-nav-link-icon"><i class="fas fa-tasks"></i></div>
-                                Task Reports
+                                {{ __('common.task_reports') }}
                                 <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
                             </a>
                             <div class="collapse" id="collapseEvangelismTasks" aria-labelledby="headingEvangelismTasks" data-bs-parent="#sidenavAccordion">
                                 <nav class="sb-sidenav-menu-nested nav">
                                     <a class="nav-link" href="{{ route('evangelism-leader.tasks.index') }}">
-                                        <i class="fas fa-list me-2"></i>All Tasks
+                                        <i class="fas fa-list me-2"></i>{{ __('common.all_tasks') }}
                                     </a>
                                     <a class="nav-link" href="{{ route('evangelism-leader.tasks.create') }}">
-                                        <i class="fas fa-plus me-2"></i>Create Task
+                                        <i class="fas fa-plus me-2"></i>{{ __('common.create_task') }}
                                     </a>
                                 </nav>
                             </div>
                             <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapseEvangelismIssues" aria-expanded="false" aria-controls="collapseEvangelismIssues">
                                 <div class="sb-nav-link-icon"><i class="fas fa-exclamation-triangle"></i></div>
-                                Report Issue
+                                {{ __('common.report_issue') }}
                                 <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
                             </a>
                             <div class="collapse" id="collapseEvangelismIssues" aria-labelledby="headingEvangelismIssues" data-bs-parent="#sidenavAccordion">
                                 <nav class="sb-sidenav-menu-nested nav">
                                     <a class="nav-link" href="{{ route('evangelism-leader.issues.index') }}">
-                                        <i class="fas fa-list me-2"></i>All Issues
+                                        <i class="fas fa-list me-2"></i>{{ __('common.all_issues') }}
                                     </a>
                                     <a class="nav-link" href="{{ route('evangelism-leader.issues.create') }}">
-                                        <i class="fas fa-plus me-2"></i>Report Issue
+                                        <i class="fas fa-plus me-2"></i>{{ __('common.report_issue') }}
                                     </a>
                                 </nav>
                             </div>
                             <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapseChurchElderReports" aria-expanded="false" aria-controls="collapseChurchElderReports">
                                 <div class="sb-nav-link-icon"><i class="fas fa-church"></i></div>
-                                Church Elder Reports
+                                {{ __('common.church_elder_reports') }}
                                 <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
                             </a>
                             <div class="collapse" id="collapseChurchElderReports" aria-labelledby="headingChurchElderReports" data-bs-parent="#sidenavAccordion">
                                 <nav class="sb-sidenav-menu-nested nav">
                                     <a class="nav-link" href="{{ route('evangelism-leader.church-elder-tasks.index') }}">
-                                        <i class="fas fa-tasks me-2"></i>Church Elder Tasks
+                                        <i class="fas fa-tasks me-2"></i>{{ __('common.church_elder_tasks') }}
                                     </a>
                                     <a class="nav-link" href="{{ route('evangelism-leader.church-elder-issues.index') }}">
-                                        <i class="fas fa-exclamation-triangle me-2"></i>Church Elder Issues
+                                        <i class="fas fa-exclamation-triangle me-2"></i>{{ __('common.church_elder_issues') }}
                                     </a>
                                 </nav>
                             </div>
                             <a class="nav-link" href="{{ route('evangelism-leader.offerings.index') }}">
                                 <div class="sb-nav-link-icon"><i class="fas fa-money-bill-wave"></i></div>
-                                Community Offerings
+                                {{ __('common.community_offerings') }}
                             </a>
                             <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapseBranchServices" aria-expanded="false" aria-controls="collapseBranchServices">
                                 <div class="sb-nav-link-icon"><i class="fas fa-church"></i></div>
-                                Branch Services
+                                {{ __('common.branch_services') }}
                                 <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
                             </a>
                             <div class="collapse" id="collapseBranchServices" aria-labelledby="headingBranchServices" data-bs-parent="#sidenavAccordion">
@@ -2550,6 +2602,62 @@
                                 <div class="sb-nav-link-icon"><i class="fas fa-key"></i></div>
                                 Change Password
                             </a>
+                            @elseif(auth()->user()->isParishWorker())
+                            <div class="sb-sidenav-menu-heading">Parish Worker</div>
+                            <a class="nav-link" href="{{ route('parish-worker.dashboard') }}">
+                                <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
+                                {{ __('common.dashboard') }}
+                            </a>
+                            <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapsePWActivities" aria-expanded="false" aria-controls="collapsePWActivities">
+                                <div class="sb-nav-link-icon"><i class="fas fa-walking"></i></div>
+                                Activities
+                                <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                            </a>
+                            <div class="collapse" id="collapsePWActivities" aria-labelledby="headingPWActivities" data-bs-parent="#sidenavAccordion">
+                                <nav class="sb-sidenav-menu-nested nav">
+                                    <a class="nav-link" href="{{ route('parish-worker.activities.index') }}">
+                                        <i class="fas fa-list me-2"></i>My Activities
+                                    </a>
+                                    <a class="nav-link" href="{{ route('parish-worker.activities.create') }}">
+                                        <i class="fas fa-plus me-2"></i>Record Activity
+                                    </a>
+                                </nav>
+                            </div>
+                            <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapsePWCandles" aria-expanded="false" aria-controls="collapsePWCandles">
+                                <div class="sb-nav-link-icon"><i class="fas fa-fire"></i></div>
+                                Candle Inventory
+                                <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                            </a>
+                            <div class="collapse" id="collapsePWCandles" aria-labelledby="headingPWCandles" data-bs-parent="#sidenavAccordion">
+                                <nav class="sb-sidenav-menu-nested nav">
+                                    <a class="nav-link" href="{{ route('parish-worker.candles.index') }}">
+                                        <i class="fas fa-list-alt me-2"></i>Stock History
+                                    </a>
+                                    <a class="nav-link" href="{{ route('parish-worker.candles.create') }}">
+                                        <i class="fas fa-plus-circle me-2"></i>New Transaction
+                                    </a>
+                                </nav>
+                            </div>
+                            <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapsePWReports" aria-expanded="false" aria-controls="collapsePWReports">
+                                <div class="sb-nav-link-icon"><i class="fas fa-file-alt"></i></div>
+                                My Reports
+                                <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                            </a>
+                            <div class="collapse" id="collapsePWReports" aria-labelledby="headingPWReports" data-bs-parent="#sidenavAccordion">
+                                <nav class="sb-sidenav-menu-nested nav">
+                                    <a class="nav-link" href="{{ route('parish-worker.reports.index') }}">
+                                        <i class="fas fa-list me-2"></i>All Reports
+                                    </a>
+                                    <a class="nav-link" href="{{ route('parish-worker.reports.create') }}">
+                                        <i class="fas fa-plus me-2"></i>Submit Report
+                                    </a>
+                                </nav>
+                            </div>
+                            <div class="sb-sidenav-menu-heading">Account</div>
+                            <a class="nav-link" href="{{ route('leader.change-password') }}">
+                                <div class="sb-nav-link-icon"><i class="fas fa-key"></i></div>
+                                Change Password
+                            </a>
                             @else
                             {{-- Branch & Usharika Dashboards --}}
                             @php
@@ -2558,6 +2666,7 @@
                                 $isUsharikaAdmin = auth()->user()->isUsharikaAdmin();
                                 $isSuperSecretary = auth()->user()->isSecretary() && $userCampus && $userCampus->is_main_campus;
                             @endphp
+                            
                             
                             @if($isBranchUser && !auth()->user()->isChurchElder())
                             <div class="sb-sidenav-menu-heading">Branch</div>
@@ -2615,7 +2724,7 @@
                             </div>
                             @endif
                             
-                            @if((!auth()->user()->isTreasurer() || auth()->user()->isAdmin()) && !auth()->user()->isMember())
+                            @if((!auth()->user()->isTreasurer() || auth()->user()->isAdmin()) && !auth()->user()->isMember() && !auth()->user()->isParishWorker() && !auth()->user()->isChurchElder())
                             <div class="sb-sidenav-menu-heading">Reports</div>
                             <a class="nav-link" href="{{ route('analytics.index') }}">
                                 <div class="sb-nav-link-icon"><i class="fas fa-chart-line"></i></div>
@@ -2625,8 +2734,29 @@
                                 <div class="sb-nav-link-icon"><i class="fas fa-file-alt"></i></div>
                                 All Reports
                             </a>
+                            @if(auth()->user()->isSecretary() || auth()->user()->isPastor() || auth()->user()->isAdmin())
+                            <a class="nav-link" href="{{ route('reports.general-secretary') }}">
+                                <div class="sb-nav-link-icon"><i class="fas fa-star"></i></div>
+                                Gen Sec Report
+                            </a>
+                            @endif
+                            @if(auth()->user()->isPastor())
+                            <a class="nav-link" href="{{ route('pastor.parish-worker.activities.index') }}">
+                                <div class="sb-nav-link-icon"><i class="fas fa-walking"></i></div>
+                                PW Activities
+                            </a>
+                            <a class="nav-link" href="{{ route('pastor.parish-worker.reports.index') }}">
+                                <div class="sb-nav-link-icon"><i class="fas fa-file-invoice"></i></div>
+                                PW Reports
+                            </a>
+                            <a class="nav-link" href="{{ route('pastor.parish-worker.candles.index') }}">
+                                <div class="sb-nav-link-icon"><i class="fas fa-fire"></i></div>
+                                Candle Inventory
+                            </a>
+                            @endif
+                            @endif
                             
-                            @if(!auth()->user()->isMember())
+                            @if(!auth()->user()->isMember() && !auth()->user()->isParishWorker())
                             <div class="sb-sidenav-menu-heading">Account</div>
                             <a class="nav-link" href="{{ route('leader.change-password') }}">
                                 <div class="sb-nav-link-icon"><i class="fas fa-key"></i></div>
@@ -2640,7 +2770,6 @@
                                 <div class="sb-nav-link-icon"><i class="fas fa-cog"></i></div>
                                 System Settings
                             </a>
-                            @endif
                             @endif
                             @endif
                         </div>

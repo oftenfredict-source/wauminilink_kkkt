@@ -28,7 +28,7 @@ class ChurchElderController extends Controller
     public function dashboard()
     {
         $user = auth()->user();
-        
+
         // Check if user is a church elder
         if (!$user->isChurchElder()) {
             abort(403, 'You are not authorized to access this page.');
@@ -36,22 +36,22 @@ class ChurchElderController extends Controller
 
         // Get communities where user is elder
         $communities = $user->elderCommunities();
-        
+
         if ($communities->isEmpty()) {
-            return redirect()->route('home')
+            return redirect()->route('member.dashboard')
                 ->with('error', 'You are not assigned to any community as a church elder.');
         }
 
         // For now, show the first community (can be enhanced to show all or let user select)
         $community = $communities->first();
-        $community->load(['campus', 'members', 'churchElder.member']);
+        $community->load(['campus', 'members', 'memberChildren.member', 'churchElder.member']);
 
         // Get community statistics
         $stats = $this->getCommunityStats($community);
-        
+
         // Load user's member information for personal info display
         $user->load('member');
-        
+
         // Get recent tasks for this community and elder
         $recentTasks = ChurchElderTask::where('community_id', $community->id)
             ->where('church_elder_id', $user->id)
@@ -59,7 +59,7 @@ class ChurchElderController extends Controller
             ->orderBy('created_at', 'desc')
             ->take(5)
             ->get();
-        
+
         // Get recent issues for this community and elder
         $recentIssues = ChurchElderIssue::where('community_id', $community->id)
             ->where('church_elder_id', $user->id)
@@ -68,13 +68,13 @@ class ChurchElderController extends Controller
             ->orderBy('created_at', 'desc')
             ->take(5)
             ->get();
-        
+
         // Get pending tasks count
         $pendingTasks = ChurchElderTask::where('community_id', $community->id)
             ->where('church_elder_id', $user->id)
             ->where('status', 'pending')
             ->count();
-        
+
         // Get open issues count
         $openIssues = ChurchElderIssue::where('community_id', $community->id)
             ->where('church_elder_id', $user->id)
@@ -90,13 +90,13 @@ class ChurchElderController extends Controller
     public function showCommunity(Community $community)
     {
         $user = auth()->user();
-        
+
         // Verify user is elder of this community
         if (!$this->isElderOfCommunity($user, $community)) {
             abort(403, 'You are not authorized to view this community.');
         }
 
-        $community->load(['campus', 'members', 'churchElder.member']);
+        $community->load(['campus', 'members', 'memberChildren.member', 'churchElder.member']);
         $stats = $this->getCommunityStats($community);
 
         return view('church-elder.community', compact('community', 'stats'));
@@ -108,7 +108,7 @@ class ChurchElderController extends Controller
     public function services(Community $community)
     {
         $user = auth()->user();
-        
+
         if (!$this->isElderOfCommunity($user, $community)) {
             abort(403, 'You are not authorized to view this community.');
         }
@@ -128,16 +128,16 @@ class ChurchElderController extends Controller
             ->keyBy('service_id');
 
         // Get recent attendance records grouped by date
-        $recentAttendances = ServiceAttendance::whereHas('member', function($query) use ($community) {
+        $recentAttendances = ServiceAttendance::whereHas('member', function ($query) use ($community) {
             $query->where('community_id', $community->id);
         })
-        ->with('member')
-        ->orderBy('attended_at', 'desc')
-        ->limit(50)
-        ->get()
-        ->groupBy(function($attendance) {
-            return \Carbon\Carbon::parse($attendance->attended_at)->format('Y-m-d');
-        });
+            ->with('member')
+            ->orderBy('attended_at', 'desc')
+            ->limit(50)
+            ->get()
+            ->groupBy(function ($attendance) {
+                return \Carbon\Carbon::parse($attendance->attended_at)->format('Y-m-d');
+            });
 
         return view('church-elder.services', compact('community', 'services', 'recentAttendances', 'serviceOfferings'));
     }
@@ -148,7 +148,7 @@ class ChurchElderController extends Controller
     public function offerings(Community $community)
     {
         $user = auth()->user();
-        
+
         if (!$this->isElderOfCommunity($user, $community)) {
             abort(403, 'You are not authorized to view this community.');
         }
@@ -157,13 +157,13 @@ class ChurchElderController extends Controller
         $members = $community->members()->orderBy('full_name')->get();
 
         // Get recent offerings for this community
-        $recentOfferings = Offering::whereHas('member', function($query) use ($community) {
+        $recentOfferings = Offering::whereHas('member', function ($query) use ($community) {
             $query->where('community_id', $community->id);
         })
-        ->with('member')
-        ->orderBy('offering_date', 'desc')
-        ->limit(50)
-        ->get();
+            ->with('member')
+            ->orderBy('offering_date', 'desc')
+            ->limit(50)
+            ->get();
 
         // Get offering statistics
         $offeringStats = $this->getOfferingStats($community);
@@ -177,7 +177,7 @@ class ChurchElderController extends Controller
     public function storeOffering(Request $request, Community $community)
     {
         $user = auth()->user();
-        
+
         if (!$this->isElderOfCommunity($user, $community)) {
             return response()->json([
                 'success' => false,
@@ -250,22 +250,22 @@ class ChurchElderController extends Controller
     public function finance(Community $community)
     {
         $user = auth()->user();
-        
+
         if (!$this->isElderOfCommunity($user, $community)) {
             abort(403, 'You are not authorized to view this community.');
         }
 
         // Get community-specific financial data
         $offeringStats = $this->getOfferingStats($community);
-        
+
         // Get recent offerings for this community
-        $recentOfferings = Offering::whereHas('member', function($query) use ($community) {
+        $recentOfferings = Offering::whereHas('member', function ($query) use ($community) {
             $query->where('community_id', $community->id);
         })
-        ->with('member')
-        ->orderBy('offering_date', 'desc')
-        ->limit(20)
-        ->get();
+            ->with('member')
+            ->orderBy('offering_date', 'desc')
+            ->limit(20)
+            ->get();
 
         // Get community offerings (mid-week)
         $communityOfferings = CommunityOffering::where('community_id', $community->id)
@@ -280,9 +280,9 @@ class ChurchElderController extends Controller
         $totalGeneralOfferings = $recentOfferings->sum('amount');
 
         return view('church-elder.finance', compact(
-            'community', 
-            'offeringStats', 
-            'recentOfferings', 
+            'community',
+            'offeringStats',
+            'recentOfferings',
             'communityOfferings',
             'totalCommunityOfferings',
             'totalGeneralOfferings'
@@ -295,7 +295,7 @@ class ChurchElderController extends Controller
     public function reports(Community $community)
     {
         $user = auth()->user();
-        
+
         if (!$this->isElderOfCommunity($user, $community)) {
             abort(403, 'You are not authorized to view this community.');
         }
@@ -312,14 +312,14 @@ class ChurchElderController extends Controller
         $offeringStats = $this->getOfferingStats($community, $start, $end);
 
         // Get attendance statistics
-        $attendanceStats = ServiceAttendance::whereHas('member', function($query) use ($community) {
+        $attendanceStats = ServiceAttendance::whereHas('member', function ($query) use ($community) {
             $query->where('community_id', $community->id);
         })
-        ->whereBetween('attended_at', [$start, $end])
-        ->select(DB::raw('DATE(attended_at) as attendance_date'), DB::raw('COUNT(*) as attendance_count'))
-        ->groupBy(DB::raw('DATE(attended_at)'))
-        ->orderBy('attendance_date', 'desc')
-        ->get();
+            ->whereBetween('attended_at', [$start, $end])
+            ->select(DB::raw('DATE(attended_at) as attendance_date'), DB::raw('COUNT(*) as attendance_count'))
+            ->groupBy(DB::raw('DATE(attended_at)'))
+            ->orderBy('attendance_date', 'desc')
+            ->get();
 
         return view('church-elder.reports', compact('community', 'stats', 'offeringStats', 'attendanceStats', 'startDate', 'endDate'));
     }
@@ -345,26 +345,31 @@ class ChurchElderController extends Controller
         $start = $startDate ? Carbon::parse($startDate) : Carbon::now()->startOfMonth();
         $end = $endDate ? Carbon::parse($endDate) : Carbon::now()->endOfMonth();
 
+        $adultMembers = $community->members()->count();
+        $childMembers = $community->memberChildren()->count();
+        $totalMembers = $adultMembers + $childMembers;
+
+        // Get individual offerings
+        $individualOfferings = Offering::whereHas('member', function ($query) use ($community) {
+            $query->where('community_id', $community->id);
+        })
+            ->whereBetween('offering_date', [$start, $end]);
+
+        // Get community offerings
+        $communityOfferings = CommunityOffering::where('community_id', $community->id)
+            ->whereBetween('created_at', [$start, $end]);
+
         return [
-            'total_members' => $community->members()->count(),
+            'total_members' => $totalMembers,
             'active_members' => $community->members()->where('membership_type', 'permanent')->count(),
-            'total_offerings' => Offering::whereHas('member', function($query) use ($community) {
+            'total_offerings' => (clone $individualOfferings)->where('approval_status', 'approved')->sum('amount') +
+                (clone $communityOfferings)->sum('amount'), // Assuming community offerings are auto-approved or don't have status yet
+            'pending_offerings' => (clone $individualOfferings)->where('approval_status', 'pending')->sum('amount'),
+            'total_attendance' => ServiceAttendance::whereHas('member', function ($query) use ($community) {
                 $query->where('community_id', $community->id);
             })
-            ->whereBetween('offering_date', [$start, $end])
-            ->where('approval_status', 'approved')
-            ->sum('amount'),
-            'pending_offerings' => Offering::whereHas('member', function($query) use ($community) {
-                $query->where('community_id', $community->id);
-            })
-            ->whereBetween('offering_date', [$start, $end])
-            ->where('approval_status', 'pending')
-            ->sum('amount'),
-            'total_attendance' => ServiceAttendance::whereHas('member', function($query) use ($community) {
-                $query->where('community_id', $community->id);
-            })
-            ->whereBetween('attended_at', [$start, $end])
-            ->count(),
+                ->whereBetween('attended_at', [$start, $end])
+                ->count(),
         ];
     }
 
@@ -376,19 +381,31 @@ class ChurchElderController extends Controller
         $start = $startDate ? Carbon::parse($startDate) : Carbon::now()->startOfMonth();
         $end = $endDate ? Carbon::parse($endDate) : Carbon::now()->endOfMonth();
 
-        $offerings = Offering::whereHas('member', function($query) use ($community) {
+        $offerings = Offering::whereHas('member', function ($query) use ($community) {
             $query->where('community_id', $community->id);
         })
-        ->whereBetween('offering_date', [$start, $end]);
+            ->whereBetween('offering_date', [$start, $end]);
+
+        $communityOfferings = CommunityOffering::where('community_id', $community->id)
+            ->whereBetween('created_at', [$start, $end]);
+
+        $totalIndividual = (clone $offerings)->where('approval_status', 'approved')->sum('amount');
+        $totalCommunity = (clone $communityOfferings)->sum('amount');
+
+        // Merge types for consistent breakdown
+        $individualTypes = (clone $offerings)->where('approval_status', 'approved')
+            ->select('offering_type', DB::raw('SUM(amount) as total'), DB::raw('COUNT(*) as count'))
+            ->groupBy('offering_type')
+            ->get();
+
+        // For community offerings, we might simply group them or add them as a specific type "Community Offering" if they don't have types
+        // Checking CommunityOffering model would confirm if it has 'offering_type'
 
         return [
-            'total' => (clone $offerings)->where('approval_status', 'approved')->sum('amount'),
+            'total' => $totalIndividual + $totalCommunity,
             'pending' => (clone $offerings)->where('approval_status', 'pending')->sum('amount'),
-            'count' => (clone $offerings)->where('approval_status', 'approved')->count(),
-            'by_type' => (clone $offerings)->where('approval_status', 'approved')
-                ->select('offering_type', DB::raw('SUM(amount) as total'), DB::raw('COUNT(*) as count'))
-                ->groupBy('offering_type')
-                ->get(),
+            'count' => (clone $offerings)->where('approval_status', 'approved')->count() + (clone $communityOfferings)->count(),
+            'by_type' => $individualTypes, // Keeping just individual breakdown for now to avoid complex merging logic without strict type alignment
         ];
     }
 
@@ -398,7 +415,7 @@ class ChurchElderController extends Controller
     public function createService(Community $community)
     {
         $user = auth()->user();
-        
+
         if (!$this->isElderOfCommunity($user, $community)) {
             abort(403, 'You are not authorized to create services for this community.');
         }
@@ -414,7 +431,7 @@ class ChurchElderController extends Controller
     public function storeService(Request $request, Community $community)
     {
         $user = auth()->user();
-        
+
         if (!$this->isElderOfCommunity($user, $community)) {
             return response()->json([
                 'success' => false,
@@ -453,15 +470,15 @@ class ChurchElderController extends Controller
 
         // Set church elder ID (current user's member ID)
         $validated['church_elder_id'] = $user->member_id;
-        
+
         // Set default values for numeric fields that cannot be null
         $validated['attendance_count'] = $validated['attendance_count'] ?? 0;
         $validated['guests_count'] = $validated['guests_count'] ?? 0;
         $validated['offerings_amount'] = $validated['offerings_amount'] ?? 0;
-        
+
         // Set status based on whether attendance/offerings are provided
-        $validated['status'] = ($validated['attendance_count'] > 0 || $validated['offerings_amount'] > 0) 
-            ? 'completed' 
+        $validated['status'] = ($validated['attendance_count'] > 0 || $validated['offerings_amount'] > 0)
+            ? 'completed'
             : 'scheduled';
 
         try {
@@ -497,7 +514,7 @@ class ChurchElderController extends Controller
     public function editService(Community $community, SundayService $service)
     {
         $user = auth()->user();
-        
+
         if (!$this->isElderOfCommunity($user, $community)) {
             abort(403, 'You are not authorized to edit services for this community.');
         }
@@ -518,7 +535,7 @@ class ChurchElderController extends Controller
     public function updateService(Request $request, Community $community, SundayService $service)
     {
         $user = auth()->user();
-        
+
         if (!$this->isElderOfCommunity($user, $community)) {
             return response()->json([
                 'success' => false,
@@ -567,10 +584,10 @@ class ChurchElderController extends Controller
         $validated['attendance_count'] = $validated['attendance_count'] ?? 0;
         $validated['guests_count'] = $validated['guests_count'] ?? 0;
         $validated['offerings_amount'] = $validated['offerings_amount'] ?? 0;
-        
+
         // Set status based on whether attendance/offerings are provided
-        $validated['status'] = ($validated['attendance_count'] > 0 || $validated['offerings_amount'] > 0) 
-            ? 'completed' 
+        $validated['status'] = ($validated['attendance_count'] > 0 || $validated['offerings_amount'] > 0)
+            ? 'completed'
             : 'scheduled';
 
         try {
@@ -606,7 +623,7 @@ class ChurchElderController extends Controller
     public function deleteService(Community $community, SundayService $service)
     {
         $user = auth()->user();
-        
+
         if (!$this->isElderOfCommunity($user, $community)) {
             return response()->json([
                 'success' => false,
@@ -655,7 +672,7 @@ class ChurchElderController extends Controller
     public function createTask(Community $community)
     {
         $user = auth()->user();
-        
+
         if (!$this->isElderOfCommunity($user, $community)) {
             abort(403, 'You are not authorized to create tasks for this community.');
         }
@@ -671,7 +688,7 @@ class ChurchElderController extends Controller
     public function storeTask(Request $request, Community $community)
     {
         $user = auth()->user();
-        
+
         if (!$this->isElderOfCommunity($user, $community)) {
             return response()->json([
                 'success' => false,
@@ -745,7 +762,7 @@ class ChurchElderController extends Controller
     public function tasksIndex(Community $community)
     {
         $user = auth()->user();
-        
+
         if (!$this->isElderOfCommunity($user, $community)) {
             abort(403, 'You are not authorized to view tasks for this community.');
         }
@@ -766,7 +783,7 @@ class ChurchElderController extends Controller
     public function showTask(Community $community, ChurchElderTask $task)
     {
         $user = auth()->user();
-        
+
         if (!$this->isElderOfCommunity($user, $community) || $task->church_elder_id !== $user->id) {
             abort(403, 'You are not authorized to view this task.');
         }
@@ -782,7 +799,7 @@ class ChurchElderController extends Controller
     public function updateTaskStatus(Request $request, Community $community, ChurchElderTask $task)
     {
         $user = auth()->user();
-        
+
         if (!$this->isElderOfCommunity($user, $community) || $task->church_elder_id !== $user->id) {
             return response()->json([
                 'success' => false,
@@ -811,7 +828,7 @@ class ChurchElderController extends Controller
     public function createIssue(Community $community)
     {
         $user = auth()->user();
-        
+
         if (!$this->isElderOfCommunity($user, $community)) {
             abort(403, 'You are not authorized to report issues for this community.');
         }
@@ -825,7 +842,7 @@ class ChurchElderController extends Controller
     public function storeIssue(Request $request, Community $community)
     {
         $user = auth()->user();
-        
+
         if (!$this->isElderOfCommunity($user, $community)) {
             return response()->json([
                 'success' => false,
@@ -877,7 +894,7 @@ class ChurchElderController extends Controller
     public function issuesIndex(Community $community)
     {
         $user = auth()->user();
-        
+
         if (!$this->isElderOfCommunity($user, $community)) {
             abort(403, 'You are not authorized to view issues for this community.');
         }
@@ -897,7 +914,7 @@ class ChurchElderController extends Controller
     public function showIssue(Community $community, ChurchElderIssue $issue)
     {
         $user = auth()->user();
-        
+
         if (!$this->isElderOfCommunity($user, $community) || $issue->church_elder_id !== $user->id) {
             abort(403, 'You are not authorized to view this issue.');
         }
@@ -913,12 +930,12 @@ class ChurchElderController extends Controller
     public function allOfferings(Community $community)
     {
         $user = auth()->user();
-        
+
         if (!$this->isElderOfCommunity($user, $community)) {
             abort(403, 'You are not authorized to view offerings for this community.');
         }
 
-        $query = Offering::whereHas('member', function($q) use ($community) {
+        $query = Offering::whereHas('member', function ($q) use ($community) {
             $q->where('community_id', $community->id);
         })->with('member');
 
@@ -955,7 +972,7 @@ class ChurchElderController extends Controller
     public function attendance(Community $community)
     {
         $user = auth()->user();
-        
+
         if (!$this->isElderOfCommunity($user, $community)) {
             abort(403, 'You are not authorized to record attendance for this community.');
         }
@@ -963,8 +980,14 @@ class ChurchElderController extends Controller
         // Get community members
         $members = $community->members()->orderBy('full_name')->get();
 
-        // Get services created by this church elder
-        $recentServices = SundayService::where('church_elder_id', $user->member_id)
+        // Get elder's campus IDs
+        $elderCampusIds = $user->elderCommunities()->pluck('campus_id')->unique();
+
+        // Get services created by this church elder OR services in their campus(es)
+        $recentServices = SundayService::where(function ($query) use ($user, $elderCampusIds) {
+            $query->where('church_elder_id', $user->member_id)
+                ->orWhereIn('campus_id', $elderCampusIds);
+        })
             ->orderBy('service_date', 'desc')
             ->orderBy('created_at', 'desc')
             ->limit(50)
@@ -974,27 +997,30 @@ class ChurchElderController extends Controller
         $selectedService = null;
         if (request()->has('service_id')) {
             $selectedService = SundayService::where('id', request('service_id'))
-                ->where('church_elder_id', $user->member_id)
+                ->where(function ($query) use ($user, $elderCampusIds) {
+                    $query->where('church_elder_id', $user->member_id)
+                        ->orWhereIn('campus_id', $elderCampusIds);
+                })
                 ->first();
         }
 
         // Get recent attendance records
-        $recentAttendances = ServiceAttendance::whereHas('member', function($query) use ($community) {
+        $recentAttendances = ServiceAttendance::whereHas('member', function ($query) use ($community) {
             $query->where('community_id', $community->id);
         })
-        ->with(['member', 'sundayService'])
-        ->orderBy('attended_at', 'desc')
-        ->limit(20)
-        ->get();
+            ->with(['member', 'sundayService'])
+            ->orderBy('attended_at', 'desc')
+            ->limit(20)
+            ->get();
 
         // Check time restriction for selected service
         $canRecordAttendance = true;
         $timeRestrictionMessage = '';
-        
+
         if ($selectedService) {
             $serviceDate = $selectedService->service_date ?? null;
             $startTime = $selectedService->start_time ?? null;
-            
+
             if ($serviceDate && $startTime) {
                 try {
                     $timeString = $startTime;
@@ -1007,14 +1033,14 @@ class ChurchElderController extends Controller
                             $timeString = $startTime . ':00';
                         }
                     }
-                    
+
                     $serviceStartDateTime = \Carbon\Carbon::parse($serviceDate->format('Y-m-d') . ' ' . $timeString);
                     $now = now();
-                    
+
                     if ($now->lt($serviceStartDateTime)) {
                         $canRecordAttendance = false;
-                        $timeRestrictionMessage = 'Attendance and offering cannot be recorded before the service start time. Service starts at ' . 
-                            $serviceStartDateTime->format('d/m/Y h:i A') . '. Current time is ' . 
+                        $timeRestrictionMessage = 'Attendance and offering cannot be recorded before the service start time. Service starts at ' .
+                            $serviceStartDateTime->format('d/m/Y h:i A') . '. Current time is ' .
                             $now->format('d/m/Y h:i A') . '.';
                     }
                 } catch (\Exception $e) {
@@ -1036,7 +1062,7 @@ class ChurchElderController extends Controller
     public function recordAttendance(Request $request, Community $community)
     {
         $user = auth()->user();
-        
+
         if (!$this->isElderOfCommunity($user, $community)) {
             return response()->json([
                 'success' => false,
@@ -1055,19 +1081,20 @@ class ChurchElderController extends Controller
 
         // Verify service belongs to this community and elder
         $service = SundayService::findOrFail($request->service_id);
-        
-        // Check if service belongs to this elder
-        if ($service->church_elder_id !== $user->member_id) {
+
+        // Check if service belongs to this elder OR belongs to the same campus as the elder's communities
+        $elderCampusIds = $user->elderCommunities()->pluck('campus_id')->unique();
+        if ($service->church_elder_id !== $user->member_id && !$elderCampusIds->contains($service->campus_id)) {
             return response()->json([
                 'success' => false,
-                'message' => 'This service does not belong to you. You can only record attendance for services you created.'
+                'message' => 'This service does not belong to you or your campus.'
             ], 403);
         }
 
         // Check time restriction
         $serviceDate = $service->service_date ?? null;
         $startTime = $service->start_time ?? null;
-        
+
         if ($serviceDate && $startTime) {
             try {
                 $timeString = $startTime;
@@ -1080,15 +1107,15 @@ class ChurchElderController extends Controller
                         $timeString = $startTime . ':00';
                     }
                 }
-                
+
                 $serviceStartDateTime = \Carbon\Carbon::parse($serviceDate->format('Y-m-d') . ' ' . $timeString);
                 $now = now();
-                
+
                 if ($now->lt($serviceStartDateTime)) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'Attendance cannot be recorded before the service start time. Service starts at ' . 
-                            $serviceStartDateTime->format('d/m/Y h:i A') . '. Current time is ' . 
+                        'message' => 'Attendance cannot be recorded before the service start time. Service starts at ' .
+                            $serviceStartDateTime->format('d/m/Y h:i A') . '. Current time is ' .
                             $now->format('d/m/Y h:i A') . '.'
                     ], 422);
                 }
@@ -1105,13 +1132,13 @@ class ChurchElderController extends Controller
         // Clean and validate member IDs
         $rawMemberIds = is_array($request->member_ids) ? $request->member_ids : [];
         $memberIds = [];
-        
+
         foreach ($rawMemberIds as $id) {
             // Skip empty values
             if (empty($id) && $id !== '0') {
                 continue;
             }
-            
+
             // Convert to integer and skip invalid values
             if (is_numeric($id)) {
                 $intId = (int) $id;
@@ -1120,10 +1147,10 @@ class ChurchElderController extends Controller
                 }
             }
         }
-        
+
         // Remove duplicates and re-index array
         $memberIds = array_values(array_unique($memberIds));
-        
+
         if (empty($memberIds)) {
             Log::warning('No valid member IDs provided for attendance', [
                 'raw_member_ids' => $rawMemberIds,
@@ -1136,14 +1163,14 @@ class ChurchElderController extends Controller
                 'message' => 'Please select at least one valid member to record attendance. No valid member IDs were provided. Raw data: ' . json_encode($rawMemberIds)
             ], 422);
         }
-        
+
         // Get all members that match the IDs
         $allMembers = Member::whereIn('id', $memberIds)->get();
-        
+
         // Check if all requested members exist
         $foundMemberIds = $allMembers->pluck('id')->toArray();
         $invalidMemberIds = array_diff($memberIds, $foundMemberIds);
-        
+
         if (!empty($invalidMemberIds)) {
             Log::warning('Invalid member IDs provided for attendance', [
                 'invalid_ids' => $invalidMemberIds,
@@ -1152,16 +1179,16 @@ class ChurchElderController extends Controller
                 'raw_member_ids' => $rawMemberIds,
                 'community_id' => $community->id
             ]);
-            
+
             $invalidIdsStr = !empty($invalidMemberIds) ? implode(', ', array_map('strval', $invalidMemberIds)) : 'Unknown';
             return response()->json([
                 'success' => false,
                 'message' => 'Some selected members do not exist in the system. Invalid member IDs: ' . $invalidIdsStr . '. Please refresh the page and try again.'
             ], 422);
         }
-        
+
         // Filter members that belong to this community
-        $members = $allMembers->filter(function($member) use ($community) {
+        $members = $allMembers->filter(function ($member) use ($community) {
             return $member->community_id == $community->id;
         });
 
@@ -1170,19 +1197,19 @@ class ChurchElderController extends Controller
             $validMemberIds = $members->pluck('id')->toArray();
             $invalidMemberIds = array_diff($memberIds, $validMemberIds);
             $invalidMembers = $allMembers->whereIn('id', $invalidMemberIds)->pluck('full_name')->toArray();
-            
+
             $errorMessage = 'Some selected members do not belong to this community (' . $community->name . ').';
             if (!empty($invalidMembers)) {
                 $errorMessage .= ' Invalid members: ' . implode(', ', $invalidMembers);
             }
             $errorMessage .= ' Please select only members from ' . $community->name . '.';
-            
+
             return response()->json([
                 'success' => false,
                 'message' => $errorMessage
             ], 422);
         }
-        
+
         // Use the validated member IDs
         $memberIds = $members->pluck('id')->toArray();
 
@@ -1254,12 +1281,12 @@ class ChurchElderController extends Controller
     public function viewAttendance(Community $community)
     {
         $user = auth()->user();
-        
+
         if (!$this->isElderOfCommunity($user, $community)) {
             abort(403, 'You are not authorized to view attendance for this community.');
         }
 
-        $query = ServiceAttendance::whereHas('member', function($q) use ($community) {
+        $query = ServiceAttendance::whereHas('member', function ($q) use ($community) {
             $q->where('community_id', $community->id);
         })->with(['member', 'sundayService']);
 

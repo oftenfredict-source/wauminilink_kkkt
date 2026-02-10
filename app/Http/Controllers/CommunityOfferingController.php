@@ -18,93 +18,87 @@ class CommunityOfferingController extends Controller
     public function index(Community $community = null)
     {
         $user = auth()->user();
-        
+
         if ($user->isChurchElder()) {
             // Get all communities where user is elder
             $elderCommunities = $user->elderCommunities();
-            
+
             // Verify user is elder of this community if community is provided
-            if ($community && !$elderCommunities->contains($community->id)) {
+            if ($community && !$elderCommunities->pluck('id')->contains($community->id)) {
                 abort(403, 'You are not authorized to view offerings for this community.');
             }
-            
+
             // Elder sees their own submissions
             // If community is provided, filter by that community
             // Otherwise, show offerings from all communities they manage
             $offerings = CommunityOffering::where('church_elder_id', $user->id)
-                ->when($community, function($query) use ($community) {
+                ->when($community, function ($query) use ($community) {
                     return $query->where('community_id', $community->id);
-                }, function($query) use ($elderCommunities) {
+                }, function ($query) use ($elderCommunities) {
                     // If no community specified, show from all their communities
                     return $query->whereIn('community_id', $elderCommunities->pluck('id'));
                 })
                 ->with(['community', 'service'])
                 ->orderBy('created_at', 'desc')
                 ->paginate(10);
-                
+
             // If no community specified but elder has communities, use first one for context
             if (!$community && $elderCommunities->count() > 0) {
                 $community = $elderCommunities->first();
             }
-                
+
             return view('church-elder.community-offerings.index', compact('offerings', 'community'));
-        } 
-        elseif ($user->isEvangelismLeader()) {
+        } elseif ($user->isEvangelismLeader()) {
             // Get the evangelism leader's campus
             $campus = $user->getCampus();
-            
+
             if (!$campus) {
                 abort(404, 'Campus not found for this evangelism leader.');
             }
-            
+
             // Get all community IDs for this campus
             $communityIds = Community::where('campus_id', $campus->id)
                 ->pluck('id')
                 ->toArray();
-            
-            // Leader sees submissions from communities in their campus only
-            // Include rejected offerings so they can see what was rejected
-            $offerings = CommunityOffering::whereIn('status', ['pending_evangelism', 'rejected'])
-                ->whereIn('community_id', $communityIds)
-                ->with(['community', 'service', 'churchElder', 'rejectedBy'])
-                ->orderByRaw("CASE WHEN status = 'rejected' THEN 1 ELSE 0 END")
-                ->orderBy('offering_date', 'asc')
+
+            // Leader sees ALL submissions from communities in their campus
+            // Show BOTH pending_evangelism (waiting for them) and pending_secretary (forwarded by them)
+            $offerings = CommunityOffering::whereIn('community_id', $communityIds)
+                ->whereIn('status', ['pending_evangelism', 'pending_secretary'])
+                ->with(['community', 'service', 'churchElder'])
+                ->orderBy('created_at', 'desc')
                 ->paginate(10);
-                
-            $confirmedOfferings = CommunityOffering::where('evangelism_leader_id', $user->id)
-                ->where('status', 'pending_secretary')
-                ->whereIn('community_id', $communityIds)
+
+            $confirmedOfferings = CommunityOffering::whereIn('community_id', $communityIds)
+                ->where('status', 'completed')
                 ->with(['community', 'service'])
                 ->orderBy('updated_at', 'desc')
                 ->paginate(10);
 
-            // Get consolidated totals (only for communities in this campus)
-            $consolidatedTotal = CommunityOffering::where('evangelism_leader_id', $user->id)
-                ->where('status', 'pending_secretary')
-                ->whereIn('community_id', $communityIds)
+            // Get consolidated totals (only for offerings they have NOT yet confirmed)
+            $consolidatedTotal = CommunityOffering::whereIn('community_id', $communityIds)
+                ->where('status', 'pending_evangelism')
                 ->sum('amount');
-            $consolidatedCount = CommunityOffering::where('evangelism_leader_id', $user->id)
-                ->where('status', 'pending_secretary')
-                ->whereIn('community_id', $communityIds)
+            $consolidatedCount = CommunityOffering::whereIn('community_id', $communityIds)
+                ->where('status', 'pending_evangelism')
                 ->count();
-                
+
             return view('evangelism-leader.offerings.index', compact('offerings', 'confirmedOfferings', 'consolidatedTotal', 'consolidatedCount'));
-        }
-        elseif ($user->isSecretary() || $user->isAdmin()) {
-            // Secretary sees submissions ready for them
-            $offerings = CommunityOffering::where('status', 'pending_secretary')
-                ->with(['community', 'service', 'evangelismLeader'])
-                ->orderBy('handover_to_evangelism_at', 'asc')
+        } elseif ($user->isSecretary() || $user->isAdmin() || $user->isPastor()) {
+            // Secretary/Admin/Pastor sees submissions ready for secretary OR still with leader
+            $offerings = CommunityOffering::whereIn('status', ['pending_evangelism', 'pending_secretary'])
+                ->with(['community', 'service', 'churchElder', 'evangelismLeader'])
+                ->orderBy('created_at', 'desc')
                 ->paginate(10);
-                
+
             $completedOfferings = CommunityOffering::where('status', 'completed')
                 ->with(['community', 'service'])
                 ->orderBy('updated_at', 'desc')
                 ->paginate(10);
-                
+
             return view('secretary.offerings.index', compact('offerings', 'completedOfferings'));
         }
-        
+
         abort(403);
     }
 
@@ -117,26 +111,31 @@ class CommunityOfferingController extends Controller
         if (!$user->isChurchElder()) {
             abort(403);
         }
-        
+
         // Verify user is elder of this community
-        if (!$user->elderCommunities()->contains($community->id)) {
+        if (!$user->elderCommunities()->pluck('id')->contains($community->id)) {
             abort(403, 'You are not authorized to create offerings for this community.');
         }
-        
+
         // Get communities where user is elder
         $communities = $user->elderCommunities();
-        
-        // Get mid-week services for the communities (services from last 30 days)
-        $midWeekServiceTypes = ['prayer_meeting', 'bible_study', 'youth_service', 'women_fellowship', 'men_fellowship', 'evangelism'];
-        $services = SundayService::whereIn('service_type', $midWeekServiceTypes)
+        $campusIds = $communities->pluck('campus_id')->unique();
+
+        // Get services: 
+        // 1. Sunday Services from the elder's campus(es)
+        // 2. Mid-week services led by this elder
+        $midWeekTypes = ['prayer_meeting', 'bible_study', 'youth_service', 'women_fellowship', 'men_fellowship', 'evangelism'];
+        $serviceTypes = array_merge(['sunday_service'], $midWeekTypes);
+
+        $services = SundayService::whereIn('service_type', $serviceTypes)
+            ->whereIn('campus_id', $campusIds)
             ->where('service_date', '>=', now()->subDays(30))
-            ->whereHas('churchElder', function($query) use ($user) {
-                $query->where('id', $user->member_id);
-            })
             ->orderBy('service_date', 'desc')
             ->get();
-        
-        return view('church-elder.community-offerings.create', compact('communities', 'services', 'community'));
+
+        $offeringCategories = $this->getOfferingCategories();
+
+        return view('church-elder.community-offerings.create', compact('communities', 'services', 'community', 'offeringCategories'));
     }
 
     /**
@@ -150,13 +149,14 @@ class CommunityOfferingController extends Controller
         }
 
         // Verify user is elder of this community
-        if (!$user->elderCommunities()->contains($community)) {
+        if (!$user->elderCommunities()->pluck('id')->contains($community->id)) {
             abort(403, 'You are not authorized to create offerings for this community.');
         }
 
-        // Verify service belongs to this elder
-        if ($service->church_elder_id != $user->member_id) {
-            abort(403, 'This service does not belong to you.');
+        // Verify service belongs to this elder OR belongs to the same campus as the elder's communities
+        $elderCampusIds = $user->elderCommunities()->pluck('campus_id')->unique();
+        if ($service->church_elder_id != $user->member_id && !$elderCampusIds->contains($service->campus_id)) {
+            abort(403, 'This service does not belong to you or your campus.');
         }
 
         // Check if offering already exists for this service
@@ -170,16 +170,16 @@ class CommunityOfferingController extends Controller
         $serviceDate = $service->service_date ?? null;
         $startTime = $service->start_time ?? null;
         $now = now();
-        
+
         if ($serviceDate) {
             // First check if service date has been reached
             $serviceDateOnly = \Carbon\Carbon::parse($serviceDate->format('Y-m-d'))->startOfDay();
             $today = $now->copy()->startOfDay();
-            
+
             if ($today->lt($serviceDateOnly)) {
                 $canRecordOffering = false;
-                $timeRestrictionMessage = 'Offering cannot be recorded before the service date. Service date is ' . 
-                    $serviceDateOnly->format('d/m/Y') . '. Today is ' . 
+                $timeRestrictionMessage = 'Offering cannot be recorded before the service date. Service date is ' .
+                    $serviceDateOnly->format('d/m/Y') . '. Today is ' .
                     $today->format('d/m/Y') . '.';
             } elseif ($startTime) {
                 // If date is reached, check if start time has been reached
@@ -194,13 +194,13 @@ class CommunityOfferingController extends Controller
                             $timeString = $startTime . ':00';
                         }
                     }
-                    
+
                     $serviceStartDateTime = \Carbon\Carbon::parse($serviceDate->format('Y-m-d') . ' ' . $timeString);
-                    
+
                     if ($now->lt($serviceStartDateTime)) {
                         $canRecordOffering = false;
-                        $timeRestrictionMessage = 'Offering cannot be recorded before the service start time. Service starts at ' . 
-                            $serviceStartDateTime->format('d/m/Y h:i A') . '. Current time is ' . 
+                        $timeRestrictionMessage = 'Offering cannot be recorded before the service start time. Service starts at ' .
+                            $serviceStartDateTime->format('d/m/Y h:i A') . '. Current time is ' .
                             $now->format('d/m/Y h:i A') . '.';
                     }
                 } catch (\Exception $e) {
@@ -213,7 +213,64 @@ class CommunityOfferingController extends Controller
             }
         }
 
-        return view('church-elder.community-offerings.create-from-service', compact('community', 'service', 'existingOffering', 'canRecordOffering', 'timeRestrictionMessage'));
+        $offeringCategories = $this->getOfferingCategories();
+
+        return view('church-elder.community-offerings.create-from-service', compact('community', 'service', 'existingOffering', 'canRecordOffering', 'timeRestrictionMessage', 'offeringCategories'));
+    }
+
+    /**
+     * Get offering categories and sub-types for "Other" offerings
+     */
+    private function getOfferingCategories()
+    {
+        return [
+            'Mapato ya Injili' => [
+                'KOLEKTI' => 'Kolekti ya Jumapili',
+                'S/SCHOOL' => 'Sadaka ya Sunday School',
+                'SHUKRANI' => 'Sadaka ya Shukrani',
+                'CHAKULA CHA BWANA' => 'Sadaka ya Chakula cha Bwana',
+                'FUNGU LA KUMI' => 'Fungu la Kumi (Zaka)',
+                'SHUKRANI YA NDOA' => 'Shukrani ya Ndoa',
+                'SHUKRANI UBATIZO' => 'Shukrani ya Ubatizo',
+                'MALIMBUKO' => 'Sadaka ya Malimbuko',
+                'MAVUNO' => 'Mavuno',
+                'HURUMA' => 'Sadaka ya Huruma',
+                'MKOPO KUTOKA VIKUNDI' => 'Mkopo kutoka Vikundi',
+            ],
+            'Mapato ya Vikundi' => [
+                'OMBENI KWAYA' => 'Ombeni Kwaya',
+                'ALPHA NA OMEGA KWAYA' => 'Alpha na Omega Kwaya',
+                'TUMAINI KWAYA' => 'Tumaini Kwaya',
+                'SIFUNI KWAYA' => 'Sifuni Kwaya',
+                'JUMUIYA' => 'Jumuiya',
+                'WANAWAKE' => 'Wanawake',
+                'MASIFU YA ASUBUHI' => 'Masifu ya Asubuhi',
+                'DIAKONIA/BCC' => 'Diakonia/BCC',
+                'VIJANA' => 'Vijana',
+                'PRAISE TEAM' => 'Praise Team',
+                'UAMSHO' => 'Uamsho',
+                'UIMBAJI' => 'Uimbaji',
+                'SEMINA/KONGAMANO' => 'Semina/Kongamano',
+                'MICHAEL NA WATOTO' => 'Michael na Watoto',
+                'NYUMBA YA MAOMBI' => 'Nyumba ya Maombi',
+                'UKARIMU WAGENI' => 'Ukarimu Wageni',
+                'KUSTAAFISHA WAZEE' => 'Kustaafisha Wazee',
+                'USCF KWAYA' => 'USCF Kwaya',
+                'KAMBA PORI' => 'Kamba Pori',
+                'MCHANGO KIPAIMARA' => 'Mchango Kipaimara',
+                'MCHANGO MAALUMU' => 'Mchango Maalumu',
+                'VITI WATOTO S/SCHOOL' => 'Viti Watoto S/School',
+                'MAPAMBO KANISA' => 'Mapambo Kanisa',
+            ],
+            'Mapato ya Majengo' => [
+                'JENGO SENTA' => 'Jengo Senta',
+                'JENGO KIFUMBU' => 'Jengo Kifumbu',
+                'JENGO MWEKA' => 'Jengo Mweka',
+                'JENGO CCP' => 'Jengo CCP',
+                'JENGO S/SCHOOL SENTA' => 'Jengo S/School Senta',
+                'ALAMA KIPAIMARA' => 'Alama ya Kipaimara',
+            ]
+        ];
     }
 
     /**
@@ -230,39 +287,84 @@ class CommunityOfferingController extends Controller
             'community_id' => 'required|exists:communities,id',
             'service_id' => 'nullable|exists:sunday_services,id',
             'service_type' => 'nullable|string',
+            'offering_type' => 'required|in:general,sadaka_umoja,sadaka_jengo,sadaka_ahadi,sunday_offering,tithe,other',
+            'other_category' => 'nullable|string',
+            'other_subtype' => 'nullable|string',
             'amount' => 'required|numeric|min:0',
             'offering_date' => 'required|date|before_or_equal:today',
             'collection_method' => 'required|in:cash,mobile_money,bank_transfer',
             'reference_number' => 'nullable|string|max:255',
             'notes' => 'nullable|string',
             'elder_notes' => 'nullable|string',
+            'items_json' => 'nullable|string',
         ]);
 
         // Verify user is elder of this community
-        if (!$user->elderCommunities()->contains($validated['community_id'])) {
+        if (!$user->elderCommunities()->pluck('id')->contains($validated['community_id'])) {
             return back()->with('error', 'You are not authorized to create offerings for this community.');
+        }
+
+        // If items_json is present (for detailed offerings), parse it
+        $offeringItems = [];
+        if (!empty($validated['items_json'])) {
+            $items = json_decode($validated['items_json'], true);
+            if (is_array($items) && count($items) > 0) {
+                $offeringItems = $items;
+                // Recalculate total amount from items to ensure accuracy
+                $totalAmount = 0;
+                foreach ($items as $item) {
+                    if (isset($item['amount'])) {
+                        $totalAmount += floatval($item['amount']);
+                    } else {
+                        // For Sunday Offering combo
+                        $totalAmount += floatval($item['amount_umoja'] ?? 0);
+                        $totalAmount += floatval($item['amount_jengo'] ?? 0);
+                        $totalAmount += floatval($item['amount_ahadi'] ?? 0);
+                        $totalAmount += floatval($item['amount_other'] ?? 0);
+                    }
+                }
+                $validated['amount'] = $totalAmount;
+            }
+        }
+
+        // Backend Validation: For Sadaka ya Umoja, Sadaka ya Jengo, Sadaka ya Ahadi, and Sunday Offering,
+        // the breakdown is MANDATORY. 
+        if (in_array($validated['offering_type'], ['sadaka_umoja', 'sadaka_jengo', 'sadaka_ahadi', 'sunday_offering']) && empty($offeringItems)) {
+            $typeLabel = $validated['offering_type'];
+            if ($typeLabel === 'sadaka_umoja')
+                $typeLabel = 'Sadaka ya Umoja';
+            if ($typeLabel === 'sadaka_jengo')
+                $typeLabel = 'Sadaka ya Jengo';
+            if ($typeLabel === 'sadaka_ahadi')
+                $typeLabel = 'Ahadi ya Bwana';
+            if ($typeLabel === 'sunday_offering')
+                $typeLabel = 'Sunday Offering';
+
+            return back()->withInput()->with('error', 'ERROR: Envelope breakdown is required for ' . $typeLabel . '. Please add at least one member envelope.');
         }
 
         // If service_id is provided, verify it belongs to this elder and check date/time restriction
         if (!empty($validated['service_id'])) {
             $service = SundayService::findOrFail($validated['service_id']);
-            if ($service->church_elder_id != $user->member_id) {
-                return back()->with('error', 'This service does not belong to you.');
+            // Verify service belongs to this elder OR belongs to the same campus as the elder's communities
+            $elderCampusIds = $user->elderCommunities()->pluck('campus_id')->unique();
+            if ($service->church_elder_id != $user->member_id && !$elderCampusIds->contains($service->campus_id)) {
+                return back()->with('error', 'This service does not belong to you or your campus.');
             }
-            
+
             // Check date and time restriction
             $serviceDate = $service->service_date ?? null;
             $startTime = $service->start_time ?? null;
             $now = now();
-            
+
             if ($serviceDate) {
                 // First check if service date has been reached
                 $serviceDateOnly = \Carbon\Carbon::parse($serviceDate->format('Y-m-d'))->startOfDay();
                 $today = $now->copy()->startOfDay();
-                
+
                 if ($today->lt($serviceDateOnly)) {
-                    return back()->with('error', 'Offering cannot be recorded before the service date. Service date is ' . 
-                        $serviceDateOnly->format('d/m/Y') . '. Today is ' . 
+                    return back()->with('error', 'Offering cannot be recorded before the service date. Service date is ' .
+                        $serviceDateOnly->format('d/m/Y') . '. Today is ' .
                         $today->format('d/m/Y') . '.');
                 } elseif ($startTime) {
                     // If date is reached, check if start time has been reached
@@ -277,12 +379,12 @@ class CommunityOfferingController extends Controller
                                 $timeString = $startTime . ':00';
                             }
                         }
-                        
+
                         $serviceStartDateTime = \Carbon\Carbon::parse($serviceDate->format('Y-m-d') . ' ' . $timeString);
-                        
+
                         if ($now->lt($serviceStartDateTime)) {
-                            return back()->with('error', 'Offering cannot be recorded before the service start time. Service starts at ' . 
-                                $serviceStartDateTime->format('d/m/Y h:i A') . '. Current time is ' . 
+                            return back()->with('error', 'Offering cannot be recorded before the service start time. Service starts at ' .
+                                $serviceStartDateTime->format('d/m/Y h:i A') . '. Current time is ' .
                                 $now->format('d/m/Y h:i A') . '.');
                         }
                     } catch (\Exception $e) {
@@ -294,39 +396,106 @@ class CommunityOfferingController extends Controller
                     }
                 }
             }
-            
+
             // Auto-fill service_type if not provided
             if (empty($validated['service_type'])) {
                 $validated['service_type'] = $service->service_type;
             }
         }
 
+        // Map slugs to pretty labels for consistency across reports
+        $offeringType = $validated['offering_type'];
+        if ($offeringType === 'sadaka_umoja')
+            $offeringType = 'Sadaka ya Umoja';
+        elseif ($offeringType === 'sadaka_jengo')
+            $offeringType = 'Sadaka ya Jengo';
+        elseif ($offeringType === 'sadaka_ahadi')
+            $offeringType = 'Ahadi ya Bwana';
+        elseif ($offeringType === 'sunday_offering')
+            $offeringType = 'Sunday Offering';
+        elseif ($offeringType === 'other' && !empty($validated['other_subtype']) && $validated['other_subtype'] !== 'other') {
+            // Use the specific subtype for reports to pick it up via LIKE query
+            $offeringType = $validated['other_subtype'];
+        }
+
+        // Initialize session totals
+        $sessionTotals = [
+            'amount_umoja' => 0,
+            'amount_jengo' => 0,
+            'amount_ahadi' => 0,
+            'amount_other' => 0,
+        ];
+
+        // If it's single type, assign it now
+        if ($validated['offering_type'] === 'sadaka_umoja') {
+            $sessionTotals['amount_umoja'] = $validated['amount'];
+        } elseif ($validated['offering_type'] === 'sadaka_jengo') {
+            $sessionTotals['amount_jengo'] = $validated['amount'];
+        } elseif ($validated['offering_type'] === 'sadaka_ahadi') {
+            $sessionTotals['amount_ahadi'] = $validated['amount'];
+        } elseif ($validated['offering_type'] === 'general' || $validated['offering_type'] === 'other' || $validated['offering_type'] === 'tithe') {
+            $sessionTotals['amount_other'] = $validated['amount'];
+        } elseif ($validated['offering_type'] === 'sunday_offering') {
+            // For combo, we'll calculate from items
+            foreach ($offeringItems as $item) {
+                $sessionTotals['amount_umoja'] += floatval($item['amount_umoja'] ?? 0);
+                $sessionTotals['amount_jengo'] += floatval($item['amount_jengo'] ?? 0);
+                $sessionTotals['amount_ahadi'] += floatval($item['amount_ahadi'] ?? 0);
+                $sessionTotals['amount_other'] += floatval($item['amount_other'] ?? 0);
+            }
+            // Update total amount
+            $validated['amount'] = array_sum($sessionTotals);
+        }
+
         $offering = CommunityOffering::create([
             'community_id' => $validated['community_id'],
             'service_id' => $validated['service_id'] ?? null,
             'service_type' => $validated['service_type'] ?? null,
+            'offering_type' => $offeringType,
             'amount' => $validated['amount'],
+            'amount_umoja' => $sessionTotals['amount_umoja'],
+            'amount_jengo' => $sessionTotals['amount_jengo'],
+            'amount_ahadi' => $sessionTotals['amount_ahadi'],
+            'amount_other' => $sessionTotals['amount_other'],
             'offering_date' => $validated['offering_date'],
             'collection_method' => $validated['collection_method'],
             'reference_number' => $validated['reference_number'] ?? null,
             'church_elder_id' => $user->id,
-            'status' => 'pending_evangelism',
+            'status' => 'pending_secretary',
             'notes' => $validated['notes'] ?? null,
             'elder_notes' => $validated['elder_notes'] ?? null,
         ]);
 
-        // Send notification to Evangelism Leader
-        $this->sendNotificationToEvangelismLeader($offering);
+        // Save offering items if present
+        if (!empty($offeringItems)) {
+            foreach ($offeringItems as $item) {
+                // Find member by envelope number (trimmed for robustness)
+                $envelope = trim($item['envelope_number']);
+                $member = \App\Models\Member::where('envelope_number', $envelope)->first();
 
-        // Redirect based on user role
-        $user = auth()->user();
-        if ($user->isChurchElder()) {
-            return redirect()->route('church-elder.community-offerings.index', $validated['community_id'])
-                ->with('success', 'Offering recorded and submitted to Evangelism Leader.');
+                \App\Models\CommunityOfferingItem::create([
+                    'community_offering_id' => $offering->id,
+                    'member_id' => $member ? $member->id : null,
+                    'envelope_number' => $envelope,
+                    'amount' => $item['amount'] ?? array_sum([
+                        $item['amount_umoja'] ?? 0,
+                        $item['amount_jengo'] ?? 0,
+                        $item['amount_ahadi'] ?? 0,
+                        $item['amount_other'] ?? 0,
+                    ]),
+                    'amount_umoja' => $item['amount_umoja'] ?? (($validated['offering_type'] === 'sadaka_umoja' && isset($item['amount'])) ? $item['amount'] : 0),
+                    'amount_jengo' => $item['amount_jengo'] ?? (($validated['offering_type'] === 'sadaka_jengo' && isset($item['amount'])) ? $item['amount'] : 0),
+                    'amount_ahadi' => $item['amount_ahadi'] ?? (($validated['offering_type'] === 'sadaka_ahadi' && isset($item['amount'])) ? $item['amount'] : 0),
+                    'amount_other' => $item['amount_other'] ?? (($validated['offering_type'] === 'general' && isset($item['amount'])) ? $item['amount'] : 0),
+                ]);
+            }
         }
-        
-        return redirect()->back()
-            ->with('success', 'Offering recorded and submitted to Evangelism Leader.');
+
+        // Send notification to Secretary
+        $this->sendNotificationToSecretary($offering);
+
+        return redirect()->route('church-elder.community-offerings.index', $validated['community_id'])
+            ->with('success', 'Offering recorded and submitted to General Secretary.');
     }
 
     /**
@@ -338,7 +507,7 @@ class CommunityOfferingController extends Controller
         if (!$user->isEvangelismLeader() && !$user->isAdmin()) {
             abort(403);
         }
-        
+
         // Verify the offering belongs to a community in the evangelism leader's campus
         if ($user->isEvangelismLeader()) {
             $campus = $user->getCampus();
@@ -346,7 +515,7 @@ class CommunityOfferingController extends Controller
                 abort(403, 'You are not authorized to confirm offerings from communities outside your campus.');
             }
         }
-        
+
         if ($offering->status !== 'pending_evangelism') {
             return back()->with('error', 'This offering is not pending your confirmation.');
         }
@@ -378,7 +547,7 @@ class CommunityOfferingController extends Controller
         if (!$user->isEvangelismLeader() && !$user->isAdmin()) {
             abort(403);
         }
-        
+
         // Verify the offering belongs to a community in the evangelism leader's campus
         if ($user->isEvangelismLeader()) {
             $campus = $user->getCampus();
@@ -386,7 +555,7 @@ class CommunityOfferingController extends Controller
                 abort(403, 'You are not authorized to reject offerings from communities outside your campus.');
             }
         }
-        
+
         if ($offering->status !== 'pending_evangelism') {
             return back()->with('error', 'This offering cannot be rejected.');
         }
@@ -442,18 +611,18 @@ class CommunityOfferingController extends Controller
         // Get the evangelism leader's campus and filter offerings
         $query = CommunityOffering::whereIn('id', $validated['offering_ids'])
             ->where('status', 'pending_evangelism');
-            
+
         if ($user->isEvangelismLeader()) {
             $campus = $user->getCampus();
             if (!$campus) {
                 abort(404, 'Campus not found for this evangelism leader.');
             }
-            
+
             // Get all community IDs for this campus
             $communityIds = Community::where('campus_id', $campus->id)
                 ->pluck('id')
                 ->toArray();
-                
+
             $query->whereIn('community_id', $communityIds);
         }
 
@@ -487,7 +656,7 @@ class CommunityOfferingController extends Controller
         if (!$user->isSecretary() && !$user->isAdmin()) {
             abort(403);
         }
-        
+
         if ($offering->status !== 'pending_secretary') {
             return back()->with('error', 'This offering is not pending secretary confirmation.');
         }
@@ -522,11 +691,11 @@ class CommunityOfferingController extends Controller
 
         // Get the evangelism leader's campus
         $campus = $user->getCampus();
-        
+
         if (!$campus) {
             abort(404, 'Campus not found for this evangelism leader.');
         }
-        
+
         // Get all community IDs for this campus
         $communityIds = Community::where('campus_id', $campus->id)
             ->pluck('id')
@@ -541,7 +710,7 @@ class CommunityOfferingController extends Controller
 
         // Group by community
         $groupedByCommunity = $offerings->groupBy('community_id');
-        
+
         // Group by service type
         $groupedByServiceType = $offerings->groupBy('service_type');
 
@@ -549,10 +718,10 @@ class CommunityOfferingController extends Controller
         $totalCount = $offerings->count();
 
         return view('evangelism-leader.offerings.consolidated', compact(
-            'offerings', 
-            'groupedByCommunity', 
-            'groupedByServiceType', 
-            'totalAmount', 
+            'offerings',
+            'groupedByCommunity',
+            'groupedByServiceType',
+            'totalAmount',
             'totalCount'
         ));
     }
@@ -563,7 +732,7 @@ class CommunityOfferingController extends Controller
     public function show(CommunityOffering $offering)
     {
         $user = auth()->user();
-        
+
         // Check permissions based on role
         if ($user->isChurchElder()) {
             if ($offering->church_elder_id != $user->id) {
@@ -575,20 +744,14 @@ class CommunityOfferingController extends Controller
             if (!$campus || !$offering->community || $offering->community->campus_id !== $campus->id) {
                 abort(403, 'You are not authorized to view offerings from communities outside your campus.');
             }
-            
-            // Can view if pending (they can confirm) or if they confirmed it
-            if ($offering->status == 'pending_evangelism' || $offering->evangelism_leader_id == $user->id) {
-                // Allowed
-            } else {
-                abort(403);
-            }
-        } elseif ($user->isSecretary() || $user->isAdmin()) {
-            // Secretary and Admin can view all
+            // Allowed to view all status
+        } elseif ($user->isSecretary() || $user->isAdmin() || $user->isPastor()) {
+            // Secretary, Admin, Pastor can view all
         } else {
             abort(403);
         }
 
-        $offering->load(['community', 'service', 'churchElder', 'evangelismLeader', 'secretary', 'rejectedBy']);
+        $offering->load(['community', 'service', 'churchElder', 'evangelismLeader', 'secretary', 'rejectedBy', 'items.member']);
 
         return view('community-offerings.show', compact('offering'));
     }
@@ -599,8 +762,8 @@ class CommunityOfferingController extends Controller
     private function sendNotificationToEvangelismLeader(CommunityOffering $offering)
     {
         try {
-            $evangelismLeaders = User::whereHas('member', function($query) {
-                $query->whereHas('leaders', function($q) {
+            $evangelismLeaders = User::whereHas('member', function ($query) {
+                $query->whereHas('leaders', function ($q) {
                     $q->where('position', 'evangelism_leader')->where('is_active', true);
                 });
             })->get();

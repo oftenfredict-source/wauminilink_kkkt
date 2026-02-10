@@ -104,11 +104,21 @@ class Budget extends Model
     {
         $now = now();
         return $query->where('start_date', '<=', $now)
-                    ->where('end_date', '>=', $now)
-                    ->where('status', 'active');
+            ->where('end_date', '>=', $now)
+            ->where('status', 'active');
     }
 
     // Accessors
+    public function getSpentAmountAttribute($value)
+    {
+        // Calculate spent amount from paid expenses
+        // Only count expenses that are both approved and paid
+        return $this->expenses()
+            ->where('status', 'paid')
+            ->where('approval_status', 'approved')
+            ->sum('amount');
+    }
+
     public function getRemainingAmountAttribute()
     {
         return $this->total_budget - $this->spent_amount;
@@ -116,7 +126,8 @@ class Budget extends Model
 
     public function getUtilizationPercentageAttribute()
     {
-        if ($this->total_budget == 0) return 0;
+        if ($this->total_budget == 0)
+            return 0;
         return round(($this->spent_amount / $this->total_budget) * 100, 2);
     }
 
@@ -154,7 +165,8 @@ class Budget extends Model
 
     public function getFundingPercentageAttribute()
     {
-        if ($this->total_budget == 0) return 0;
+        if ($this->total_budget == 0)
+            return 0;
         return round(($this->total_allocated_from_offerings / $this->total_budget) * 100, 2);
     }
 

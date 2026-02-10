@@ -1,576 +1,393 @@
 @extends('layouts.index')
 
+@section('title', 'Reports Overview')
+
 @section('content')
-<div class="container-fluid px-4">
-    <div class="card border-0 shadow-sm mb-4" style="background: white;">
-        <div class="card-body p-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
-            <div class="d-flex align-items-center gap-2">
-                <div class="d-flex align-items-center justify-content-center rounded-2 border border-primary border-2" style="width:48px;height:48px;background:rgba(0,123,255,.1);color:#007bff;">
-                    <i class="fas fa-file-alt"></i>
-                </div>
-                <div>
-                    <h1 class="h5 mb-0 text-dark fw-semibold">
-                        @if(isset($isChurchElder) && $isChurchElder && isset($selectedCommunity))
-                            {{ $selectedCommunity->name }} Reports Overview
-                        @else
-                            All Reports Overview
-                        @endif
-                    </h1>
-                    <p class="mb-0 small text-muted">
-                        @if(isset($isChurchElder) && $isChurchElder && isset($selectedCommunity))
-                            Key activities and contributions for {{ $selectedCommunity->name }}
-                        @else
-                            Key activities and contributions across the system
-                        @endif
-                    </p>
-                </div>
+<style>
+    :root {
+        --primary-gradient: linear-gradient(135deg, #1e3799 0%, #0c2461 100%);
+        --success-gradient: linear-gradient(135deg, #10ac84 0%, #0b8e6b 100%);
+        --info-gradient: linear-gradient(135deg, #0fbcf9 0%, #0984e3 100%);
+        --warning-gradient: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+        --glass-bg: rgba(255, 255, 255, 0.9);
+        --glass-border: rgba(255, 255, 255, 0.4);
+    }
+
+    .glass-card {
+        background: var(--glass-bg);
+        backdrop-filter: blur(10px);
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+    }
+
+    .glass-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.12);
+    }
+
+    .kpi-card {
+        color: white;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .kpi-card::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 150px;
+        height: 150px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+        z-index: 0;
+    }
+
+    .bg-umoja { background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%); }
+    .bg-jengo { background: linear-gradient(135deg, #fd9644 0%, #feb47b 100%); }
+
+    .action-grid .btn {
+        height: 100px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        border-radius: 12px;
+        font-weight: 600;
+        border: none;
+        transition: transform 0.2s;
+    }
+
+    .action-grid .btn:hover {
+        transform: scale(1.05);
+    }
+
+    .avatar-sm {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        font-weight: bold;
+        font-size: 0.8rem;
+    }
+
+    .dotted-spacer {
+        border-bottom: 1px dotted #dee2e6;
+        flex-grow: 1;
+        margin: 0 10px;
+        margin-bottom: 5px;
+    }
+
+    .table-footer-total {
+        background-color: #f8f9fa;
+        font-weight: 700;
+    }
+</style>
+
+<div class="container-fluid px-4 py-4">
+    <!-- Header Section -->
+    <div class="glass-card p-4 mb-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="rounded-circle bg-primary bg-opacity-10 p-3 text-primary">
+                <i class="fas fa-chart-line fa-2x"></i>
             </div>
-            <div class="d-flex gap-2 flex-wrap">
-                @if(isset($isChurchElder) && $isChurchElder && isset($communities) && $communities->count() > 1)
-                    <div class="dropdown">
-                        <button class="btn btn-outline-primary btn-sm dropdown-toggle" type="button" id="communityDropdown" data-bs-toggle="dropdown">
-                            <i class="fas fa-home me-1"></i>{{ $selectedCommunity->name ?? 'Select Community' }}
-                        </button>
-                        <ul class="dropdown-menu">
-                            @foreach($communities as $community)
-                                <li>
-                                    <a class="dropdown-item {{ isset($selectedCommunity) && $selectedCommunity->id == $community->id ? 'active' : '' }}" 
-                                       href="{{ route('reports.overview', ['community_id' => $community->id, 'start_date' => request('start_date'), 'end_date' => request('end_date')]) }}">
-                                        {{ $community->name }}
-                                    </a>
-                                </li>
-                            @endforeach
-                        </ul>
+            <div>
+                <h2 class="h4 fw-bold mb-1">
+                    @if(isset($isChurchElder) && $isChurchElder && isset($selectedCommunity))
+                        {{ $selectedCommunity->name }} Reports
+                    @else
+                        Executive Reports Overview
+                    @endif
+                </h2>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{{ route('dashboard') }}" class="text-decoration-none">Dashboard</a></li>
+                        <li class="breadcrumb-item active">Overview</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+        
+        <div class="d-flex gap-2 align-items-center">
+            @if(isset($isChurchElder) && $isChurchElder && isset($communities) && $communities->count() > 1)
+                <select onchange="window.location.href=this.value" class="form-select border-0 shadow-sm rounded-pill px-4">
+                    @foreach($communities as $community)
+                        <option value="{{ route('reports.overview', ['community_id' => $community->id]) }}" 
+                            {{ isset($selectedCommunity) && $selectedCommunity->id == $community->id ? 'selected' : '' }}>
+                            {{ $community->name }}
+                        </option>
+                    @endforeach
+                </select>
+            @endif
+            <button class="btn btn-primary rounded-pill px-4 shadow-sm" data-bs-toggle="modal" data-bs-target="#filterModal">
+                <i class="fas fa-filter me-2"></i>Filter Date
+            </button>
+        </div>
+    </div>
+
+    <!-- KPI Section -->
+    <div class="row g-4 mb-4">
+        <div class="col-12 col-md-6 col-xl-4">
+            <div class="glass-card kpi-card bg-success p-4 h-100">
+                <div class="position-relative z-1">
+                    <div class="text-white text-opacity-75 small text-uppercase fw-bold mb-1">Total Focused Giving</div>
+                    <div class="h2 fw-bold mb-0 text-white">TZS {{ number_format($totalGiving, 0) }}</div>
+                    <div class="mt-2 small text-white text-opacity-75 text-truncate"> Umoja + Jengo + Pledges </div>
+                </div>
+                <i class="fas fa-hand-holding-usd fa-3x position-absolute end-0 bottom-0 mb-3 me-3 text-white opacity-25"></i>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-xl-4">
+            <div class="glass-card kpi-card bg-info p-4 h-100">
+                <div class="position-relative z-1">
+                    <div class="text-white text-opacity-75 small text-uppercase fw-bold mb-1">Target Transactions</div>
+                    <div class="h2 fw-bold mb-0 text-white">{{ number_format($transactionsCount) }}</div>
+                    <div class="mt-2 badge bg-white bg-opacity-20 rounded-pill">
+                        <i class="fas fa-check-circle me-1"></i> All Approved & Completed
                     </div>
-                @endif
-                <a href="{{ route('reports.index') }}" class="btn btn-primary btn-sm"><i class="fas fa-chart-pie me-1"></i>Financial Reports</a>
-                @if(isset($isChurchElder) && $isChurchElder && isset($selectedCommunity))
-                    <a href="{{ route('church-elder.reports', $selectedCommunity->id) }}" class="btn btn-success btn-sm"><i class="fas fa-chart-bar me-1"></i>Community Reports</a>
-                @endif
+                </div>
+                <i class="fas fa-receipt fa-3x position-absolute end-0 bottom-0 mb-3 me-3 text-white opacity-25"></i>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-xl-4">
+            <div class="glass-card kpi-card bg-primary p-4 h-100">
+                <div class="position-relative z-1">
+                    <div class="text-white text-opacity-75 small text-uppercase fw-bold mb-1">Active Members</div>
+                    <div class="h2 fw-bold mb-0 text-white">{{ number_format($totalMembers) }}</div>
+                    <div class="mt-2 badge bg-white bg-opacity-20 rounded-pill">
+                        <i class="fas fa-user-plus me-1"></i> +{{ $newMembers30d }} new (30d)
+                    </div>
+                </div>
+                <i class="fas fa-users fa-3x position-absolute end-0 bottom-0 mb-3 me-3 text-white opacity-25"></i>
             </div>
         </div>
     </div>
 
-    <!-- KPI Row -->
-    <div class="row mb-4 g-3">
-        <div class="col-12 col-md-6 col-xl-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="text-xs text-uppercase fw-bold text-primary">Total Members</div>
-                        <div class="h5 mb-0 fw-bold">{{ number_format($totalMembers) }}</div>
-                        <small class="text-muted">As of {{ $end->format('M d, Y') }}</small>
+    <div class="row g-4 mb-4">
+        <!-- New Special Offerings Section -->
+        <div class="col-12">
+            <div class="glass-card p-4">
+                <div class="d-flex align-items-center justify-content-between mb-4">
+                    <h5 class="fw-bold mb-0"><i class="fas fa-star text-warning me-2"></i>Special Offering Summary</h5>
+                    <a href="{{ route('reports.special-offerings') }}" class="btn btn-sm btn-outline-primary rounded-pill">View Breakdowns</a>
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-4 bg-umoja text-white shadow-sm d-flex align-items-center gap-3">
+                            <div class="bg-white bg-opacity-25 rounded-circle p-3">
+                                <i class="fas fa-users fa-lg"></i>
+                            </div>
+                            <div>
+                                <div class="small text-uppercase fw-bold opacity-75">Sadaka ya Umoja</div>
+                                <div class="h4 fw-bold mb-0">TZS {{ number_format($specialOfferingsSummary['umoja'], 0) }}</div>
+                            </div>
+                        </div>
                     </div>
-                    <i class="fas fa-users fa-2x text-primary opacity-75"></i>
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-4 bg-jengo text-white shadow-sm d-flex align-items-center gap-3">
+                            <div class="bg-white bg-opacity-25 rounded-circle p-3">
+                                <i class="fas fa-building fa-lg"></i>
+                            </div>
+                            <div>
+                                <div class="small text-uppercase fw-bold opacity-75">Sadaka ya Jengo</div>
+                                <div class="h4 fw-bold mb-0">TZS {{ number_format($specialOfferingsSummary['jengo'], 0) }}</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-12 col-md-6 col-xl-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="text-xs text-uppercase fw-bold text-success">New (30 days)</div>
-                        <div class="h5 mb-0 fw-bold">{{ number_format($newMembers30d) }}</div>
-                        <small class="text-muted">Recent registrations</small>
-                    </div>
-                    <i class="fas fa-user-plus fa-2x text-success opacity-75"></i>
-                </div>
-            </div>
-        </div>
-        <div class="col-12 col-md-6 col-xl-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="text-xs text-uppercase fw-bold text-info">Total Giving (YTD)</div>
-                        <div class="h5 mb-0 fw-bold">TZS {{ number_format($totalGiving + (isset($totalCommunityOfferings) ? $totalCommunityOfferings : 0), 2) }}</div>
-                        <small class="text-muted">
-                            @if(isset($isChurchElder) && $isChurchElder && isset($totalCommunityOfferings))
-                                Tithes + Offerings + Donations + Mid-Week
-                            @else
-                                Tithes + Offerings + Donations
-                            @endif
-                        </small>
-                    </div>
-                    <i class="fas fa-hand-holding-usd fa-2x text-info opacity-75"></i>
-                </div>
-            </div>
-        </div>
-        @if(isset($isChurchElder) && $isChurchElder && isset($totalCommunityOfferings))
-        <div class="col-12 col-md-6 col-xl-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="text-xs text-uppercase fw-bold text-success">Mid-Week Offerings</div>
-                        <div class="h5 mb-0 fw-bold">TZS {{ number_format($totalCommunityOfferings, 0) }}</div>
-                        <small class="text-muted">{{ $communityOfferings->count() }} completed</small>
-                    </div>
-                    <i class="fas fa-calendar-week fa-2x text-success opacity-75"></i>
-                </div>
-            </div>
-        </div>
-        @endif
-        <div class="col-12 col-md-6 col-xl-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="text-xs text-uppercase fw-bold text-warning">Transactions (YTD)</div>
-                        <div class="h5 mb-0 fw-bold">{{ number_format($transactionsCount + (isset($communityOfferings) ? $communityOfferings->count() : 0)) }}</div>
-                        <small class="text-muted">Approved only</small>
-                    </div>
-                    <i class="fas fa-receipt fa-2x text-warning opacity-75"></i>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <div class="row g-3">
-        <!-- Member Contributions -->
-        <div class="col-12 col-lg-6">
-            <div class="card border-0 shadow-sm rounded-3 h-100">
-                <div class="card-header report-header-primary py-2 rounded-top position-relative">
-                    <h6 class="mb-0 fw-semibold text-white position-relative"><i class="fas fa-star me-2"></i>Top Contributors ({{ $start->format('M d') }} - {{ $end->format('M d, Y') }})</h6>
+        <!-- Charts/Tables Row -->
+        <div class="col-12 col-lg-7">
+            <div class="glass-card h-100 overflow-hidden">
+                <div class="bg-primary p-3 border-bottom d-flex align-items-center justify-content-between">
+                    <h6 class="mb-0 fw-bold text-white"><i class="fas fa-trophy me-2"></i>Top Contributors (YTD)</h6>
+                    <span class="badge bg-white text-primary rounded-pill">{{ $topContributors->count() }} Members</span>
                 </div>
-                <div class="card-body">
-                    @if($topContributors->count())
-                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-                        <table class="table table-sm align-middle">
-                            <thead>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
                                 <tr>
-                                    <th>#</th>
-                                    <th>Member</th>
-                                    <th class="text-end">Total Giving (TZS)</th>
+                                    <th class="ps-4">Rank</th>
+                                    <th>Member Name</th>
+                                    <th class="text-end pe-4">Total Giving (TZS)</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($topContributors as $i => $m)
+                                @foreach($topContributors as $index => $contributor)
                                 <tr>
-                                    <td class="text-muted">{{ $i + 1 }}</td>
-                                    <td>{{ $m->full_name }}</td>
-                                    <td class="text-end fw-semibold">{{ number_format($m->total_giving, 2) }}</td>
+                                    <td class="ps-4">
+                                        @if($index == 0) <span class="badge bg-warning text-dark"><i class="fas fa-medal"></i></span>
+                                        @elseif($index == 1) <span class="badge bg-secondary text-white">2</span>
+                                        @elseif($index == 2) <span class="badge bg-bronze text-white" style="background:#cd7f32">3</span>
+                                        @else <span class="text-muted">{{ $index + 1 }}</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="avatar-sm bg-primary bg-opacity-10 text-primary">
+                                                {{ strtoupper(substr($contributor->full_name, 0, 1)) }}
+                                            </div>
+                                            <span class="fw-semibold">{{ $contributor->full_name }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <div class="fw-bold text-success">{{ number_format($contributor->total_giving, 0) }}</div>
+                                    </td>
                                 </tr>
                                 @endforeach
                             </tbody>
+                            @if($topContributors->count() > 0)
+                            <tfoot class="table-footer-total">
+                                <tr>
+                                    <td colspan="2" class="ps-4">TOTAL (Top Contributors)</td>
+                                    <td class="text-end pe-4 text-primary">
+                                        {{ number_format($topContributors->sum('total_giving'), 0) }}
+                                    </td>
+                                </tr>
+                            </tfoot>
+                            @endif
                         </table>
-                    </div>
-                    @else
-                        <p class="text-muted mb-0">No contributor data available for the selected period.</p>
-                    @endif
-                    <div class="mt-3 d-flex flex-wrap gap-2">
-                        <a href="{{ route('reports.member-giving') }}" class="btn btn-primary btn-sm"><i class="fas fa-user me-1"></i><span class="d-none d-sm-inline">Member Giving Report</span><span class="d-sm-none">Member Giving</span></a>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Finance breakdown: Offerings and Donations by Type -->
-        <div class="col-12 col-lg-6">
-            <div class="card border-0 shadow-sm rounded-3 h-100">
-                <div class="card-header report-header-info py-2 rounded-top position-relative">
-                    <h6 class="mb-0 fw-semibold text-white position-relative"><i class="fas fa-layer-group me-2"></i>Offering & Donation Types (Approved)</h6>
+        <div class="col-12 col-lg-5">
+            <div class="glass-card h-100 overflow-hidden">
+                <div class="bg-info bg-opacity-10 p-3 border-bottom">
+                    <h6 class="mb-0 fw-bold text-info"><i class="fas fa-th-list me-2"></i>Focused Giving Breakdown</h6>
                 </div>
                 <div class="card-body">
-                    <!-- Combined View: Shows types that exist in both offerings and donations -->
-                    @if(isset($combinedByType) && count($combinedByType) > 0)
-                    <div class="mb-4">
-                        <h6 class="text-success mb-3"><i class="fas fa-chart-pie me-2"></i>Combined by Type (Showing Total, Offering, and Donation amounts separately)</h6>
-                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-                            <table class="table table-sm align-middle table-bordered">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Type</th>
-                                        <th class="text-end">Total Amount</th>
-                                        <th class="text-end">Offering</th>
-                                        <th class="text-end">Donation</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($combinedByType as $combined)
-                                    <tr>
-                                        <td><strong>{{ ucfirst(str_replace('_',' ', $combined['type'])) }}</strong></td>
-                                        <td class="text-end fw-bold text-success">{{ number_format($combined['total_amount'], 2) }}</td>
-                                        <td class="text-end">
-                                            @if($combined['offering_amount'] > 0)
-                                                <span class="text-primary">{{ number_format($combined['offering_amount'], 2) }}</span>
-                                                <small class="text-muted">({{ $combined['offering_count'] }})</small>
-                                            @else
-                                                <span class="text-muted">-</span>
-                                            @endif
-                                        </td>
-                                        <td class="text-end">
-                                            @if($combined['donation_amount'] > 0)
-                                                <span class="text-info">{{ number_format($combined['donation_amount'], 2) }}</span>
-                                                <small class="text-muted">({{ $combined['donation_count'] }})</small>
-                                            @else
-                                                <span class="text-muted">-</span>
-                                            @endif
-                                        </td>
-                                    </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
+                    <div class="d-flex flex-column gap-3">
+                        <div class="d-flex align-items-center">
+                            <span class="fw-bold text-muted small" style="width: 120px;">Sadaka ya Umoja</span>
+                            <div class="dotted-spacer"></div>
+                            <span class="fw-bold text-dark">TZS {{ number_format($specialOfferingsSummary['umoja'], 0) }}</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span class="fw-bold text-muted small" style="width: 120px;">Sadaka ya Jengo</span>
+                            <div class="dotted-spacer"></div>
+                            <span class="fw-bold text-dark">TZS {{ number_format($specialOfferingsSummary['jengo'], 0) }}</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span class="fw-bold text-muted small" style="width: 120px;">Ahadi ya Bwana</span>
+                            <div class="dotted-spacer"></div>
+                            <span class="fw-bold text-primary">TZS {{ number_format($totalPledgesPaid, 0) }}</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span class="fw-bold text-muted small" style="width: 120px;">Zaka (Tithes)</span>
+                            <div class="dotted-spacer"></div>
+                            <span class="fw-bold text-dark">TZS {{ number_format($totalTithes, 0) }}</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span class="fw-bold text-muted small" style="width: 120px;">Mengineyo</span>
+                            <div class="dotted-spacer"></div>
+                            <span class="fw-bold text-dark">TZS {{ number_format($specialOfferingsSummary['other'], 0) }}</span>
                         </div>
                     </div>
-                    <hr>
-                    @endif
-                    
-                    <div class="row g-3">
-                        <div class="col-12 mb-3">
-                            <h6 class="text-primary mb-2"><i class="fas fa-gift me-2"></i>Offerings by Type</h6>
-                            @if($offeringTypes->count())
-                            <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
-                                <table class="table table-sm align-middle">
-                                    <thead>
-                                        <tr>
-                                            <th>Type</th>
-                                            <th class="text-end">Total (TZS)</th>
-                                            <th class="text-end">Transactions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach($offeringTypes as $t)
-                                        <tr>
-                                            <td>{{ ucfirst(str_replace('_',' ', $t->offering_type ?? 'general')) }}</td>
-                                            <td class="text-end fw-semibold">{{ number_format($t->total_amount, 2) }}</td>
-                                            <td class="text-end">{{ number_format($t->count) }}</td>
-                                        </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
-                            @else
-                                <p class="text-muted mb-0">No approved offerings in this period.</p>
-                            @endif
+
+                    <div class="mt-4 pt-4 border-top">
+                        <div class="d-flex align-items-center mb-3">
+                            <span class="fw-bold text-dark" style="width: 120px;">GRAND TOTAL</span>
+                            <div class="dotted-spacer"></div>
+                            <span class="h5 fw-bold text-success mb-0">TZS {{ number_format($totalGiving, 0) }}</span>
                         </div>
-                        <div class="col-md-12">
-                            <h6 class="text-info mb-2"><i class="fas fa-heart me-2"></i>Donations by Type</h6>
-                            @if($donationTypes->count())
-                            <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
-                                <table class="table table-sm align-middle">
-                                    <thead>
-                                        <tr>
-                                            <th>Type</th>
-                                            <th class="text-end">Total (TZS)</th>
-                                            <th class="text-end">Transactions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach($donationTypes as $d)
-                                        <tr>
-                                            <td>{{ ucfirst(str_replace('_',' ', $d->donation_type ?? 'general')) }}</td>
-                                            <td class="text-end fw-semibold">{{ number_format($d->total_amount, 2) }}</td>
-                                            <td class="text-end">{{ number_format($d->count) }}</td>
-                                        </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
-                            @else
-                                <p class="text-muted mb-0">No approved donations in this period.</p>
-                            @endif
+                        <div class="alert alert-info border-0 bg-info bg-opacity-10 py-2 small mb-0">
+                            <i class="fas fa-info-circle me-1"></i> These figures represent all approved payments tracked in the selected period.
                         </div>
-                    </div>
-                    <div class="mt-3 d-flex flex-wrap gap-2">
-                        <a href="{{ route('reports.department-giving') }}" class="btn btn-success btn-sm"><i class="fas fa-layer-group me-1"></i><span class="d-none d-sm-inline">Department Giving</span><span class="d-sm-none">Dept Giving</span></a>
-                        <a href="{{ route('reports.offering-fund-breakdown') }}" class="btn btn-warning btn-sm"><i class="fas fa-coins me-1"></i><span class="d-none d-sm-inline">Fund Breakdown</span><span class="d-sm-none">Funds</span></a>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="row">
-        <!-- Quick Links to Other Reports -->
-        <div class="col-12">
-            <div class="card border-0 shadow-sm rounded-3">
-                <div class="card-header report-header-neutral py-2 rounded-top position-relative">
-                    <h6 class="mb-0 fw-semibold text-white position-relative"><i class="fas fa-link me-2"></i>More Reports</h6>
-                </div>
-                <div class="card-body">
-                    <div class="row g-2">
-                        <div class="col-12 col-sm-6 col-md-3">
-                            <a href="{{ route('reports.income-vs-expenditure') }}" class="btn btn-outline-primary w-100"><i class="fas fa-balance-scale me-1"></i><span class="d-none d-md-inline">Income vs Expenditure</span><span class="d-md-none">Income vs Expense</span></a>
-                        </div>
-                        <div class="col-12 col-sm-6 col-md-3">
-                            <a href="{{ route('reports.budget-performance') }}" class="btn btn-outline-secondary w-100"><i class="fas fa-chart-bar me-1"></i><span class="d-none d-md-inline">Budget Performance</span><span class="d-md-none">Budget</span></a>
-                        </div>
-                        <div class="col-12 col-sm-6 col-md-3">
-                            <a href="{{ route('reports.member-giving') }}" class="btn btn-outline-success w-100"><i class="fas fa-user me-1"></i><span class="d-none d-md-inline">Member Giving</span><span class="d-md-none">Member</span></a>
-                        </div>
-                        <div class="col-12 col-sm-6 col-md-3">
-                            <a href="{{ route('reports.department-giving') }}" class="btn btn-outline-info w-100"><i class="fas fa-sitemap me-1"></i><span class="d-none d-md-inline">Department Giving</span><span class="d-md-none">Department</span></a>
-                        </div>
-                    </div>
-                    <p class="small text-muted mt-3 mb-0">Period: {{ $start->format('M d, Y') }} - {{ $end->format('M d, Y') }}</p>
-                </div>
+    <!-- Quick Actions Grid -->
+    <div class="glass-card p-4">
+        <h5 class="fw-bold mb-4"><i class="fas fa-bolt text-warning me-2"></i>Quick Access Reports</h5>
+        <div class="row g-3 action-grid">
+            <div class="col-6 col-md-4 col-lg-2">
+                <a href="{{ route('reports.member-giving') }}" class="btn w-100" style="background-color: #ebf5ff !important; color: #1e3799 !important;">
+                    <i class="fas fa-users fa-lg"></i>
+                    <span>Member Giving</span>
+                </a>
             </div>
+            <div class="col-6 col-md-4 col-lg-2">
+                <a href="{{ route('reports.department-giving') }}" class="btn bg-success bg-opacity-10 text-success w-100">
+                    <i class="fas fa-building fa-lg"></i>
+                    <span>Dept Giving</span>
+                </a>
+            </div>
+            <div class="col-6 col-md-4 col-lg-2">
+                <a href="{{ route('reports.income-vs-expenditure') }}" class="btn bg-warning bg-opacity-10 text-warning w-100">
+                    <i class="fas fa-balance-scale fa-lg"></i>
+                    <span>In vs Out</span>
+                </a>
+            </div>
+            <div class="col-6 col-md-4 col-lg-2">
+                <a href="{{ route('reports.budget-performance') }}" class="btn bg-info bg-opacity-10 text-info w-100">
+                    <i class="fas fa-wallet fa-lg"></i>
+                    <span>Budget Perf.</span>
+                </a>
+            </div>
+            <div class="col-6 col-md-4 col-lg-2">
+                <a href="{{ route('reports.special-offerings') }}" class="btn bg-indigo bg-opacity-10 text-indigo w-100" style="background-color: rgba(108, 92, 231, 0.1); color: #6c5ce7;">
+                    <i class="fas fa-file-invoice-dollar fa-lg"></i>
+                    <span>Special Card</span>
+                </a>
+            </div>
+            <div class="col-6 col-md-4 col-lg-2">
+                <a href="{{ route('reports.offering-fund-breakdown') }}" class="btn bg-dark bg-opacity-10 text-dark w-100">
+                    <i class="fas fa-layer-group fa-lg"></i>
+                    <span>Fund Analysis</span>
+                </a>
+            </div>
+            @if(auth()->user()->isSecretary() || auth()->user()->isPastor() || auth()->user()->isAdmin())
+            <div class="col-6 col-md-4 col-lg-2">
+                <a href="{{ route('reports.general-secretary') }}" class="btn bg-danger bg-opacity-10 text-danger w-100">
+                    <i class="fas fa-file-invoice-dollar fa-lg"></i>
+                    <span>Gen Sec Report</span>
+                </a>
+            </div>
+            @endif
         </div>
     </div>
 </div>
-<style>
-.report-header-primary{
-    background: linear-gradient(135deg, #4e73df 0%, #6f42c1 100%) !important;
-    color: #fff !important;
-}
-.report-header-primary::before{
-    content: '';
-    position: absolute; inset: 0;
-    background: rgba(0,0,0,.08);
-    border-top-left-radius: .5rem; border-top-right-radius: .5rem;
-}
 
-.report-header-info{
-    background: linear-gradient(135deg, #36b9cc 0%, #2aa2b3 100%) !important;
-    color: #fff !important;
-}
-.report-header-info::before{
-    content: '';
-    position: absolute; inset: 0;
-    background: rgba(0,0,0,.06);
-    border-top-left-radius: .5rem; border-top-right-radius: .5rem;
-}
-
-.report-header-neutral{
-    background: linear-gradient(135deg, #6c757d 0%, #495057 100%) !important;
-    color: #fff !important;
-}
-.report-header-neutral::before{
-    content: '';
-    position: absolute; inset: 0;
-    background: rgba(0,0,0,.05);
-    border-top-left-radius: .5rem; border-top-right-radius: .5rem;
-}
-
-/* Mobile Responsive Styles */
-@media (max-width: 768px) {
-    .container-fluid {
-        padding-left: 0.75rem !important;
-        padding-right: 0.75rem !important;
-    }
-    
-    /* Header card mobile */
-    .card-body.p-3 {
-        padding: 1rem !important;
-    }
-    
-    .card-body.p-3 h1.h5 {
-        font-size: 1rem !important;
-    }
-    
-    .card-body.p-3 .small {
-        font-size: 0.8rem !important;
-    }
-    
-    .card-body.p-3 .btn-sm {
-        font-size: 0.8rem !important;
-        padding: 0.375rem 0.75rem !important;
-    }
-    
-    /* Icon in header */
-    .card-body.p-3 > div:first-child > div:first-child {
-        width: 40px !important;
-        height: 40px !important;
-        font-size: 18px !important;
-    }
-    
-    /* KPI Cards */
-    .card-body .h5 {
-        font-size: 1.25rem !important;
-    }
-    
-    .card-body .text-xs {
-        font-size: 0.7rem !important;
-    }
-    
-    .card-body small {
-        font-size: 0.75rem !important;
-    }
-    
-    .fa-2x {
-        font-size: 1.5em !important;
-    }
-    
-    /* Card headers */
-    .card-header {
-        padding: 0.75rem !important;
-    }
-    
-    .card-header h6 {
-        font-size: 0.9rem !important;
-    }
-    
-    /* Tables */
-    .table-responsive {
-        font-size: 0.875rem;
-        -webkit-overflow-scrolling: touch;
-        overflow-x: auto;
-        overflow-y: auto;
-    }
-    
-    .table th,
-    .table td {
-        padding: 0.5rem 0.5rem;
-        font-size: 0.875rem;
-        min-width: 80px;
-    }
-    
-    .table th {
-        font-size: 0.8rem;
-        white-space: nowrap;
-        position: sticky;
-        top: 0;
-        background-color: #f8f9fa;
-        z-index: 10;
-    }
-    
-    /* Buttons */
-    .btn-sm {
-        font-size: 0.8rem !important;
-        padding: 0.375rem 0.75rem !important;
-    }
-    
-    /* Section headers in cards */
-    h6.text-success,
-    h6.text-primary,
-    h6.text-info {
-        font-size: 0.85rem !important;
-    }
-}
-
-@media (max-width: 576px) {
-    .container-fluid {
-        padding-left: 0.5rem !important;
-        padding-right: 0.5rem !important;
-    }
-    
-    /* Header card extra small */
-    .card-body.p-3 {
-        padding: 0.75rem !important;
-        flex-direction: column !important;
-        align-items: flex-start !important;
-    }
-    
-    .card-body.p-3 > div:last-child {
-        width: 100%;
-        margin-top: 0.75rem;
-    }
-    
-    .card-body.p-3 > div:last-child .btn {
-        width: 100%;
-    }
-    
-    .card-body.p-3 h1.h5 {
-        font-size: 0.95rem !important;
-    }
-    
-    .card-body.p-3 .small {
-        font-size: 0.75rem !important;
-    }
-    
-    /* Icon in header */
-    .card-body.p-3 > div:first-child > div:first-child {
-        width: 36px !important;
-        height: 36px !important;
-        font-size: 16px !important;
-    }
-    
-    /* KPI Cards */
-    .card-body {
-        padding: 0.875rem !important;
-    }
-    
-    .card-body .h5 {
-        font-size: 1.1rem !important;
-    }
-    
-    .card-body .text-xs {
-        font-size: 0.65rem !important;
-    }
-    
-    .card-body small {
-        font-size: 0.7rem !important;
-    }
-    
-    .fa-2x {
-        font-size: 1.25em !important;
-    }
-    
-    /* Card headers */
-    .card-header {
-        padding: 0.625rem !important;
-    }
-    
-    .card-header h6 {
-        font-size: 0.85rem !important;
-    }
-    
-    .card-header i {
-        font-size: 0.9rem !important;
-    }
-    
-    /* Tables */
-    .table-responsive {
-        font-size: 0.75rem;
-        max-height: 300px;
-        overflow-x: auto;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-    
-    .table {
-        font-size: 0.75rem;
-    }
-    
-    .table th,
-    .table td {
-        padding: 0.5rem 0.375rem;
-        font-size: 0.75rem;
-        min-width: 70px;
-    }
-    
-    .table th {
-        font-size: 0.7rem;
-        white-space: nowrap;
-        position: sticky;
-        top: 0;
-        background-color: #f8f9fa;
-        z-index: 10;
-    }
-    
-    .table td {
-        word-break: break-word;
-    }
-    
-    /* Buttons */
-    .btn-sm {
-        font-size: 0.75rem !important;
-        padding: 0.35rem 0.65rem !important;
-    }
-    
-    .btn {
-        font-size: 0.8rem !important;
-    }
-    
-    /* Section headers in cards */
-    h6.text-success,
-    h6.text-primary,
-    h6.text-info {
-        font-size: 0.8rem !important;
-    }
-    
-    /* Button groups */
-    .d-flex.gap-2 {
-        flex-direction: column;
-    }
-    
-    .d-flex.gap-2 .btn {
-        width: 100%;
-    }
-    
-    /* More Reports buttons */
-    .row.g-2 .btn {
-        font-size: 0.75rem !important;
-        padding: 0.5rem 0.75rem !important;
-    }
-}
-</style>
+<!-- Filter Modal -->
+<div class="modal fade" id="filterModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-card">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">Filter Overview Period</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ route('reports.overview') }}" method="GET">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">Start Date</label>
+                            <input type="date" name="start_date" class="form-control" value="{{ $start->format('Y-m-d') }}">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">End Date</label>
+                            <input type="date" name="end_date" class="form-control" value="{{ $end->format('Y-m-d') }}">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light rounded-pill" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4">Apply Filter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 @endsection

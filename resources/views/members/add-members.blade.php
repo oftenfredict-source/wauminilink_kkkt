@@ -12,6 +12,18 @@
             </div>
         </div>
         <div class="card-body bg-light px-4 py-4">
+            @if($errors->any())
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <h5 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>Validation Errors</h5>
+                    <ul class="mb-0">
+                        @foreach($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            @endif
+            
             <form id="addMemberForm" action="{{ route('members.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf
 
@@ -54,6 +66,27 @@
                                 <label for="membership_type">Membership Type</label>
                             </div>
                         </div>
+                        <!-- Temporary Membership Duration Fields -->
+                        <div class="col-md-4" id="temporaryMembershipDurationWrapper" style="display:none;">
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <div class="form-floating">
+                                        <input type="number" class="form-control" name="membership_duration_value" id="membership_duration_value" min="1" max="120" placeholder="3">
+                                        <label for="membership_duration_value">Duration</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-floating">
+                                        <select class="form-select" name="membership_duration_unit" id="membership_duration_unit">
+                                            <option value="months">Months</option>
+                                            <option value="years">Years</option>
+                                        </select>
+                                        <label for="membership_duration_unit">Unit</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <small class="text-muted">e.g., 3 months, 6 months, 2 years</small>
+                        </div>
                         <div class="col-md-4" id="memberTypeWrapper">
                             <div class="form-floating">
                                 <select name="member_type" id="member_type" class="form-select" required>
@@ -93,6 +126,13 @@
                                 </select>
                                 <label for="community_id">Community (Optional)</label>
                             </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-floating">
+                                <input type="text" name="envelope_number" id="envelope_number" class="form-control" placeholder="e.g. 024">
+                                <label for="envelope_number">Envelope Number (Optional)</label>
+                            </div>
+                            <small class="text-muted ms-1">Unique number within the fellowship (Jumuiya)</small>
                         </div>
                     </div>
 
@@ -287,6 +327,49 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Social Welfare Section -->
+                    <div class="border rounded-3 p-4 mb-4 bg-white shadow-sm">
+                        <h6 class="mb-3 text-danger fw-bold"><i class="fas fa-hand-holding-heart me-2"></i>Hali ya Ustawi wa Jamii (Welfare Status)</h6>
+                        <div class="row g-4">
+                            <div class="col-md-4">
+                                <div class="form-floating">
+                                    <select class="form-select" name="orphan_status" id="orphan_status">
+                                        <option value="not_orphan">Si Yatima (Not Orphan)</option>
+                                        <option value="father_deceased">Baba amefariki (Father Deceased)</option>
+                                        <option value="mother_deceased">Mama amefariki (Mother Deceased)</option>
+                                        <option value="both_deceased">Wote wamefariki (Both Deceased)</option>
+                                    </select>
+                                    <label for="orphan_status">Hali ya Uyathima (Orphan Status)</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check form-switch pt-2">
+                                    <input class="form-check-input" type="checkbox" id="disability_status" name="disability_status" value="1">
+                                    <label class="form-check-label fw-bold" for="disability_status">Ana Ulemavu? (Has Disability?)</label>
+                                </div>
+                                <div id="disabilityTypeWrapper" class="mt-2" style="display:none;">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" name="disability_type" id="disability_type" placeholder="Nature of disability">
+                                        <label for="disability_type">Aina ya Ulemavu (Type)</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check form-switch pt-2">
+                                    <input class="form-check-input" type="checkbox" id="vulnerable_status" name="vulnerable_status" value="1">
+                                    <label class="form-check-label fw-bold" for="vulnerable_status">Hali Ngumu/Dhaifu? (Vulnerable?)</label>
+                                </div>
+                                <div id="vulnerableTypeWrapper" class="mt-2" style="display:none;">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" name="vulnerable_type" id="vulnerable_type" placeholder="e.g. Poverty, Chronic Illness">
+                                        <label for="vulnerable_type">Aina ya Changamoto (Type)</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="d-flex justify-content-between">
                         <button type="button" class="btn btn-outline-secondary btn-lg px-4 shadow-sm prev-step" id="prevStep2"><i class="fas fa-arrow-left me-1"></i>Back</button>
                         <button type="button" class="btn btn-primary btn-lg px-4 shadow-sm next-step" id="nextStep2">Next <i class="fas fa-arrow-right ms-1"></i></button>
@@ -494,6 +577,26 @@
                                     </div>
                                 </div>
                             </div>
+                            
+                            <!-- Spouse Campus and Community (only if spouse is a church member) -->
+                            <div class="row g-4 mb-3" id="spouseCampusCommunityFields" style="display:none;">
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <select class="form-select" name="spouse_campus_id" id="spouse_campus_id">
+                                            <option value="">Select Campus...</option>
+                                        </select>
+                                        <label for="spouse_campus_id">Spouse Campus/Branch <span class="text-danger">*</span></label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <select class="form-select" name="spouse_community_id" id="spouse_community_id">
+                                            <option value="">Select Fellowship...</option>
+                                        </select>
+                                        <label for="spouse_community_id">Spouse Fellowship (Jumuiya) <span class="text-danger">*</span></label>
+                                    </div>
+                                </div>
+                            </div>
                             <div class="row g-4 mb-3">
                                 <div class="col-md-4">
                                     <div class="form-floating">
@@ -551,6 +654,35 @@
                                 </div>
                             </div>
                             
+                            <!-- Spouse Welfare Status -->
+                            <hr class="my-3">
+                            <h6 class="mb-3 text-danger fw-bold"><i class="fas fa-hand-holding-heart me-2"></i>Spouse Welfare Status</h6>
+                            <div class="row g-4 mb-3">
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <select class="form-select" name="spouse_orphan_status" id="spouse_orphan_status">
+                                            <option value="not_orphan">Si Yatima (Not Orphan)</option>
+                                            <option value="father_deceased">Baba amefariki (Father Deceased)</option>
+                                            <option value="mother_deceased">Mama amefariki (Mother Deceased)</option>
+                                            <option value="both_deceased">Wote wamefariki (Both Deceased)</option>
+                                        </select>
+                                        <label for="spouse_orphan_status">Spouse Orphan Status</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch pt-2">
+                                        <input class="form-check-input" type="checkbox" id="spouse_disability_status" name="spouse_disability_status" value="1">
+                                        <label class="form-check-label fw-bold" for="spouse_disability_status">Spouse Ana Ulemavu? (Has Disability?)</label>
+                                    </div>
+                                    <div id="spouseDisabilityTypeWrapper" class="mt-2" style="display:none;">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" name="spouse_disability_type" id="spouse_disability_type" placeholder="Nature of disability">
+                                            <label for="spouse_disability_type">Spouse Disability Type</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <!-- Spouse Profile Picture -->
                             <div class="row g-4 mb-3">
                                 <div class="col-md-6">
@@ -599,7 +731,7 @@
                         <h6 class="mb-3 text-success fw-bold"><i class="fas fa-child me-2"></i>Children Information</h6>
                         <div class="mb-3">
                             <div class="form-floating">
-                                <input type="number" class="form-control" name="children_count" id="children_count" min="0" max="20" value="0" placeholder="Enter number">
+                                <input type="number" class="form-control" name="children_count" id="children_count" min="0" value="0" placeholder="Enter number">
                                 <label for="children_count">Number of Children</label>
                             </div>
                             <small class="text-muted">Enter the number of children you want to register (0 if no children)</small>
@@ -713,6 +845,7 @@
 // Global variables for location and tribe data
 let tzLocations = null;
 let tribeList = ['Chaga','Sukuma','Haya','Nyakyusa','Makonde','Hehe','Other'];
+const campusesUrl = '{{ route("campuses.ajax.get") }}';
 
 // Load Tanzania locations data
 function ensureLocationsLoaded() {
@@ -1045,6 +1178,29 @@ function generateSummary() {
                 </div>
             </div>
         </div>
+
+        <!-- Social Welfare Information -->
+        <div class="col-12">
+            <div class="card border-danger mb-3">
+                <div class="card-header bg-danger text-white">
+                    <h6 class="mb-0"><i class="fas fa-hand-holding-heart me-2"></i>Social Welfare Status</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4"><strong>Orphan Status:</strong> ${
+                            ({
+                                'not_orphan': 'Si Yatima',
+                                'father_deceased': 'Baba amefariki',
+                                'mother_deceased': 'Mama amefariki',
+                                'both_deceased': 'Wote wamefariki'
+                            })[getValue('orphan_status')] || getValue('orphan_status')
+                        }</div>
+                        <div class="col-md-4"><strong>Has Disability:</strong> ${document.getElementById('disability_status')?.checked ? 'Yes (' + (getValue('disability_type') || 'N/A') + ')' : 'No'}</div>
+                        <div class="col-md-4"><strong>Vulnerable:</strong> ${document.getElementById('vulnerable_status')?.checked ? 'Yes (' + (getValue('vulnerable_type') || 'N/A') + ')' : 'No'}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
     `;
     
     // Step 3: Current Residence
@@ -1142,12 +1298,17 @@ function generateSummary() {
                         <div class="col-md-4"><strong>Name:</strong> ${childName}</div>
                         <div class="col-md-4"><strong>Gender:</strong> ${childGender}</div>
                         <div class="col-md-4"><strong>Date of Birth:</strong> ${formatDate(childDOB)}</div>
-                        <div class="col-md-4"><strong>Baptism Status:</strong> ${childBaptism}</div>
-                        ${childBaptism === 'Baptized' ? `
-                            <div class="col-md-4"><strong>Baptism Date:</strong> ${formatDate(form.querySelector(`input[name="children[${i}][baptism_date]"]`)?.value || '')}</div>
-                            <div class="col-md-4"><strong>Baptism Location:</strong> ${form.querySelector(`input[name="children[${i}][baptism_location]"]`)?.value || 'N/A'}</div>
-                            <div class="col-md-4"><strong>Baptized By:</strong> ${form.querySelector(`input[name="children[${i}][baptized_by]"]`)?.value || 'N/A'}</div>
-                        ` : ''}
+                            <div class="col-md-4"><strong>Baptism Status:</strong> ${childBaptism}</div>
+                            ${childBaptism === 'Baptized' ? `
+                                <div class="col-md-4"><strong>Baptism Date:</strong> ${formatDate(form.querySelector(`input[name="children[${i}][baptism_date]"]`)?.value || '')}</div>
+                                <div class="col-md-4"><strong>Baptism Location:</strong> ${form.querySelector(`input[name="children[${i}][baptism_location]"]`)?.value || 'N/A'}</div>
+                                <div class="col-md-4"><strong>Baptized By:</strong> ${form.querySelector(`input[name="children[${i}][baptized_by]"]`)?.value || 'N/A'}</div>
+                            ` : ''}
+                            <div class="col-12"><hr></div>
+                            <div class="col-md-4"><strong>Orphan Status:</strong> ${form.querySelector(`select[name="children[${i}][orphan_status]"]`)?.options[form.querySelector(`select[name="children[${i}][orphan_status]"]`).selectedIndex]?.text || 'N/A'}</div>
+                            <div class="col-md-4"><strong>Has Disability:</strong> ${form.querySelector(`input[name="children[${i}][disability_status]"]`)?.checked ? 'Yes (' + (form.querySelector(`input[name="children[${i}][disability_type]"]`)?.value || 'N/A') + ')' : 'No'}</div>
+                            <div class="col-md-4"><strong>Vulnerable:</strong> ${form.querySelector(`input[name="children[${i}][vulnerable_status]"]`)?.checked ? 'Yes (' + (form.querySelector(`input[name="children[${i}][vulnerable_type]"]`)?.value || 'N/A') + ')' : 'No'}</div>
+                        </div>
                     </div>
                 </div>
             `;
@@ -1181,7 +1342,8 @@ function loadCommunities(campusId) {
         }
     })
     .then(response => response.json())
-    .then(communities => {
+    .then(data => {
+        const communities = Array.isArray(data) ? data : (data?.communities || []);
         communitySelect.innerHTML = '<option value="">Select Community...</option>';
         communities.forEach(community => {
             const option = document.createElement('option');
@@ -1343,12 +1505,44 @@ document.addEventListener('DOMContentLoaded', function() {
     if (prevStep4) prevStep4.addEventListener('click', () => showStep(3, 4));
     if (prevStep5) prevStep5.addEventListener('click', () => showStep(4, 5));
     
-    // Member type change handler - show/hide gender field and guardian section
+    // Get references to elements
     const memberTypeSelect = document.getElementById('member_type');
     const genderFieldWrapper = document.getElementById('genderFieldWrapper');
     const genderSelect = document.getElementById('gender');
     const guardianSection = document.getElementById('guardianSection');
+    const membershipTypeSelect = document.getElementById('membership_type');
     
+    // Function to update guardian section visibility based on membership type and member type
+    function updateGuardianSectionVisibility() {
+        if (!guardianSection) return;
+        
+        const membershipType = membershipTypeSelect ? membershipTypeSelect.value : '';
+        const memberType = memberTypeSelect ? memberTypeSelect.value : '';
+        
+        // Show guardian section if:
+        // 1. Member type is independent (always show for independent)
+        // 2. Membership type is temporary (required for all temporary members)
+        const shouldShow = (memberType === 'independent') || (membershipType === 'temporary');
+        
+        guardianSection.style.display = shouldShow ? 'block' : 'none';
+        
+        // Update required attributes
+        const guardianName = document.getElementById('guardian_name');
+        const guardianPhone = document.getElementById('guardian_phone');
+        const guardianRelationship = document.getElementById('guardian_relationship');
+        
+        if (shouldShow) {
+            if (guardianName) guardianName.setAttribute('required', 'required');
+            if (guardianPhone) guardianPhone.setAttribute('required', 'required');
+            if (guardianRelationship) guardianRelationship.setAttribute('required', 'required');
+        } else {
+            if (guardianName) guardianName.removeAttribute('required');
+            if (guardianPhone) guardianPhone.removeAttribute('required');
+            if (guardianRelationship) guardianRelationship.removeAttribute('required');
+        }
+    }
+    
+    // Member type change handler - show/hide gender field and guardian section
     if (memberTypeSelect && genderFieldWrapper && genderSelect) {
         function handleMemberTypeChange() {
             const memberType = memberTypeSelect.value;
@@ -1358,19 +1552,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 genderFieldWrapper.style.display = 'none';
                 genderSelect.value = 'male';
                 genderSelect.removeAttribute('required');
-                // Hide guardian section
-                if (guardianSection) {
-                    guardianSection.style.display = 'none';
-                }
             } else if (memberType === 'mother') {
                 // Hide gender field and set to female
                 genderFieldWrapper.style.display = 'none';
                 genderSelect.value = 'female';
                 genderSelect.removeAttribute('required');
-                // Hide guardian section
-                if (guardianSection) {
-                    guardianSection.style.display = 'none';
-                }
             } else if (memberType === 'independent') {
                 // Show gender field and make it required
                 genderFieldWrapper.style.display = 'block';
@@ -1379,18 +1565,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (genderSelect.value === 'male' || genderSelect.value === 'female') {
                     genderSelect.value = '';
                 }
-                // Show guardian section
-                if (guardianSection) {
-                    guardianSection.style.display = 'block';
-                }
             } else {
-                // Default: show gender field, hide guardian
+                // Default: show gender field
                 genderFieldWrapper.style.display = 'block';
                 genderSelect.setAttribute('required', 'required');
-                if (guardianSection) {
-                    guardianSection.style.display = 'none';
-                }
             }
+            
+            // Update guardian section visibility after member type change
+            updateGuardianSectionVisibility();
         }
         
         memberTypeSelect.addEventListener('change', handleMemberTypeChange);
@@ -1441,6 +1623,82 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
+    // Spouse disability status change handler
+    const spouseDisabilityStatus = document.getElementById('spouse_disability_status');
+    if (spouseDisabilityStatus) {
+        spouseDisabilityStatus.addEventListener('change', function() {
+            const wrapper = document.getElementById('spouseDisabilityTypeWrapper');
+            if (wrapper) wrapper.style.display = this.checked ? 'block' : 'none';
+        });
+    }
+    
+    // Spouse church member change handler
+    const spouseChurchMember = document.getElementById('spouse_church_member');
+    const spouseCampusCommunityFields = document.getElementById('spouseCampusCommunityFields');
+    if (spouseChurchMember && spouseCampusCommunityFields) {
+        spouseChurchMember.addEventListener('change', function() {
+            const isMember = this.value === 'yes';
+            spouseCampusCommunityFields.style.display = isMember ? 'block' : 'none';
+            
+            const spouseCampusSelect = document.getElementById('spouse_campus_id');
+            const spouseCommunitySelect = document.getElementById('spouse_community_id');
+            
+            if (isMember) {
+                // Add required attribute
+                if (spouseCampusSelect) spouseCampusSelect.setAttribute('required', 'required');
+                if (spouseCommunitySelect) spouseCommunitySelect.setAttribute('required', 'required');
+                // Load campuses for spouse
+                loadCampusesForSpouse();
+            } else {
+                // Remove required attribute
+                if (spouseCampusSelect) spouseCampusSelect.removeAttribute('required');
+                if (spouseCommunitySelect) spouseCommunitySelect.removeAttribute('required');
+                // Clear selections
+                if (spouseCampusSelect) spouseCampusSelect.value = '';
+                if (spouseCommunitySelect) {
+                    spouseCommunitySelect.innerHTML = '<option value="">Select Fellowship...</option>';
+                }
+            }
+        });
+    }
+    
+    // Spouse campus selection change handler
+    const spouseCampusSelect = document.getElementById('spouse_campus_id');
+    if (spouseCampusSelect) {
+        spouseCampusSelect.addEventListener('change', function() {
+            const campusId = this.value;
+            if (campusId) {
+                loadCommunitiesForSpouse(campusId);
+            } else {
+                const spouseCommunitySelect = document.getElementById('spouse_community_id');
+                if (spouseCommunitySelect) {
+                    spouseCommunitySelect.innerHTML = '<option value="">Select Fellowship...</option>';
+                }
+            }
+        });
+    }
+    
+    // Membership type change handler - show/hide temporary duration fields and guardian section
+    const temporaryDurationWrapper = document.getElementById('temporaryMembershipDurationWrapper');
+    
+    if (membershipTypeSelect && temporaryDurationWrapper) {
+        membershipTypeSelect.addEventListener('change', function() {
+            if (this.value === 'temporary') {
+                temporaryDurationWrapper.style.display = 'block';
+            } else {
+                temporaryDurationWrapper.style.display = 'none';
+            }
+            // Update guardian section visibility when membership type changes
+            updateGuardianSectionVisibility();
+        });
+        // Initialize on page load
+        if (membershipTypeSelect.value === 'temporary') {
+            temporaryDurationWrapper.style.display = 'block';
+        }
+        // Also initialize guardian section visibility on page load
+        updateGuardianSectionVisibility();
+    }
+    
     // Campus change handler - load communities
     const campusSelect = document.getElementById('campus_id');
     if (campusSelect) {
@@ -1451,6 +1709,23 @@ document.addEventListener('DOMContentLoaded', function() {
         if (campusSelect.value) {
             loadCommunities(campusSelect.value);
         }
+    }
+    
+    // Welfare status change handlers for main member
+    const disabilityStatus = document.getElementById('disability_status');
+    if (disabilityStatus) {
+        disabilityStatus.addEventListener('change', function() {
+            const wrapper = document.getElementById('disabilityTypeWrapper');
+            if (wrapper) wrapper.style.display = this.checked ? 'block' : 'none';
+        });
+    }
+    
+    const vulnerableStatus = document.getElementById('vulnerable_status');
+    if (vulnerableStatus) {
+        vulnerableStatus.addEventListener('change', function() {
+            const wrapper = document.getElementById('vulnerableTypeWrapper');
+            if (wrapper) wrapper.style.display = this.checked ? 'block' : 'none';
+        });
     }
     
     // Children count handler
@@ -1498,6 +1773,84 @@ document.addEventListener('DOMContentLoaded', function() {
                                         <label>Date of Birth <span class="text-danger">*</span></label>
                                     </div>
                                 </div>
+                                <div class="col-md-2">
+                                    <div class="form-floating">
+                                        <select class="form-select child-membership-status" name="children[${i}][is_church_member]" data-child-index="${i}">
+                                            <option value="no">No</option>
+                                            <option value="yes">Yes</option>
+                                        </select>
+                                        <label>Church Member?</label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Campus and Fellowship (only for member children) -->
+                            <div class="row g-4 mb-3 child-member-fields" id="child${i}_member_fields" style="display:none;">
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <select class="form-select child-campus-select" name="children[${i}][campus_id]" id="child${i}_campus_id" data-child-index="${i}">
+                                            <option value="">Select Campus...</option>
+                                        </select>
+                                        <label>Campus/Branch <span class="text-danger">*</span></label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <select class="form-select child-community-select" name="children[${i}][community_id]" id="child${i}_community_id" data-child-index="${i}">
+                                            <option value="">Select Fellowship...</option>
+                                        </select>
+                                        <label>Fellowship (Jumuiya) <span class="text-danger">*</span></label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Location for children living outside main area -->
+                            <div class="row g-4 mb-3">
+                                <div class="col-md-12">
+                                    <div class="form-check">
+                                        <input class="form-check-input child-outside-area" type="checkbox" name="children[${i}][lives_outside_main_area]" value="yes" id="child${i}_outside_area" data-child-index="${i}">
+                                        <label class="form-check-label" for="child${i}_outside_area">
+                                            This child lives outside the main church area
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row g-4 mb-3 child-location-fields" id="child${i}_location_fields" style="display:none;">
+                                <div class="col-md-3">
+                                    <div class="form-floating">
+                                        <select class="form-select child-region-select" name="children[${i}][region]" id="child${i}_region" data-child-index="${i}">
+                                            <option value="">Select Region...</option>
+                                        </select>
+                                        <label>Region</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-floating">
+                                        <select class="form-select child-district-select" name="children[${i}][district]" id="child${i}_district" data-child-index="${i}">
+                                            <option value="">Select District...</option>
+                                        </select>
+                                        <label>District</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" name="children[${i}][city_town]" placeholder="City/Town">
+                                        <label>City/Town</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" name="children[${i}][current_church_attended]" placeholder="Church name">
+                                        <label>Current Church Attended (Optional)</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control child-phone-input" name="children[${i}][phone_number]" id="child${i}_phone_number" placeholder="+255XXXXXXXXX" pattern="^\+255[0-9]{9,15}$">
+                                        <label>Phone Number (Optional)</label>
+                                    </div>
+                                    <small class="text-muted d-block mt-1">Format: +255XXXXXXXXX</small>
+                                </div>
                             </div>
                             
                             <hr class="my-3">
@@ -1531,10 +1884,44 @@ document.addEventListener('DOMContentLoaded', function() {
                                         <label>Baptized By</label>
                                     </div>
                                 </div>
-                                <div class="col-md-4 child-baptism-certificate-wrapper" id="child${i}_baptism_certificate_wrapper" style="display:none;">
+                            </div>
+
+                            <hr class="my-3">
+                            <h6 class="text-danger mb-3"><i class="fas fa-hand-holding-heart me-2"></i>Child ${i + 1} Welfare Status</h6>
+                            <div class="row g-4 mb-3">
+                                <div class="col-md-4">
                                     <div class="form-floating">
-                                        <input type="text" class="form-control" name="children[${i}][baptism_certificate_number]" placeholder="Certificate number">
-                                        <label>Baptism Certificate Number (Optional)</label>
+                                        <select class="form-select" name="children[${i}][orphan_status]">
+                                            <option value="not_orphan">Si Yatima (Not Orphan)</option>
+                                            <option value="father_deceased">Baba amefariki (Father Deceased)</option>
+                                            <option value="mother_deceased">Mama amefariki (Mother Deceased)</option>
+                                            <option value="both_deceased">Wote wamefariki (Both Deceased)</option>
+                                        </select>
+                                        <label>Hali ya Uyathima (Orphan Status)</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check form-switch pt-2">
+                                        <input class="form-check-input child-disability-status" type="checkbox" name="children[${i}][disability_status]" value="1" data-child-index="${i}" id="child${i}_disability_status">
+                                        <label class="form-check-label fw-bold" for="child${i}_disability_status">Ana Ulemavu? (Has Disability?)</label>
+                                    </div>
+                                    <div id="child${i}_disabilityTypeWrapper" class="mt-2" style="display:none;">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" name="children[${i}][disability_type]" placeholder="Nature of disability">
+                                            <label>Aina ya Ulemavu (Type)</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check form-switch pt-2">
+                                        <input class="form-check-input child-vulnerable-status" type="checkbox" name="children[${i}][vulnerable_status]" value="1" data-child-index="${i}" id="child${i}_vulnerable_status">
+                                        <label class="form-check-label fw-bold" for="child${i}_vulnerable_status">Hali Ngumu/Dhaifu? (Vulnerable?)</label>
+                                    </div>
+                                    <div id="child${i}_vulnerableTypeWrapper" class="mt-2" style="display:none;">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" name="children[${i}][vulnerable_type]" placeholder="e.g. Poverty">
+                                            <label>Aina ya Changamoto (Type)</label>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -1561,9 +1948,274 @@ document.addEventListener('DOMContentLoaded', function() {
                     });
                 });
             });
+            
+            // Add event listeners for child "lives outside main area" checkbox
+            document.querySelectorAll('.child-outside-area').forEach(function(checkbox) {
+                checkbox.addEventListener('change', function() {
+                    const childIndex = this.getAttribute('data-child-index');
+                    const locationFields = document.getElementById('child' + childIndex + '_location_fields');
+                    if (locationFields) {
+                        locationFields.style.display = this.checked ? 'block' : 'none';
+                    }
+                });
+            });
         });
+        
+        // Use event delegation for dynamically added child fields (set up once on page load)
+        const childrenContainer = document.getElementById('childrenFields');
+        if (childrenContainer) {
+            // Handle child membership status changes
+            childrenContainer.addEventListener('change', function(e) {
+                if (e.target.classList.contains('child-membership-status')) {
+                    const childIndex = e.target.getAttribute('data-child-index');
+                    const isMember = e.target.value === 'yes';
+                    const memberFields = document.getElementById('child' + childIndex + '_member_fields');
+                    if (memberFields) {
+                        memberFields.style.display = isMember ? 'block' : 'none';
+                        // Load campuses for child campus select
+                        if (isMember) {
+                            loadCampusesForChild(childIndex);
+                        }
+                    }
+                }
+            });
+            
+            // Handle child campus selection changes
+            childrenContainer.addEventListener('change', function(e) {
+                if (e.target.classList.contains('child-campus-select')) {
+                    const childIndex = e.target.getAttribute('data-child-index');
+                    const campusId = e.target.value;
+                    if (campusId) {
+                        loadCommunitiesForChild(campusId, childIndex);
+                    } else {
+                        const communitySelect = document.getElementById('child' + childIndex + '_community_id');
+                        if (communitySelect) {
+                            communitySelect.innerHTML = '<option value="">Select Fellowship...</option>';
+                        }
+                    }
+                }
+            });
+            
+            // Handle child "lives outside main area" checkbox
+            childrenContainer.addEventListener('change', function(e) {
+                if (e.target.classList.contains('child-outside-area')) {
+                    const childIndex = e.target.getAttribute('data-child-index');
+                    const locationFields = document.getElementById('child' + childIndex + '_location_fields');
+                    if (locationFields) {
+                        locationFields.style.display = e.target.checked ? 'block' : 'none';
+                        // Load regions when checkbox is checked
+                        if (e.target.checked) {
+                            setupChildLocationCascading(childIndex);
+                        }
+                    }
+                }
+            });
+            
+            // Handle child region selection changes (for cascading districts)
+            childrenContainer.addEventListener('change', function(e) {
+                if (e.target.classList.contains('child-region-select')) {
+                    const childIndex = e.target.getAttribute('data-child-index');
+                    const region = e.target.value;
+                    const districtSelect = document.getElementById('child' + childIndex + '_district');
+                    
+                    if (districtSelect && tzLocations) {
+                        const districts = region && tzLocations[region] ? Object.keys(tzLocations[region]) : [];
+                        populateSelect(districtSelect, districts, 'Select District...');
+                    }
+                }
+            });
+            
+            // Handle child welfare toggles
+            childrenContainer.addEventListener('change', function(e) {
+                if (e.target.classList.contains('child-disability-status')) {
+                    const childIndex = e.target.getAttribute('data-child-index');
+                    const wrapper = document.getElementById('child' + childIndex + '_disabilityTypeWrapper');
+                    if (wrapper) wrapper.style.display = e.target.checked ? 'block' : 'none';
+                }
+                
+                if (e.target.classList.contains('child-vulnerable-status')) {
+                    const childIndex = e.target.getAttribute('data-child-index');
+                    const wrapper = document.getElementById('child' + childIndex + '_vulnerableTypeWrapper');
+                    if (wrapper) wrapper.style.display = e.target.checked ? 'block' : 'none';
+                }
+            });
+        }
+        
+        // Function to load campuses for child campus select
+        function loadCampusesForChild(childIndex) {
+            const campusSelect = document.getElementById('child' + childIndex + '_campus_id');
+            if (!campusSelect) return;
+            
+            fetch(campusesUrl, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(campuses => {
+                campusSelect.innerHTML = '<option value="">Select Campus...</option>';
+                campuses.forEach(campus => {
+                    const option = document.createElement('option');
+                    option.value = campus.id;
+                    option.textContent = campus.name + (campus.is_main_campus ? ' (Usharika)' : '');
+                    campusSelect.appendChild(option);
+                });
+            })
+            .catch(err => {
+                console.error('Failed to load campuses for child:', err);
+                campusSelect.innerHTML = '<option value="">Select Campus...</option>';
+            });
+        }
+        
+        // Function to load communities for child fellowship select
+        function loadCommunitiesForChild(campusId, childIndex) {
+            const communitySelect = document.getElementById('child' + childIndex + '_community_id');
+            if (!communitySelect || !campusId) {
+                if (communitySelect) {
+                    communitySelect.innerHTML = '<option value="">Select Fellowship...</option>';
+                }
+                return;
+            }
+            
+            fetch(`/campuses/${campusId}/communities/json`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const communities = Array.isArray(data) ? data : (data?.communities || []);
+                communitySelect.innerHTML = '<option value="">Select Fellowship...</option>';
+                communities.forEach(community => {
+                    const option = document.createElement('option');
+                    option.value = community.id;
+                    option.textContent = community.name;
+                    communitySelect.appendChild(option);
+                });
+            })
+            .catch(err => {
+                console.error('Failed to load communities for child:', err);
+                communitySelect.innerHTML = '<option value="">Select Fellowship...</option>';
+            });
+        }
+        
+        // Function to set up location cascading for child fields
+        function setupChildLocationCascading(childIndex) {
+            ensureLocationsLoaded().then(() => {
+                const regionSelect = document.getElementById('child' + childIndex + '_region');
+                
+                if (regionSelect && tzLocations) {
+                    // Populate regions
+                    const regions = Object.keys(tzLocations || {});
+                    populateSelect(regionSelect, regions, 'Select Region...');
+                }
+            }).catch(err => {
+                console.error('Error loading locations for child:', err);
+            });
+        }
+        
+        // Function to load campuses for spouse
+        function loadCampusesForSpouse() {
+            const campusSelect = document.getElementById('spouse_campus_id');
+            if (!campusSelect) return;
+            
+            fetch(campusesUrl, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(campuses => {
+                campusSelect.innerHTML = '<option value="">Select Campus...</option>';
+                campuses.forEach(campus => {
+                    const option = document.createElement('option');
+                    option.value = campus.id;
+                    option.textContent = campus.name + (campus.is_main_campus ? ' (Usharika)' : '');
+                    campusSelect.appendChild(option);
+                });
+            })
+            .catch(err => {
+                console.error('Failed to load campuses for spouse:', err);
+                campusSelect.innerHTML = '<option value="">Select Campus...</option>';
+            });
+        }
+        
+        // Function to load communities for spouse
+        function loadCommunitiesForSpouse(campusId) {
+            const communitySelect = document.getElementById('spouse_community_id');
+            if (!communitySelect || !campusId) {
+                if (communitySelect) {
+                    communitySelect.innerHTML = '<option value="">Select Fellowship...</option>';
+                }
+                return;
+            }
+            
+            fetch(`/campuses/${campusId}/communities/json`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const communities = Array.isArray(data) ? data : (data?.communities || []);
+                communitySelect.innerHTML = '<option value="">Select Fellowship...</option>';
+                communities.forEach(community => {
+                    const option = document.createElement('option');
+                    option.value = community.id;
+                    option.textContent = community.name;
+                    communitySelect.appendChild(option);
+                });
+            })
+            .catch(err => {
+                console.error('Failed to load communities for spouse:', err);
+                communitySelect.innerHTML = '<option value="">Select Fellowship...</option>';
+            });
+        }
     }
     
+    // Envelope Number Real-time Validation
+    const envelopeInput = document.getElementById('envelope_number');
+    const communitySelectForEnvelope = document.getElementById('community_id');
+    
+    if (envelopeInput && communitySelectForEnvelope) {
+        const checkEnvelope = function() {
+            const envelope = envelopeInput.value.trim();
+            const communityId = communitySelectForEnvelope.value;
+            
+            // Remove existing feedback
+            const existingFeedback = envelopeInput.parentNode.querySelector('.envelope-feedback');
+            if (existingFeedback) existingFeedback.remove();
+            envelopeInput.classList.remove('is-invalid', 'is-valid');
+            
+            if (!envelope || !communityId) return;
+
+            fetch(`/members/check-envelope?envelope=${encodeURIComponent(envelope)}&community_id=${communityId}`, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const feedback = document.createElement('small');
+                feedback.className = `envelope-feedback d-block mt-1 fw-bold ${data.available ? 'text-success' : 'text-danger'}`;
+                feedback.innerHTML = `<i class="fas fa-${data.available ? 'check' : 'times'}-circle me-1"></i>${data.message}`;
+                envelopeInput.parentNode.appendChild(feedback);
+                
+                if (data.available) {
+                    envelopeInput.classList.add('is-valid');
+                } else {
+                    envelopeInput.classList.add('is-invalid');
+                }
+            })
+            .catch(err => console.error('Error checking envelope:', err));
+        };
+
+        envelopeInput.addEventListener('blur', checkEnvelope);
+        communitySelectForEnvelope.addEventListener('change', checkEnvelope);
+    }
+
     // Setup location cascading and tribe selects
     // Ensure locations are loaded first, then setup cascading
     ensureLocationsLoaded().then(() => {
@@ -1728,8 +2380,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
             
-            // Form will submit normally
+            // Form will submit normally - let it proceed
+            // If there are validation errors, they will be shown via the error alert at the top
         });
+        
+        // Handle form submission response if it's an AJAX request
+        // But since this is a regular form submission, errors will be shown via redirect back
     }
 });
 </script>

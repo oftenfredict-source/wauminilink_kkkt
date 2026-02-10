@@ -13,7 +13,7 @@
         }
         
         body {
-            font-family: 'Arial', 'Helvetica', sans-serif;
+            font-family: "Century Gothic", "CenturyGothic", "AppleGothic", Arial, sans-serif;
             background: #f5f5f5;
             display: flex;
             justify-content: center;
@@ -289,7 +289,7 @@
                 border-radius: 12px !important;
                 position: relative !important;
                 overflow: hidden !important;
-                font-family: Arial, sans-serif !important;
+                font-family: "Century Gothic", "CenturyGothic", "AppleGothic", Arial, sans-serif !important;
             }
             
             .card-header {

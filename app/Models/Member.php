@@ -14,10 +14,15 @@ class Member extends Model
     protected $fillable = [
         'member_id',
         'biometric_enroll_id',
+        'envelope_number',
         'campus_id',             // Campus association
         'community_id',           // Community association
         'member_type',           // father, mother, independent
         'membership_type',       // permanent, temporary
+        'membership_duration_months', // Duration in months for temporary membership
+        'membership_start_date', // Start date of temporary membership
+        'membership_end_date',   // End date of temporary membership
+        'membership_status',     // active, expired, extended, converted, completed
         'full_name',
         'email',
         'phone_number',
@@ -29,6 +34,11 @@ class Member extends Model
         'guardian_phone',
         'guardian_relationship',
         'nida_number',
+        'baptism_status',
+        'baptism_date',
+        'baptism_location',
+        'baptized_by',
+        'baptism_certificate_number',
         'tribe',
         'other_tribe',
         'region',
@@ -57,12 +67,25 @@ class Member extends Model
         'spouse_gender',
         'spouse_church_member',
         'spouse_member_id',
+        'spouse_campus_id',
+        'spouse_community_id',
+        'spouse_orphan_status',
+        'spouse_disability_status',
+        'spouse_disability_type',
+        'orphan_status',
+        'disability_status',
+        'disability_type',
+        'vulnerable_status',
+        'vulnerable_type',
     ];
 
     protected $casts = [
         'date_of_birth' => 'date',
         'spouse_date_of_birth' => 'date',
         'wedding_date' => 'date',
+        'membership_start_date' => 'date',
+        'membership_end_date' => 'date',
+        'baptism_date' => 'date',
     ];
 
     public function children()
@@ -88,6 +111,14 @@ class Member extends Model
         return $this->hasMany(Tithe::class);
     }
 
+    // Department relationship
+    public function departments()
+    {
+        return $this->belongsToMany(Department::class, 'department_member')
+                    ->withPivot('status', 'assigned_at')
+                    ->withTimestamps();
+    }
+
     public function offerings()
     {
         return $this->hasMany(Offering::class);
@@ -101,6 +132,11 @@ class Member extends Model
     public function pledges()
     {
         return $this->hasMany(Pledge::class);
+    }
+
+    public function ahadiPledges()
+    {
+        return $this->hasMany(AhadiPledge::class);
     }
 
     // Attendance relationships
@@ -125,9 +161,49 @@ class Member extends Model
         return $this->hasMany(Leader::class);
     }
 
+    public function communityOfferingItems()
+    {
+        return $this->hasMany(CommunityOfferingItem::class);
+    }
+
     public function activeLeadershipPositions()
     {
         return $this->hasMany(Leader::class)->where('is_active', true);
+    }
+
+    /**
+     * Get all children for this member (direct + spouse's + main member's)
+     */
+    public function getAllChildrenAttribute()
+    {
+        $children = collect();
+        
+        // 1. Direct children
+        $children = $children->merge($this->children);
+        
+        // 2. Spouse's children
+        if ($this->spouse_member_id) {
+            $spouse = $this->spouseMember;
+            if ($spouse) {
+                $children = $children->merge($spouse->children);
+            }
+        }
+        
+        // 3. Main member's children (if this member is linked as a spouse)
+        $mainMember = $this->mainMember;
+        if ($mainMember) {
+            $children = $children->merge($mainMember->children);
+            
+            // Also check main member's spouse (case where children linked to another spouse)
+            if ($mainMember->spouse_member_id && $mainMember->spouse_member_id != $this->id) {
+                $otherSpouse = $mainMember->spouseMember;
+                if ($otherSpouse) {
+                    $children = $children->merge($otherSpouse->children);
+                }
+            }
+        }
+        
+        return $children->unique('id')->values();
     }
 
     // Bereavement relationships
@@ -253,6 +329,76 @@ class Member extends Model
             if (empty($member->biometric_enroll_id)) {
                 $member->biometric_enroll_id = self::generateBiometricEnrollId();
             }
+            
+            // Set membership status default
+            if (empty($member->membership_status)) {
+                $member->membership_status = 'active';
+            }
         });
+    }
+
+    /**
+     * Check if member has temporary membership
+     */
+    public function isTemporaryMember()
+    {
+        return $this->membership_type === 'temporary';
+    }
+
+    /**
+     * Check if temporary membership is expiring soon (within 30 days)
+     */
+    public function isExpiringSoon()
+    {
+        if (!$this->isTemporaryMember() || !$this->membership_end_date) {
+            return false;
+        }
+        
+        $daysUntilExpiry = now()->diffInDays($this->membership_end_date, false);
+        return $daysUntilExpiry >= 0 && $daysUntilExpiry <= 30;
+    }
+
+    /**
+     * Check if temporary membership has expired
+     */
+    public function isExpired()
+    {
+        if (!$this->isTemporaryMember() || !$this->membership_end_date) {
+            return false;
+        }
+        
+        return now()->isAfter($this->membership_end_date) && $this->membership_status === 'active';
+    }
+
+    /**
+     * Get days until expiry (negative if expired)
+     */
+    public function getDaysUntilExpiry()
+    {
+        if (!$this->isTemporaryMember() || !$this->membership_end_date) {
+            return null;
+        }
+        
+        return now()->diffInDays($this->membership_end_date, false);
+    }
+
+    /**
+     * Scope for temporary members expiring soon
+     */
+    public function scopeExpiringSoon($query)
+    {
+        return $query->where('membership_type', 'temporary')
+            ->where('membership_status', 'active')
+            ->whereBetween('membership_end_date', [now(), now()->addDays(30)]);
+    }
+
+    /**
+     * Scope for expired temporary members
+     */
+    public function scopeExpired($query)
+    {
+        return $query->where('membership_type', 'temporary')
+            ->where('membership_status', 'active')
+            ->where('membership_end_date', '<', now());
     }
 }

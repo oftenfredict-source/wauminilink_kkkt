@@ -164,29 +164,49 @@
                 <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                     <div>
                         <i class="fas fa-users me-2"></i>Community Members
-                        <span class="badge bg-white text-dark ms-2 fw-bold">{{ $memberCount }}</span>
+                        <span class="badge bg-white text-dark ms-2 fw-bold">{{ $totalMemberCount + ($adultChildren ? $adultChildren->count() : 0) }}</span>
+                        @if($childMemberCount > 0 || ($adultChildren && $adultChildren->count() > 0))
+                            <small class="ms-2">
+                                ({{ $memberCount }} adults, {{ $childMemberCount }} children under 18
+                                @if($adultChildren && $adultChildren->count() > 0)
+                                    , {{ $adultChildren->count() }} adult(s) 18+ needing transition
+                                @endif
+                                )
+                            </small>
+                        @endif
                     </div>
                 </div>
                 <div class="card-body">
-                    @if($memberCount > 0)
+                    @if($totalMemberCount > 0)
                         <div class="table-responsive">
                             <table class="table table-bordered table-hover">
                                 <thead>
                                     <tr>
                                         <th>Name</th>
                                         <th>Member ID</th>
+                                        <th>Type</th>
                                         <th>Phone</th>
                                         <th>Email</th>
+                                        <th>Parent/Guardian</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
+                                    {{-- Regular Members --}}
                                     @foreach($community->members as $member)
                                         <tr>
                                             <td><strong>{{ $member->full_name }}</strong></td>
                                             <td><span class="badge bg-secondary">{{ $member->member_id }}</span></td>
+                                            <td>
+                                                @if($member->membership_type === 'temporary')
+                                                    <span class="badge bg-warning">Temporary</span>
+                                                @else
+                                                    <span class="badge bg-primary">Adult</span>
+                                                @endif
+                                            </td>
                                             <td>{{ $member->phone_number }}</td>
                                             <td>{{ $member->email ?? '—' }}</td>
+                                            <td>—</td>
                                             <td>
                                                 <a href="{{ route('members.view') }}?search={{ $member->member_id }}" class="btn btn-sm btn-info" title="View Member">
                                                     <i class="fas fa-eye"></i>
@@ -194,6 +214,88 @@
                                             </td>
                                         </tr>
                                     @endforeach
+                                    {{-- Children who are church members (under 18) --}}
+                                    @foreach($childMembers as $child)
+                                        <tr>
+                                            <td><strong>{{ $child->full_name }}</strong></td>
+                                            <td>
+                                                @if($child->member && $child->member->member_id)
+                                                    <span class="badge bg-secondary">{{ $child->member->member_id }}-CH</span>
+                                                @else
+                                                    <span class="badge bg-info">Child</span>
+                                                @endif
+                                            </td>
+                                            <td><span class="badge bg-success">Child Member</span></td>
+                                            <td>{{ $child->phone_number ?? ($child->member->phone_number ?? '—') }}</td>
+                                            <td>{{ $child->member->email ?? '—' }}</td>
+                                            <td>
+                                                @if($child->member)
+                                                    <a href="{{ route('members.view') }}?search={{ $child->member->member_id }}" class="text-decoration-none">
+                                                        {{ $child->member->full_name }}
+                                                    </a>
+                                                @else
+                                                    {{ $child->parent_name ?? '—' }}
+                                                @endif
+                                            </td>
+                                            <td>
+                                                @if($child->member)
+                                                    <a href="{{ route('members.view') }}?search={{ $child->member->member_id }}" class="btn btn-sm btn-info" title="View Parent">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                    {{-- Adult Children (18+) who are church members - should be transitioned --}}
+                                    @if($adultChildren && $adultChildren->count() > 0)
+                                        @foreach($adultChildren as $adultChild)
+                                            @php
+                                                $age = $adultChild->getAge();
+                                            @endphp
+                                            <tr class="table-warning">
+                                                <td><strong>{{ $adultChild->full_name }}</strong> <span class="badge bg-warning">Age: {{ $age }}</span></td>
+                                                <td>
+                                                    @if($adultChild->member && $adultChild->member->member_id)
+                                                        <span class="badge bg-secondary">{{ $adultChild->member->member_id }}-CH</span>
+                                                    @else
+                                                        <span class="badge bg-info">Dependent</span>
+                                                    @endif
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-warning">Adult (18+) - Needs Transition</span>
+                                                    @if($adultChild->pendingTransition)
+                                                        <br><small class="text-info"><i class="fas fa-clock"></i> Transition Pending</small>
+                                                    @endif
+                                                </td>
+                                                <td>{{ $adultChild->phone_number ?? ($adultChild->member->phone_number ?? '—') }}</td>
+                                                <td>{{ $adultChild->member->email ?? '—' }}</td>
+                                                <td>
+                                                    @if($adultChild->member)
+                                                        <a href="{{ route('members.view') }}?search={{ $adultChild->member->member_id }}" class="text-decoration-none">
+                                                            {{ $adultChild->member->full_name }}
+                                                        </a>
+                                                    @else
+                                                        {{ $adultChild->parent_name ?? '—' }}
+                                                    @endif
+                                                </td>
+                                                <td>
+                                                    @if($adultChild->member)
+                                                        <a href="{{ route('members.view') }}?search={{ $adultChild->member->member_id }}" class="btn btn-sm btn-info" title="View Parent">
+                                                            <i class="fas fa-eye"></i>
+                                                        </a>
+                                                    @endif
+                                                    @if(auth()->user()->isPastor() || auth()->user()->isAdmin())
+                                                        @php
+                                                            $transitionRoute = auth()->user()->isAdmin() ? 'admin.transitions.index' : 'pastor.transitions.index';
+                                                        @endphp
+                                                        <a href="{{ route($transitionRoute) }}" class="btn btn-sm btn-warning" title="Review Transition">
+                                                            <i class="fas fa-exchange-alt"></i>
+                                                        </a>
+                                                    @endif
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    @endif
                                 </tbody>
                             </table>
                         </div>

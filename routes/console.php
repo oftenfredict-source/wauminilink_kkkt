@@ -38,3 +38,19 @@ Schedule::command('promise-guests:send-notifications')
     ->timezone('Africa/Dar_es_Salaam')
     ->withoutOverlapping()
     ->runInBackground();
+
+// Schedule temporary membership expiry check to run daily at 8:00 AM
+// Checks for temporary memberships expiring within 30 days or already expired
+Schedule::command('membership:check-expiry')
+    ->dailyAt('8:00')
+    ->timezone('Africa/Dar_es_Salaam')
+    ->withoutOverlapping()
+    ->runInBackground();
+
+// Schedule child to member transition eligibility check to run daily at 7:00 AM
+// Checks for children who are 18+ and church members, creates transition requests
+Schedule::command('children:check-transition-eligibility')
+    ->dailyAt('7:00')
+    ->timezone('Africa/Dar_es_Salaam')
+    ->withoutOverlapping()
+    ->runInBackground();

@@ -83,7 +83,7 @@
                         <option value="">All Members</option>
                         @foreach($members as $member)
                             <option value="{{ $member->id }}" {{ request('member_id') == $member->id ? 'selected' : '' }}>
-                                {{ $member->full_name }} ({{ $member->member_id }})
+                                {{ $member->full_name }} ({{ $member->member_id }}) @if($member->envelope_number) [Env: {{ $member->envelope_number }}] @endif
                             </option>
                         @endforeach
                     </select>

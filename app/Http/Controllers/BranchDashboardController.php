@@ -72,7 +72,13 @@ class BranchDashboardController extends Controller
      */
     private function getBranchStatistics($campus)
     {
-        $totalMembers = Member::where('campus_id', $campus->id)->count();
+        $adultMembers = Member::where('campus_id', $campus->id)->count();
+        $childMembers = \App\Models\Child::where('is_church_member', true)
+            ->whereHas('member', function($query) use ($campus) {
+                $query->where('campus_id', $campus->id);
+            })
+            ->count();
+        $totalMembers = $adultMembers + $childMembers;
         
         $totalLeaders = Leader::where('campus_id', $campus->id)
             ->where('is_active', true)

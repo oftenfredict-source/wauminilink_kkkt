@@ -10,7 +10,7 @@
     @if($permanentMembers->count() > 0)
         <div class="col-12">
             <h5 class="text-primary mb-3">
-                <i class="fas fa-users me-2"></i>Permanent Members ({{ $permanentMembers->count() }})
+                <i class="fas fa-users me-2"></i>{{ __('common.permanent_members') }} ({{ $permanentMembers->count() }})
             </h5>
         </div>
         @foreach($permanentMembers as $member)
@@ -28,8 +28,8 @@
                                     </div>
                                 @endif
                             </div>
-                            <h6 class="mb-1 text-white fw-bold member-name" style="font-size: 0.95rem;">{{ $member->full_name ?? 'Unknown Member' }}</h6>
-                            <span class="badge bg-success px-2 py-1 fw-semibold member-type" style="font-size: 0.7rem;">Permanent</span>
+                            <h6 class="mb-1 text-white fw-bold member-name" style="font-size: 0.95rem;">{{ $member->full_name ?? __('common.unknown_member') }}</h6>
+                            <span class="badge bg-success px-2 py-1 fw-semibold member-type" style="font-size: 0.7rem;">{{ __('common.permanent') }}</span>
                         </div>
                     </div>
                     
@@ -43,7 +43,7 @@
                                             <i class="fas fa-id-badge"></i>
                                         </div>
                                         <div class="flex-grow-1">
-                                            <div class="detail-label">Member ID</div>
+                                            <div class="detail-label">{{ __('common.member_id') }}</div>
                                             <div class="detail-value">{{ $member->member_id ?? '—' }}</div>
                                         </div>
                                     </div>
@@ -55,7 +55,7 @@
                                             <i class="fas fa-phone"></i>
                                         </div>
                                         <div class="flex-grow-1">
-                                            <div class="detail-label">Phone</div>
+                                            <div class="detail-label">{{ __('common.phone') }}</div>
                                             <div class="detail-value">{{ $member->phone_number ?? '—' }}</div>
                                         </div>
                                     </div>
@@ -67,7 +67,7 @@
                                             <i class="fas fa-envelope"></i>
                                         </div>
                                         <div class="flex-grow-1">
-                                            <div class="detail-label">Email</div>
+                                            <div class="detail-label">{{ __('common.email') }}</div>
                                             <div class="detail-value">{{ $member->email ?? '—' }}</div>
                                         </div>
                                     </div>
@@ -79,7 +79,7 @@
                                             <i class="fas fa-venus-mars"></i>
                                         </div>
                                         <div class="flex-grow-1">
-                                            <div class="detail-label">Gender</div>
+                                            <div class="detail-label">{{ __('common.gender') }}</div>
                                             <div class="detail-value">{{ ucfirst($member->gender ?? '—') }}</div>
                                         </div>
                                     </div>
@@ -91,7 +91,7 @@
                                             <i class="fas fa-map-marker-alt"></i>
                                         </div>
                                         <div class="flex-grow-1">
-                                            <div class="detail-label">Location</div>
+                                            <div class="detail-label">{{ __('common.location') }}</div>
                                             <div class="detail-value">{{ $member->region ?? '—' }}, {{ $member->district ?? '—' }}</div>
                                         </div>
                                     </div>
@@ -104,8 +104,8 @@
                                             <i class="fas fa-child"></i>
                                         </div>
                                         <div class="flex-grow-1">
-                                            <div class="detail-label">Children</div>
-                                            <div class="detail-value">{{ $member->children->count() }} child(ren)</div>
+                                            <div class="detail-label">{{ __('common.children') }}</div>
+                                            <div class="detail-value">{{ $member->children->count() }} {{ __('common.child_plural') }}</div>
                                         </div>
                                     </div>
                                 </div>
@@ -117,19 +117,19 @@
                     <!-- Card Footer with Actions -->
                     <div class="card-footer member-footer">
                         <div class="btn-group w-100" role="group">
-                            <button class="btn btn-outline-info btn-sm action-btn" onclick="window.viewDetails && window.viewDetails({{ $member->id }}) || console.error('viewDetails not available')" title="View Details">
-                                <i class="fas fa-eye me-1"></i>View
+                            <button class="btn btn-outline-info btn-sm action-btn" onclick="window.viewDetails && window.viewDetails({{ $member->id }}) || console.error('viewDetails not available')" title="{{ __('common.view_details') }}">
+                                <i class="fas fa-eye me-1"></i>{{ __('common.view') }}
                             </button>
-                            <button class="btn btn-outline-primary btn-sm action-btn" onclick="window.openEdit && window.openEdit({{ $member->id }}) || console.error('openEdit not available')" title="Edit Member">
-                                <i class="fas fa-edit me-1"></i>Edit
+                            <button class="btn btn-outline-primary btn-sm action-btn" onclick="window.openEdit && window.openEdit({{ $member->id }}) || console.error('openEdit not available')" title="{{ __('common.edit_member') }}">
+                                <i class="fas fa-edit me-1"></i>{{ __('common.edit') }}
                             </button>
                             @if(auth()->user()->isAdmin())
-                                <button class="btn btn-outline-success btn-sm action-btn" onclick="window.resetPassword && window.resetPassword({{ $member->id }}) || console.error('resetPassword not available')" title="Reset Password">
-                                    <i class="fas fa-key me-1"></i>Reset
+                                <button class="btn btn-outline-success btn-sm action-btn" onclick="window.resetPassword && window.resetPassword({{ $member->id }}) || console.error('resetPassword not available')" title="{{ __('common.reset_password') }}">
+                                    <i class="fas fa-key me-1"></i>{{ __('common.reset') }}
                                 </button>
                             @endif
-                            <button class="btn btn-outline-warning btn-sm action-btn" onclick="window.confirmDelete && window.confirmDelete({{ $member->id }}) || console.error('confirmDelete not available')" title="Archive Member">
-                                <i class="fas fa-archive me-1"></i>Archive
+                            <button class="btn btn-outline-warning btn-sm action-btn" onclick="window.confirmDelete && window.confirmDelete({{ $member->id }}) || console.error('confirmDelete not available')" title="{{ __('common.archive_member') }}">
+                                <i class="fas fa-archive me-1"></i>{{ __('common.archive') }}
                             </button>
                         </div>
                     </div>
@@ -142,7 +142,7 @@
     @if($temporaryMembers->count() > 0)
         <div class="col-12 mt-4">
             <h5 class="text-warning mb-3">
-                <i class="fas fa-user-clock me-2"></i>Temporary Members ({{ $temporaryMembers->count() }})
+                <i class="fas fa-user-clock me-2"></i>{{ __('common.temporary_members') }} ({{ $temporaryMembers->count() }})
             </h5>
         </div>
         @foreach($temporaryMembers as $member)
@@ -160,8 +160,8 @@
                                     </div>
                                 @endif
                             </div>
-                            <h6 class="mb-1 text-white fw-bold member-name" style="font-size: 0.95rem;">{{ $member->full_name ?? 'Unknown Member' }}</h6>
-                            <span class="badge bg-warning text-dark px-2 py-1 fw-semibold member-type" style="font-size: 0.7rem;">Temporary</span>
+                            <h6 class="mb-1 text-white fw-bold member-name" style="font-size: 0.95rem;">{{ $member->full_name ?? __('common.unknown_member') }}</h6>
+                            <span class="badge bg-warning text-dark px-2 py-1 fw-semibold member-type" style="font-size: 0.7rem;">{{ __('common.temporary') }}</span>
                         </div>
                     </div>
                     
@@ -175,7 +175,7 @@
                                             <i class="fas fa-id-badge"></i>
                                         </div>
                                         <div class="flex-grow-1">
-                                            <div class="detail-label">Member ID</div>
+                                            <div class="detail-label">{{ __('common.member_id') }}</div>
                                             <div class="detail-value">{{ $member->member_id ?? '—' }}</div>
                                         </div>
                                     </div>
@@ -187,7 +187,7 @@
                                             <i class="fas fa-phone"></i>
                                         </div>
                                         <div class="flex-grow-1">
-                                            <div class="detail-label">Phone</div>
+                                            <div class="detail-label">{{ __('common.phone') }}</div>
                                             <div class="detail-value">{{ $member->phone_number ?? '—' }}</div>
                                         </div>
                                     </div>
@@ -199,7 +199,7 @@
                                             <i class="fas fa-user-shield"></i>
                                         </div>
                                         <div class="flex-grow-1">
-                                            <div class="detail-label">Guardian</div>
+                                            <div class="detail-label">{{ __('common.guardian') }}</div>
                                             <div class="detail-value">{{ $member->guardian_name ?? '—' }}</div>
                                         </div>
                                     </div>
@@ -211,7 +211,7 @@
                                             <i class="fas fa-venus-mars"></i>
                                         </div>
                                         <div class="flex-grow-1">
-                                            <div class="detail-label">Gender</div>
+                                            <div class="detail-label">{{ __('common.gender') }}</div>
                                             <div class="detail-value">{{ ucfirst($member->gender ?? '—') }}</div>
                                         </div>
                                     </div>
@@ -223,7 +223,7 @@
                                             <i class="fas fa-map-marker-alt"></i>
                                         </div>
                                         <div class="flex-grow-1">
-                                            <div class="detail-label">Location</div>
+                                            <div class="detail-label">{{ __('common.location') }}</div>
                                             <div class="detail-value">{{ $member->region ?? '—' }}, {{ $member->district ?? '—' }}</div>
                                         </div>
                                     </div>
@@ -280,7 +280,7 @@
     @if($archivedMembers->count() > 0)
         <div class="col-12 mt-4">
             <h5 class="text-secondary mb-3">
-                <i class="fas fa-archive me-2"></i>Archived Members ({{ $archivedMembers->count() }})
+                <i class="fas fa-archive me-2"></i>{{ __('common.archived_members') }} ({{ $archivedMembers->count() }})
             </h5>
         </div>
         @foreach($archivedMembers as $member)
@@ -295,8 +295,8 @@
                                     {{ substr($snap['full_name'] ?? 'M', 0, 1) }}
                                 </div>
                             </div>
-                            <h6 class="mb-1 text-white fw-bold member-name" style="font-size: 0.95rem;">{{ $snap['full_name'] ?? 'Unknown Member' }}</h6>
-                            <span class="badge bg-secondary px-2 py-1 fw-semibold member-type" style="font-size: 0.7rem;">Archived</span>
+                            <h6 class="mb-1 text-white fw-bold member-name" style="font-size: 0.95rem;">{{ $snap['full_name'] ?? __('common.unknown_member') }}</h6>
+                            <span class="badge bg-secondary px-2 py-1 fw-semibold member-type" style="font-size: 0.7rem;">{{ __('common.archived') }}</span>
                         </div>
                     </div>
                     
@@ -310,7 +310,7 @@
                                             <i class="fas fa-id-badge"></i>
                                         </div>
                                         <div class="flex-grow-1">
-                                            <div class="detail-label">Member ID</div>
+                                            <div class="detail-label">{{ __('common.member_id') }}</div>
                                             <div class="detail-value">{{ $snap['member_id'] ?? '—' }}</div>
                                         </div>
                                     </div>
@@ -322,7 +322,7 @@
                                             <i class="fas fa-phone"></i>
                                         </div>
                                         <div class="flex-grow-1">
-                                            <div class="detail-label">Phone</div>
+                                            <div class="detail-label">{{ __('common.phone') }}</div>
                                             <div class="detail-value">{{ $snap['phone_number'] ?? '—' }}</div>
                                         </div>
                                     </div>
@@ -334,7 +334,7 @@
                                             <i class="fas fa-calendar-times"></i>
                                         </div>
                                         <div class="flex-grow-1">
-                                            <div class="detail-label">Archived Date</div>
+                                            <div class="detail-label">{{ __('common.archived_date') }}</div>
                                             <div class="detail-value">{{ $member->deleted_at_actual ? \Carbon\Carbon::parse($member->deleted_at_actual)->format('d M Y') : '—' }}</div>
                                         </div>
                                     </div>
@@ -346,8 +346,8 @@
                                             <i class="fas fa-exclamation-triangle"></i>
                                         </div>
                                         <div class="flex-grow-1">
-                                            <div class="detail-label">Reason</div>
-                                            <div class="detail-value">{{ $member->reason ?? 'Not specified' }}</div>
+                                            <div class="detail-label">{{ __('common.reason') }}</div>
+                                            <div class="detail-value">{{ $member->reason ?? __('common.not_specified') }}</div>
                                         </div>
                                     </div>
                                 </div>
@@ -368,11 +368,11 @@
                             </button>
                             <button type="button" 
                                     class="action-btn action-btn-restore" 
-                                    onclick="if(window.restoreMember){window.restoreMember({{ $member->member_id }});}else{console.error('restoreMember not available');alert('Restore function not available. Please refresh the page.');}"
-                                    title="Restore Member"
+                                    onclick="if(window.restoreMember){window.restoreMember({{ $member->member_id }});}else{console.error('restoreMember not available');alert('{{ __('common.function_not_available') }}');}"
+                                    title="{{ __('common.restore_member') }}"
                                     data-member-id="{{ $member->member_id }}">
                                 <i class="fas fa-undo"></i>
-                                <span class="action-tooltip">Restore</span>
+                                <span class="action-tooltip">{{ __('common.restore') }}</span>
                             </button>
                         </div>
                     </div>
@@ -385,8 +385,8 @@
         <div class="col-12">
             <div class="text-center py-5">
                 <i class="fas fa-users fa-3x text-muted mb-3"></i>
-                <h5 class="text-muted">No members found</h5>
-                <p class="text-muted">Click "Add Member" to create your first member.</p>
+                <h5 class="text-muted">{{ __('common.no_members_found') }}</h5>
+                <p class="text-muted">{{ __('common.click_add_member_to_start') }}</p>
             </div>
         </div>
     @endif

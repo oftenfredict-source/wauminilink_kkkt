@@ -23,55 +23,52 @@
     </div>
 
     <!-- Financial Summary -->
+    <!-- Financial Summary -->
     <div class="row mb-4">
-        <div class="col-md-3 mb-3">
-            <div class="card border-0 shadow-sm bg-primary text-white">
-                <div class="card-body text-center">
-                    <i class="fas fa-hand-holding-usd fa-2x mb-2"></i>
-                    <h6>Total Tithes</h6>
-                    <h4>TZS {{ number_format($financialSummary['total_tithes'], 2) }}</h4>
-                    <small>This Month: TZS {{ number_format($financialSummary['monthly_tithes'], 2) }}</small>
+        <!-- Ahadi ya Bwana (Pledges) -->
+        <div class="col-md-4 mb-3">
+            <div class="card border-0 shadow-sm bg-warning text-white h-100">
+                <div class="card-body text-center p-3">
+                    <i class="fas fa-handshake fa-3x mb-2"></i>
+                    <h6 class="mb-2">Ahadi ya Bwana</h6>
+                    <h4 class="mb-0">TZS {{ number_format($financialSummary['total_pledges'], 0) }}</h4>
+                    <small>Paid: {{ number_format($financialSummary['total_pledge_payments'], 0) }}</small>
                 </div>
             </div>
         </div>
-        <div class="col-md-3 mb-3">
-            <div class="card border-0 shadow-sm bg-success text-white">
-                <div class="card-body text-center">
-                    <i class="fas fa-donate fa-2x mb-2"></i>
-                    <h6>Total Offerings</h6>
-                    <h4>TZS {{ number_format($financialSummary['total_offerings'], 2) }}</h4>
-                    <small>This Month: TZS {{ number_format($financialSummary['monthly_offerings'], 2) }}</small>
+
+        <!-- Sadaka ya Jengo -->
+        <div class="col-md-4 mb-3">
+            <div class="card border-0 shadow-sm text-white h-100" style="background: linear-gradient(135deg, #fd9644 0%, #feb47b 100%);">
+                <div class="card-body text-center p-3">
+                    <i class="fas fa-church fa-3x mb-2"></i>
+                    <h6 class="mb-2">Sadaka ya Jengo</h6>
+                    <h4 class="mb-0">TZS {{ number_format($financialSummary['total_jengo'], 0) }}</h4>
+                    <small>Month: {{ number_format($financialSummary['monthly_jengo'], 0) }}</small>
                 </div>
             </div>
         </div>
-        <div class="col-md-3 mb-3">
-            <div class="card border-0 shadow-sm bg-info text-white">
-                <div class="card-body text-center">
-                    <i class="fas fa-gift fa-2x mb-2"></i>
-                    <h6>Total Donations</h6>
-                    <h4>TZS {{ number_format($financialSummary['total_donations'], 2) }}</h4>
-                    <small>This Month: TZS {{ number_format($financialSummary['monthly_donations'], 2) }}</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 mb-3">
-            <div class="card border-0 shadow-sm bg-warning text-white">
-                <div class="card-body text-center">
-                    <i class="fas fa-file-contract fa-2x mb-2"></i>
-                    <h6>Pledges</h6>
-                    <h4>TZS {{ number_format($financialSummary['total_pledges'], 2) }}</h4>
-                    <small>Remaining: TZS {{ number_format($financialSummary['remaining_pledges'], 2) }}</small>
+
+        <!-- Sadaka ya Umoja -->
+        <div class="col-md-4 mb-3">
+            <div class="card border-0 shadow-sm text-white h-100" style="background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%);">
+                <div class="card-body text-center p-3">
+                    <i class="fas fa-users fa-3x mb-2"></i>
+                    <h6 class="mb-2">Sadaka ya Umoja</h6>
+                    <h4 class="mb-0">TZS {{ number_format($financialSummary['total_umoja'], 0) }}</h4>
+                    <small>Month: {{ number_format($financialSummary['monthly_umoja'], 0) }}</small>
                 </div>
             </div>
         </div>
     </div>
+
 
     <!-- Pledges Section -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-warning text-white">
-                    <h6 class="mb-0"><i class="fas fa-file-contract me-2"></i>My Pledges</h6>
+                    <h6 class="mb-0"><i class="fas fa-file-contract me-2"></i>Ahadi ya Bwana</h6>
                 </div>
                 <div class="card-body">
                     @if(isset($pledges) && $pledges->count() > 0)

@@ -15,7 +15,7 @@ class CampusController extends Controller
      */
     public function index()
     {
-        $campuses = Campus::with(['parent', 'subCampuses.members'])
+        $campuses = Campus::with(['parent', 'subCampuses.members', 'subCampuses.memberChildren'])
             ->orderBy('is_main_campus', 'desc')
             ->orderBy('name')
             ->get();
@@ -116,16 +116,24 @@ class CampusController extends Controller
      */
     public function show(Campus $campus)
     {
-        $campus->load(['parent', 'subCampuses', 'members', 'users', 'communities.churchElder.member', 'evangelismLeader.member']);
+        $campus->load(['parent', 'subCampuses', 'members', 'memberChildren.member', 'users', 'communities.churchElder.member', 'evangelismLeader.member']);
         
-        $memberCount = $campus->members()->count();
+        // Get members and children for this campus (ordered)
+        $campusMembers = $campus->members()->orderBy('full_name')->get();
+        $campusChildMembers = $campus->memberChildren()->with('member')->orderBy('full_name')->get();
+        
+        $memberCount = $campusMembers->count();
+        $childMemberCount = $campusChildMembers->count();
         $subCampusMemberCount = 0;
+        $subCampusChildMemberCount = 0;
         
         foreach ($campus->subCampuses as $subCampus) {
+            $subCampus->load('memberChildren');
             $subCampusMemberCount += $subCampus->members()->count();
+            $subCampusChildMemberCount += $subCampus->memberChildren()->count();
         }
         
-        $totalMembers = $memberCount + $subCampusMemberCount;
+        $totalMembers = $memberCount + $childMemberCount + $subCampusMemberCount + $subCampusChildMemberCount;
 
         // Get available evangelism leaders for this campus
         $availableEvangelismLeaders = \App\Models\Leader::where('campus_id', $campus->id)
@@ -134,7 +142,7 @@ class CampusController extends Controller
             ->with('member')
             ->get();
 
-        return view('campuses.show', compact('campus', 'memberCount', 'subCampusMemberCount', 'totalMembers', 'availableEvangelismLeaders'));
+        return view('campuses.show', compact('campus', 'campusMembers', 'campusChildMembers', 'memberCount', 'childMemberCount', 'subCampusMemberCount', 'subCampusChildMemberCount', 'totalMembers', 'availableEvangelismLeaders'));
     }
 
     /**

@@ -11,9 +11,9 @@
                             <h1 class="h3 mb-0"><i class="fas fa-money-bill-wave me-2 text-success"></i>Community Offerings</h1>
                             <p class="text-muted mb-0">Review and confirm offerings from communities</p>
                         </div>
-                        <a href="{{ route('evangelism-leader.offerings.consolidated') }}" class="btn btn-primary">
-                            <i class="fas fa-chart-bar me-1"></i> View Consolidated
-                        </a>
+                        @if(Auth::user()->isAdmin() || Auth::user()->isPastor())
+                        <!-- Consolidated view hidden for now as per user request -->
+                        @endif
                     </div>
                 </div>
             </div>
@@ -34,98 +34,8 @@
     </div>
     @endif
 
-    <!-- Pending Offerings -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-warning text-dark">
-                    <h5 class="mb-0"><i class="fas fa-clock me-2"></i>Pending Confirmation ({{ $offerings->total() }})</h5>
-                </div>
-                <div class="card-body">
-                    @if($offerings->count() > 0)
-                        <form id="bulkForm" action="{{ route('evangelism-leader.offerings.bulk-confirm') }}" method="POST">
-                            @csrf
-                            <div class="mb-3">
-                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectAll()">Select All</button>
-                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="deselectAll()">Deselect All</button>
-                                <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('Confirm all selected offerings?')">
-                                    <i class="fas fa-check me-1"></i> Confirm Selected
-                                </button>
-                            </div>
-                            <div class="table-responsive">
-                                <table class="table table-hover">
-                                    <thead>
-                                        <tr>
-                                            <th width="50"><input type="checkbox" id="selectAllCheckbox" onchange="toggleAll()"></th>
-                                            <th>Date</th>
-                                            <th>Community</th>
-                                            <th>Service Type</th>
-                                            <th>Amount (TZS)</th>
-                                            <th>Recorded By</th>
-                                            <th>Submitted</th>
-                                            <th class="text-end">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach($offerings as $offering)
-                                        <tr class="{{ $offering->status === 'rejected' ? 'table-danger' : '' }}">
-                                            @if($offering->status === 'pending_evangelism')
-                                                <td><input type="checkbox" name="offering_ids[]" value="{{ $offering->id }}" class="offering-checkbox"></td>
-                                            @else
-                                                <td></td>
-                                            @endif
-                                            <td>{{ $offering->offering_date->format('M d, Y') }}</td>
-                                            <td>{{ $offering->community->name }}</td>
-                                            <td>
-                                                @if($offering->service_type)
-                                                    <span class="badge bg-info">{{ ucfirst(str_replace('_', ' ', $offering->service_type)) }}</span>
-                                                @else
-                                                    <span class="badge bg-secondary">General</span>
-                                                @endif
-                                            </td>
-                                            <td><strong>{{ number_format($offering->amount, 2) }}</strong></td>
-                                            <td>{{ $offering->churchElder->name ?? 'N/A' }}</td>
-                                            <td>{{ $offering->created_at->format('M d, Y H:i') }}</td>
-                                            <td class="text-end">
-                                                <div class="btn-group btn-group-sm">
-                                                    <a href="{{ route('evangelism-leader.offerings.show', $offering->id) }}" class="btn btn-info" title="View Details">
-                                                        <i class="fas fa-eye"></i>
-                                                    </a>
-                                                    @if($offering->status === 'pending_evangelism')
-                                                        <button type="button" class="btn btn-success" onclick="confirmOffering({{ $offering->id }})" title="Confirm">
-                                                            <i class="fas fa-check"></i>
-                                                        </button>
-                                                        <button type="button" class="btn btn-danger" onclick="rejectOffering({{ $offering->id }})" title="Reject">
-                                                            <i class="fas fa-times"></i>
-                                                        </button>
-                                                    @elseif($offering->status === 'rejected')
-                                                        <span class="badge bg-danger">Rejected</span>
-                                                        @if($offering->rejection_reason)
-                                                            <button type="button" class="btn btn-sm btn-outline-danger ms-1" onclick="alert('Rejection Reason: {{ addslashes($offering->rejection_reason) }}')" title="View Rejection Reason">
-                                                                <i class="fas fa-info-circle"></i>
-                                                            </button>
-                                                        @endif
-                                                    @endif
-                                                </div>
-                                            </td>
-                                        </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
-                        </form>
-                        <div class="mt-3">
-                            {{ $offerings->links() }}
-                        </div>
-                    @else
-                        <div class="alert alert-info mb-0">
-                            <i class="fas fa-info-circle me-2"></i>No pending offerings at this time.
-                        </div>
-                    @endif
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- Pending Offerings removed as per user request -->
+
 
     <!-- Confirmed Offerings -->
     @if($confirmedOfferings->count() > 0)
@@ -133,7 +43,7 @@
         <div class="col-12">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-info text-white">
-                    <h5 class="mb-0"><i class="fas fa-check-circle me-2"></i>Confirmed & Forwarded to Secretary ({{ $confirmedOfferings->total() }})</h5>
+                    <h5 class="mb-0"><i class="fas fa-list me-2"></i>Submitted Community Offerings</h5>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -151,7 +61,7 @@
                             <tbody>
                                 @foreach($confirmedOfferings as $offering)
                                 <tr>
-                                    <td>{{ $offering->offering_date->format('M d, Y') }}</td>
+                                    <td>{{ $offering->offering_date ? $offering->offering_date->format('M d, Y') : 'N/A' }}</td>
                                     <td>{{ $offering->community->name }}</td>
                                     <td>
                                         @if($offering->service_type)
@@ -161,7 +71,7 @@
                                         @endif
                                     </td>
                                     <td><strong>{{ number_format($offering->amount, 2) }}</strong></td>
-                                    <td>{{ $offering->handover_to_evangelism_at->format('M d, Y H:i') }}</td>
+                                    <td>{{ $offering->handover_to_evangelism_at ? $offering->handover_to_evangelism_at->format('M d, Y H:i') : 'N/A' }}</td>
                                     <td class="text-end">
                                         <a href="{{ route('evangelism-leader.offerings.show', $offering->id) }}" class="btn btn-sm btn-info">
                                             <i class="fas fa-eye"></i>

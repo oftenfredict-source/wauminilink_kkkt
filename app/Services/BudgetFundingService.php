@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Budget;
 use App\Models\BudgetOfferingAllocation;
 use App\Models\Offering;
+use App\Models\CommunityOffering;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -15,11 +16,34 @@ class BudgetFundingService
      */
     public function getAvailableOfferingAmounts()
     {
-        return Offering::selectRaw('offering_type, SUM(amount) as total_amount')
+        // Standard individual offerings
+        $individualOfferings = Offering::selectRaw('offering_type, SUM(amount) as total_amount')
             ->where('approval_status', 'approved')
             ->groupBy('offering_type')
             ->pluck('total_amount', 'offering_type')
             ->toArray();
+
+        // Community offerings (collections from communities/mitaa)
+        $communityTotals = CommunityOffering::selectRaw('
+                SUM(amount) as general,
+                SUM(amount_umoja) as thanksgiving,
+                SUM(amount_jengo) as building_fund,
+                SUM(amount_other) as other
+            ')
+            ->where('status', 'completed')
+            ->first();
+
+        // Merge the two sources
+        $combined = $individualOfferings;
+
+        if ($communityTotals) {
+            $combined['general'] = ($combined['general'] ?? 0) + ($communityTotals->general ?? 0);
+            $combined['thanksgiving'] = ($combined['thanksgiving'] ?? 0) + ($communityTotals->thanksgiving ?? 0);
+            $combined['building_fund'] = ($combined['building_fund'] ?? 0) + ($communityTotals->building_fund ?? 0);
+            $combined['other'] = ($combined['other'] ?? 0) + ($communityTotals->other ?? 0);
+        }
+
+        return $combined;
     }
 
     /**
@@ -32,11 +56,11 @@ class BudgetFundingService
     public function getAvailableAmountsAfterAllocations()
     {
         $totalOfferings = $this->getAvailableOfferingAmounts();
-        
+
         // Get allocated amounts by offering type
         // Once allocated, funds are committed and should be subtracted from available
         $allocationData = BudgetOfferingAllocation::selectRaw('offering_type, SUM(allocated_amount) as total_allocated')
-            ->whereHas('budget', function($query) {
+            ->whereHas('budget', function ($query) {
                 $query->where('status', 'active');
             })
             ->groupBy('offering_type')
@@ -65,13 +89,14 @@ class BudgetFundingService
     public function allocateFundsToBudget(Budget $budget, array $allocations)
     {
         DB::beginTransaction();
-        
+
         try {
             $totalAllocated = 0;
             $allocationsCreated = [];
 
             foreach ($allocations as $offeringType => $amount) {
-                if ($amount <= 0) continue;
+                if ($amount <= 0)
+                    continue;
 
                 $availableAmounts = $this->getAvailableAmountsAfterAllocations();
                 $availableForType = $availableAmounts[$offeringType] ?? 0;
@@ -113,7 +138,7 @@ class BudgetFundingService
     {
         $amount = $requestedAmount ?? $budget->total_budget;
         $availableAmounts = $this->getAvailableAmountsAfterAllocations();
-        
+
         $suggestions = [];
         $remainingAmount = $amount;
 
@@ -121,7 +146,7 @@ class BudgetFundingService
         if ($budget->primary_offering_type && isset($availableAmounts[$budget->primary_offering_type])) {
             $primaryAvailable = $availableAmounts[$budget->primary_offering_type];
             $primaryAllocation = min($remainingAmount, $primaryAvailable);
-            
+
             if ($primaryAllocation > 0) {
                 $suggestions[$budget->primary_offering_type] = $primaryAllocation;
                 $remainingAmount -= $primaryAllocation;
@@ -131,8 +156,10 @@ class BudgetFundingService
         // If still need more funds, suggest from other offering types
         if ($remainingAmount > 0) {
             foreach ($availableAmounts as $offeringType => $available) {
-                if ($offeringType === $budget->primary_offering_type) continue;
-                if ($remainingAmount <= 0) break;
+                if ($offeringType === $budget->primary_offering_type)
+                    continue;
+                if ($remainingAmount <= 0)
+                    break;
 
                 $allocation = min($remainingAmount, $available);
                 if ($allocation > 0) {
@@ -156,7 +183,7 @@ class BudgetFundingService
     public function deductExpenseFromAllocations(Budget $budget, $expenseAmount)
     {
         DB::beginTransaction();
-        
+
         try {
             $remainingAmount = $expenseAmount;
             $allocations = $budget->offeringAllocations()
@@ -166,7 +193,8 @@ class BudgetFundingService
                 ->get();
 
             foreach ($allocations as $allocation) {
-                if ($remainingAmount <= 0) break;
+                if ($remainingAmount <= 0)
+                    break;
 
                 $availableInAllocation = $allocation->allocated_amount - $allocation->used_amount;
                 $deductionAmount = min($remainingAmount, $availableInAllocation);
@@ -197,27 +225,27 @@ class BudgetFundingService
     public function getBudgetFundingSummary(Budget $budget)
     {
         $allocations = $budget->offeringAllocations;
-        
+
         // Calculate pending expenses (not yet paid - includes both pending and approved expenses)
         $pendingExpensesAmount = \App\Models\Expense::where('budget_id', $budget->id)
-            ->where(function($query) {
+            ->where(function ($query) {
                 $query->where('status', '!=', 'paid')
-                      ->where(function($q) {
-                          $q->whereIn('approval_status', ['pending', 'approved'])
+                    ->where(function ($q) {
+                        $q->whereIn('approval_status', ['pending', 'approved'])
                             ->orWhereNull('approval_status'); // Include NULL for backward compatibility
-                      });
+                    });
             })
             ->sum('amount');
-        
+
         // Calculate how much of pending expenses would come from each allocation
         // This is an estimate - we'll deduct proportionally from allocations
         $totalAllocated = $allocations->sum('allocated_amount');
         $totalUsed = $allocations->sum('used_amount');
         $totalRemainingAllocated = $totalAllocated - $totalUsed;
-        
+
         // Calculate pending expenses that would use allocated funds
         $pendingFromAllocations = min($pendingExpensesAmount, $totalRemainingAllocated);
-        
+
         $summary = [
             'total_budget' => $budget->total_budget,
             'total_allocated' => $totalAllocated,
@@ -226,14 +254,14 @@ class BudgetFundingService
             'remaining_allocated' => $totalRemainingAllocated - $pendingFromAllocations, // Subtract pending expenses
             'funding_percentage' => $budget->funding_percentage,
             'is_fully_funded' => $budget->isFullyFunded(),
-            'breakdown' => $allocations->map(function($allocation) use ($pendingFromAllocations, $totalRemainingAllocated) {
+            'breakdown' => $allocations->map(function ($allocation) use ($pendingFromAllocations, $totalRemainingAllocated) {
                 // Calculate pending amount for this allocation proportionally
                 $allocationRemaining = $allocation->allocated_amount - $allocation->used_amount;
                 $pendingForThisAllocation = 0;
                 if ($totalRemainingAllocated > 0 && $pendingFromAllocations > 0) {
                     $pendingForThisAllocation = ($allocationRemaining / $totalRemainingAllocated) * $pendingFromAllocations;
                 }
-                
+
                 return [
                     'offering_type' => $allocation->offering_type,
                     'allocated' => $allocation->allocated_amount,
@@ -274,22 +302,22 @@ class BudgetFundingService
     public function getSuggestedPrimaryOfferingType($purpose)
     {
         $mapping = $this->getOfferingTypeMapping();
-        
+
         // Check if purpose exists in mapping
         if (isset($mapping[$purpose])) {
             return $mapping[$purpose];
         }
-        
+
         // Check if purpose matches a custom offering type (case-insensitive)
         $availableOfferingTypes = Offering::select('offering_type')
             ->where('approval_status', 'approved')
             ->distinct()
             ->pluck('offering_type')
             ->toArray();
-        
+
         // Normalize purpose to match offering type format
         $normalizedPurpose = strtolower(str_replace([' ', '-'], '_', $purpose));
-        
+
         // Check if normalized purpose exists as an offering type
         foreach ($availableOfferingTypes as $offeringType) {
             $normalizedOfferingType = strtolower(str_replace([' ', '-'], '_', $offeringType));
@@ -297,11 +325,11 @@ class BudgetFundingService
                 return $offeringType; // Return the actual offering type from database
             }
         }
-        
+
         // Default to general if no match found
         return 'general';
     }
-    
+
     /**
      * Get all available offering types (including custom types)
      */

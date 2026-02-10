@@ -71,6 +71,7 @@
                                     <tr>
                                         <th>Date</th>
                                         <th>Service Type</th>
+                                        <th>Offering Type</th>
                                         <th>Community</th>
                                         <th>Amount (TZS)</th>
                                         <th>Collection Method</th>
@@ -91,6 +92,17 @@
                                                 @endif
                                             @else
                                                 <span class="badge bg-secondary">General</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if($offering->offering_type === 'sadaka_umoja')
+                                                <span class="badge bg-primary">Sadaka ya Umoja</span>
+                                            @elseif($offering->offering_type === 'sadaka_jengo')
+                                                <span class="badge bg-info">Sadaka ya Jengo</span>
+                                            @elseif($offering->offering_type === 'general')
+                                                <span class="badge bg-secondary">General</span>
+                                            @else
+                                                <span class="badge bg-light text-dark">{{ $offering->offering_type }}</span>
                                             @endif
                                         </td>
                                         <td>{{ $offering->community->name }}</td>

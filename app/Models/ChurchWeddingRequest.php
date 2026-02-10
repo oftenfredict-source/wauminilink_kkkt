@@ -42,6 +42,7 @@ class ChurchWeddingRequest extends Model
         'pastor_comments',
         'wedding_approval_date',
         'confirmed_wedding_date',
+        'scheduled_meeting_date',
         'submitted_at',
         'reviewed_at',
     ];
@@ -59,6 +60,7 @@ class ChurchWeddingRequest extends Model
         'expected_guests' => 'integer',
         'submitted_at' => 'datetime',
         'reviewed_at' => 'datetime',
+        'scheduled_meeting_date' => 'datetime',
     ];
 
     // Relationships

@@ -24,6 +24,20 @@ class Child extends Model
         'baptism_location',
         'baptized_by',
         'baptism_certificate_number',
+        'is_church_member',
+        'campus_id',
+        'community_id',
+        'region',
+        'district',
+        'city_town',
+        'current_church_attended',
+        'phone_number',
+        'lives_outside_main_area',
+        'orphan_status',
+        'disability_status',
+        'disability_type',
+        'vulnerable_status',
+        'vulnerable_type',
     ];
 
     protected $casts = [
@@ -34,6 +48,50 @@ class Child extends Model
     public function member()
     {
         return $this->belongsTo(Member::class);
+    }
+
+    public function campus()
+    {
+        return $this->belongsTo(Campus::class);
+    }
+
+    public function departments()
+    {
+        return $this->belongsToMany(Department::class, 'department_member')
+                    ->withPivot('status', 'assigned_at')
+                    ->withTimestamps();
+    }
+
+    public function community()
+    {
+        return $this->belongsTo(Community::class);
+    }
+
+    public function transitions()
+    {
+        return $this->hasMany(ChildToMemberTransition::class);
+    }
+
+    public function pendingTransition()
+    {
+        return $this->hasOne(ChildToMemberTransition::class)->where('status', 'pending');
+    }
+
+    public function isEligibleForTransition()
+    {
+        if (!$this->is_church_member || !$this->date_of_birth) {
+            return false;
+        }
+        
+        $age = $this->getAge();
+        if ($age < 18) {
+            return false;
+        }
+
+        // Check if there's already a pending or approved transition
+        return !$this->transitions()
+            ->whereIn('status', ['pending', 'approved', 'completed'])
+            ->exists();
     }
 
     /**
@@ -75,6 +133,30 @@ class Child extends Model
     public function hasMemberParent()
     {
         return !is_null($this->member_id);
+    }
+
+    /**
+     * Get parents who are church members (linked parent + their spouse/main member)
+     * 
+     * @return \Illuminate\Support\Collection
+     */
+    public function getMemberParents()
+    {
+        $parents = collect();
+        if ($this->member) {
+            $parents->push($this->member);
+            
+            // Check for spouse if they are also a church member
+            if ($this->member->spouse_member_id && $this->member->spouseMember) {
+                $parents->push($this->member->spouseMember);
+            }
+            
+            // Check if current linked member is a spouse of another member
+            if ($this->member->mainMember) {
+                $parents->push($this->member->mainMember);
+            }
+        }
+        return $parents->unique('id')->values();
     }
 
     /**

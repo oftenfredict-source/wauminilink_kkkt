@@ -45,6 +45,14 @@ class Community extends Model
     }
 
     /**
+     * Get all children who are church members belonging to this community
+     */
+    public function memberChildren()
+    {
+        return $this->hasMany(Child::class)->where('is_church_member', true);
+    }
+
+    /**
      * Scope to get only active communities
      */
     public function scopeActive($query)

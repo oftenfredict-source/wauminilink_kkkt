@@ -143,10 +143,16 @@
         <div class="col-12">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="fas fa-users me-2"></i>Community Members ({{ $community->members->count() }})</h5>
+                    <h5 class="mb-0">
+                        <i class="fas fa-users me-2"></i>Community Members 
+                        ({{ $community->members->count() + $community->memberChildren->count() }})
+                        @if($community->memberChildren->count() > 0)
+                            <small class="ms-2">({{ $community->members->count() }} adults, {{ $community->memberChildren->count() }} children)</small>
+                        @endif
+                    </h5>
                 </div>
                 <div class="card-body">
-                    @if($community->members->count() > 0)
+                    @if($community->members->count() > 0 || $community->memberChildren->count() > 0)
                     <div class="table-responsive">
                         <table class="table table-hover">
                             <thead>
@@ -157,20 +163,51 @@
                                     <th>Phone</th>
                                     <th>Email</th>
                                     <th>Type</th>
+                                    <th>Parent/Guardian</th>
                                 </tr>
                             </thead>
                             <tbody>
+                                @php $counter = 1; @endphp
+                                {{-- Regular Members --}}
                                 @foreach($community->members as $member)
                                 <tr>
-                                    <td>{{ $loop->iteration }}</td>
+                                    <td>{{ $counter++ }}</td>
                                     <td><strong>{{ $member->full_name }}</strong></td>
                                     <td>{{ $member->member_id ?? 'N/A' }}</td>
                                     <td>{{ $member->phone_number ?? '-' }}</td>
                                     <td>{{ $member->email ?? '-' }}</td>
                                     <td>
+                                        <span class="badge bg-primary">Adult</span>
                                         <span class="badge bg-{{ $member->membership_type === 'permanent' ? 'success' : 'warning' }}">
                                             {{ ucfirst($member->membership_type) }}
                                         </span>
+                                    </td>
+                                    <td>—</td>
+                                </tr>
+                                @endforeach
+                                {{-- Children who are church members --}}
+                                @foreach($community->memberChildren as $child)
+                                <tr>
+                                    <td>{{ $counter++ }}</td>
+                                    <td><strong>{{ $child->full_name }}</strong></td>
+                                    <td>
+                                        @if($child->member && $child->member->member_id)
+                                            {{ $child->member->member_id }}-CH
+                                        @else
+                                            <span class="badge bg-info">Child</span>
+                                        @endif
+                                    </td>
+                                    <td>{{ $child->member->phone_number ?? '-' }}</td>
+                                    <td>{{ $child->member->email ?? '-' }}</td>
+                                    <td>
+                                        <span class="badge bg-success">Child Member</span>
+                                    </td>
+                                    <td>
+                                        @if($child->member)
+                                            {{ $child->member->full_name }}
+                                        @else
+                                            {{ $child->parent_name ?? '—' }}
+                                        @endif
                                     </td>
                                 </tr>
                                 @endforeach
@@ -188,6 +225,7 @@
     </div>
 </div>
 @endsection
+
 
 
 

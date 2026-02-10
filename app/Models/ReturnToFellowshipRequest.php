@@ -29,6 +29,7 @@ class ReturnToFellowshipRequest extends Model
         'pastor_comments',
         'submitted_at',
         'reviewed_at',
+        'scheduled_counselling_date',
     ];
 
     protected $casts = [
@@ -37,6 +38,7 @@ class ReturnToFellowshipRequest extends Model
         'declaration_agreed' => 'boolean',
         'submitted_at' => 'datetime',
         'reviewed_at' => 'datetime',
+        'scheduled_counselling_date' => 'datetime',
     ];
 
     // Relationships

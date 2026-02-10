@@ -98,8 +98,24 @@ class CommunityController extends Controller
                 ->with('error', 'Community not found in this campus.');
         }
 
-        $community->load(['campus', 'members', 'churchElder.member']);
+        $community->load(['campus', 'members', 'memberChildren.member', 'churchElder.member']);
+        
+        // Filter children to only include those under 18
+        $childMembers = $community->memberChildren()
+            ->whereNotNull('date_of_birth')
+            ->whereRaw('TIMESTAMPDIFF(YEAR, date_of_birth, CURDATE()) < 18')
+            ->get();
+        
+        // Get children 18+ who are church members (should be in transition or treated as adults)
+        $adultChildren = $community->memberChildren()
+            ->whereNotNull('date_of_birth')
+            ->whereRaw('TIMESTAMPDIFF(YEAR, date_of_birth, CURDATE()) >= 18')
+            ->with('pendingTransition')
+            ->get();
+        
         $memberCount = $community->members()->count();
+        $childMemberCount = $childMembers->count();
+        $totalMemberCount = $memberCount + $childMemberCount;
         
         // Get members from the same campus who are not assigned to any community or assigned to this community
         $availableMembers = \App\Models\Member::where('campus_id', $campus->id)
@@ -117,7 +133,7 @@ class CommunityController extends Controller
             ->with('member')
             ->get();
 
-        return view('communities.show', compact('community', 'campus', 'memberCount', 'availableMembers', 'availableChurchElders'));
+        return view('communities.show', compact('community', 'campus', 'memberCount', 'childMemberCount', 'totalMemberCount', 'childMembers', 'adultChildren', 'availableMembers', 'availableChurchElders'));
     }
 
     /**
@@ -265,7 +281,7 @@ class CommunityController extends Controller
             ->orderBy('name')
             ->get(['id', 'name']);
 
-            return response()->json($communities);
+        return response()->json(['communities' => $communities]);
     }
 
     /**

@@ -113,12 +113,12 @@ class User extends Authenticatable
         if ($this->campus_id) {
             return $this->campus;
         }
-        
+
         // Fallback: try to get campus from member
         if ($this->member_id && $this->member && $this->member->campus_id) {
             return $this->member->campus;
         }
-        
+
         return null;
     }
 
@@ -131,9 +131,9 @@ class User extends Authenticatable
         if (!$this->isAdmin()) {
             return false;
         }
-        
+
         $campus = $this->getCampus();
-        
+
         // Admin with no campus or main campus is Usharika admin
         return !$campus || $campus->is_main_campus;
     }
@@ -154,6 +154,10 @@ class User extends Authenticatable
      */
     public function isEvangelismLeader(): bool
     {
+        if ($this->role === 'evangelism_leader') {
+            return true;
+        }
+
         if (!$this->member_id || !$this->member) {
             return false;
         }
@@ -161,13 +165,39 @@ class User extends Authenticatable
         // Check if member has an active evangelism leader position
         $evangelismLeader = $this->member->activeLeadershipPositions()
             ->where('position', 'evangelism_leader')
-            ->where(function($query) {
+            ->where(function ($query) {
                 $query->whereNull('end_date')
-                      ->orWhere('end_date', '>=', now()->toDateString());
+                    ->orWhere('end_date', '>=', now()->toDateString());
             })
             ->first();
 
         return $evangelismLeader !== null;
+    }
+
+    /**
+     * Check if user is a parish worker
+     * Parish worker = user whose member has an active parish_worker position
+     */
+    public function isParishWorker(): bool
+    {
+        if ($this->role === 'parish_worker') {
+            return true;
+        }
+
+        if (!$this->member_id || !$this->member) {
+            return false;
+        }
+
+        // Check if member has an active parish worker position
+        $parishWorker = $this->member->activeLeadershipPositions()
+            ->where('position', 'parish_worker')
+            ->where(function ($query) {
+                $query->whereNull('end_date')
+                    ->orWhere('end_date', '>=', now()->toDateString());
+            })
+            ->first();
+
+        return $parishWorker !== null;
     }
 
     /**
@@ -182,10 +212,14 @@ class User extends Authenticatable
 
         // Roles to check
         $rolesToCheck = [$this->role];
-        
+
         // Add implicit roles based on leadership positions
         if ($this->isEvangelismLeader()) {
             $rolesToCheck[] = 'evangelism_leader';
+        }
+
+        if ($this->isParishWorker()) {
+            $rolesToCheck[] = 'parish_worker';
         }
 
         return \DB::table('role_permissions')
@@ -238,9 +272,9 @@ class User extends Authenticatable
         // Check if member has an active elder position
         $elder = $this->member->activeLeadershipPositions()
             ->where('position', 'elder')
-            ->where(function($query) {
+            ->where(function ($query) {
                 $query->whereNull('end_date')
-                      ->orWhere('end_date', '>=', now()->toDateString());
+                    ->orWhere('end_date', '>=', now()->toDateString());
             })
             ->first();
 
@@ -259,15 +293,15 @@ class User extends Authenticatable
         // Get elder leadership positions
         $elderPositions = $this->member->activeLeadershipPositions()
             ->where('position', 'elder')
-            ->where(function($query) {
+            ->where(function ($query) {
                 $query->whereNull('end_date')
-                      ->orWhere('end_date', '>=', now()->toDateString());
+                    ->orWhere('end_date', '>=', now()->toDateString());
             })
             ->get();
 
         // Get communities where this elder is assigned
         $communityIds = \App\Models\Community::whereIn('church_elder_id', $elderPositions->pluck('id'))->pluck('id');
-        
+
         return \App\Models\Community::whereIn('id', $communityIds)->get();
     }
 
@@ -288,56 +322,56 @@ class User extends Authenticatable
         if (!$this->login_blocked_until) {
             return null;
         }
-        
+
         // Compare in UTC (how it's stored in database) for accuracy
         // Get raw timestamp from database to avoid timezone conversion issues
         $rawBlockedUntil = \Illuminate\Support\Facades\DB::table('users')
             ->where('id', $this->id)
             ->value('login_blocked_until');
-        
+
         if (!$rawBlockedUntil) {
             return null;
         }
-        
+
         // Parse as UTC directly (how it's stored in database)
         $blockedUntil = \Carbon\Carbon::createFromFormat('Y-m-d H:i:s', $rawBlockedUntil, 'UTC');
         $now = \Carbon\Carbon::now('UTC');
-        
+
         // If block has expired, return null
         if ($blockedUntil->lte($now)) {
             return null;
         }
-        
+
         // Calculate remaining minutes: blockedUntil - now (both in UTC)
         // diffInMinutes with false returns signed value (positive if future)
         $remaining = $blockedUntil->diffInMinutes($now, false);
-        
+
         // Ensure we return a positive value
-        return $remaining > 0 ? (int)$remaining : null;
+        return $remaining > 0 ? (int) $remaining : null;
     }
-    
+
     /**
      * Get remaining block time formatted (e.g., "2h 30m" or "45m")
      */
     public function getRemainingBlockTimeFormatted(): ?string
     {
         $minutes = $this->getRemainingBlockTime();
-        
+
         if ($minutes === null) {
             return null;
         }
-        
+
         if ($minutes < 60) {
             return "{$minutes}m";
         }
-        
+
         $hours = floor($minutes / 60);
         $remainingMinutes = $minutes % 60;
-        
+
         if ($remainingMinutes > 0) {
             return "{$hours}h {$remainingMinutes}m";
         }
-        
+
         return "{$hours}h";
     }
 }

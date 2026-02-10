@@ -17,7 +17,7 @@ class ReturnToFellowshipRequestController extends Controller
     public function index()
     {
         $user = auth()->user();
-        
+
         if (!$user->isEvangelismLeader() && !$user->isAdmin()) {
             abort(403, 'Unauthorized access.');
         }
@@ -41,7 +41,7 @@ class ReturnToFellowshipRequestController extends Controller
     public function create()
     {
         $user = auth()->user();
-        
+
         if (!$user->isEvangelismLeader() && !$user->isAdmin()) {
             abort(403, 'Unauthorized access.');
         }
@@ -60,7 +60,7 @@ class ReturnToFellowshipRequestController extends Controller
     public function store(Request $request)
     {
         $user = auth()->user();
-        
+
         if (!$user->isEvangelismLeader() && !$user->isAdmin()) {
             abort(403, 'Unauthorized access.');
         }
@@ -137,7 +137,7 @@ class ReturnToFellowshipRequestController extends Controller
     public function show(ReturnToFellowshipRequest $returnToFellowshipRequest)
     {
         $user = auth()->user();
-        
+
         // Check authorization
         if ($user->isEvangelismLeader()) {
             if ($returnToFellowshipRequest->evangelism_leader_id !== $user->id) {
@@ -160,7 +160,7 @@ class ReturnToFellowshipRequestController extends Controller
     public function pending()
     {
         $user = auth()->user();
-        
+
         if (!$user->isPastor() && !$user->isAdmin()) {
             abort(403, 'Unauthorized access. Only Pastors can review requests.');
         }
@@ -179,7 +179,7 @@ class ReturnToFellowshipRequestController extends Controller
     public function approve(Request $request, ReturnToFellowshipRequest $returnToFellowshipRequest)
     {
         $user = auth()->user();
-        
+
         if (!$user->isPastor() && !$user->isAdmin()) {
             abort(403, 'Unauthorized access.');
         }
@@ -208,7 +208,7 @@ class ReturnToFellowshipRequestController extends Controller
     public function reject(Request $request, ReturnToFellowshipRequest $returnToFellowshipRequest)
     {
         $user = auth()->user();
-        
+
         if (!$user->isPastor() && !$user->isAdmin()) {
             abort(403, 'Unauthorized access.');
         }
@@ -231,28 +231,56 @@ class ReturnToFellowshipRequestController extends Controller
         return back()->with('success', 'Request rejected.');
     }
 
-    /**
-     * Mark as requiring counseling
-     */
     public function requireCounseling(Request $request, ReturnToFellowshipRequest $returnToFellowshipRequest)
     {
         $user = auth()->user();
-        
+
         if (!$user->isPastor() && !$user->isAdmin()) {
             abort(403, 'Unauthorized access.');
         }
 
         $validated = $request->validate([
             'pastor_comments' => 'required|string|max:1000',
+            'scheduled_counselling_date' => 'required|date|after:now',
         ]);
 
         $returnToFellowshipRequest->update([
             'status' => 'counseling_required',
             'pastor_id' => $user->id,
             'pastor_comments' => $validated['pastor_comments'],
+            'scheduled_counselling_date' => $validated['scheduled_counselling_date'],
             'reviewed_at' => now(),
         ]);
 
-        return back()->with('success', 'Request marked as requiring counseling.');
+        return back()->with('success', 'Request marked as requiring counseling and scheduled for ' . Carbon::parse($validated['scheduled_counselling_date'])->format('M d, Y h:i A') . '.');
+    }
+
+    /**
+     * Approve a request after counseling is complete
+     */
+    public function approveAfterCounseling(Request $request, ReturnToFellowshipRequest $returnToFellowshipRequest)
+    {
+        $user = auth()->user();
+
+        if (!$user->isPastor() && !$user->isAdmin()) {
+            abort(403, 'Unauthorized access.');
+        }
+
+        if ($returnToFellowshipRequest->status !== 'counseling_required') {
+            return back()->with('error', 'Counselling has not been required for this request.');
+        }
+
+        $validated = $request->validate([
+            'pastor_comments' => 'nullable|string|max:1000',
+        ]);
+
+        $returnToFellowshipRequest->update([
+            'status' => 'approved',
+            'pastor_id' => $user->id,
+            'pastor_comments' => $validated['pastor_comments'] ?? $returnToFellowshipRequest->pastor_comments,
+            'reviewed_at' => now(),
+        ]);
+
+        return back()->with('success', 'Counselling complete. Request approved successfully.');
     }
 }

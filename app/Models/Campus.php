@@ -64,6 +64,14 @@ class Campus extends Model
     }
 
     /**
+     * Get all children who are church members belonging to this campus
+     */
+    public function memberChildren()
+    {
+        return $this->hasMany(Child::class)->where('is_church_member', true);
+    }
+
+    /**
      * Get all users associated with this campus
      */
     public function users()

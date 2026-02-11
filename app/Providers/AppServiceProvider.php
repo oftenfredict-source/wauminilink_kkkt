@@ -104,6 +104,11 @@ class AppServiceProvider extends ServiceProvider
             // This allows artisan serve to work correctly with http://127.0.0.1:8000
         }
 
+        // Force HTTPS in production to prevent Mixed Content errors
+        if ($appEnv !== 'local') {
+            URL::forceScheme('https');
+        }
+
         // Extend the session manager to use our custom database handler
         Session::extend('database', function ($app) {
             $connection = $app['db']->connection($app['config']['session.connection']);

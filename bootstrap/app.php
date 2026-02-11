@@ -7,18 +7,17 @@ use Illuminate\Session\TokenMismatchException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
-        web: __DIR__.'/../routes/web.php',
-        commands: __DIR__.'/../routes/console.php',
+        web: __DIR__ . '/../routes/web.php',
+        commands: __DIR__ . '/../routes/console.php',
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        /**
-         * Global middleware applied to every request
-         */
         $middleware->append([
             // Example: \App\Http\Middleware\TrustProxies::class,
             // Example: \Fruitcake\Cors\HandleCors::class,
         ]);
+
+        $middleware->trustProxies(at: '*');
 
         /**
          * Web middleware group
@@ -31,7 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
             // Remove PreventBackHistory from here
         ]);
-        
+
         /**
          * Add CheckSessionRevoked middleware FIRST to check if session was revoked
          * This forces logout if session was deleted by admin
@@ -40,7 +39,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->appendToGroup('web', [
             \App\Http\Middleware\CheckSessionRevoked::class,
         ]);
-        
+
         /**
          * Add UpdateSessionUserId middleware after StartSession
          * This ensures user_id is set in sessions table for tracking
@@ -48,7 +47,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->appendToGroup('web', [
             \App\Http\Middleware\UpdateSessionUserId::class,
         ]);
-        
+
         /**
          * Add SetLocale middleware to set application locale from session
          * This allows users to switch between English and Swahili
@@ -89,7 +88,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 return response()->json([
                     'success' => false,
                     'message' => 'Your session has expired. Redirecting to login...',
-                    'error'   => 'Page Expired',
+                    'error' => 'Page Expired',
                     'redirect' => route('login')
                 ], 419);
             }
@@ -98,7 +97,7 @@ return Application::configure(basePath: dirname(__DIR__))
             // Check if we're already on login/OTP/forgot-password pages to avoid redirect loops
             $currentPath = $request->path();
             $loginRelatedPaths = ['login', 'login/otp', 'login/otp/verify', 'forgot-password', 'reset-password'];
-            
+
             $isLoginPage = false;
             foreach ($loginRelatedPaths as $path) {
                 if (str_starts_with($currentPath, $path)) {
@@ -106,32 +105,32 @@ return Application::configure(basePath: dirname(__DIR__))
                     break;
                 }
             }
-            
+
             // If already on login page, just refresh it
             if ($isLoginPage) {
                 return redirect()->route('login')
                     ->with('error', 'Your session has expired. Please try again.');
             }
-            
+
             // Otherwise, redirect to login page
             return redirect()->route('login')
                 ->with('error', $message);
         };
-        
+
         // Friendly handling for CSRF token mismatch (HTTP 419 "Page Expired")
         // Always redirect to login page instead of showing error page
         // This handler has priority and catches TokenMismatchException first
         $exceptions->render(function (TokenMismatchException $e, $request) use ($redirectToLogin) {
             return $redirectToLogin($request);
         });
-        
+
         // Also handle HTTP 419 status code directly (catch-all for any 419 errors)
         // This catches any other exceptions that result in 419 status
         $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\HttpException $e, $request) use ($redirectToLogin) {
             if ($e->getStatusCode() === 419) {
                 return $redirectToLogin($request);
             }
-            
+
             return null; // Let other exceptions be handled normally
         });
     })

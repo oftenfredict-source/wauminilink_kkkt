@@ -187,3 +187,8 @@ The Evangelism Leader can access and manage community offerings from Church Elde
 
 
 
+
+
+
+
+

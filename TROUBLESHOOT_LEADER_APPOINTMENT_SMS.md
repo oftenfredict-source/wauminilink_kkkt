@@ -230,3 +230,8 @@ After assigning a leadership position, you should see:
 - `app/Services/SettingsService.php` - Settings management
 - `storage/logs/laravel.log` - Application logs
 
+
+
+
+
+

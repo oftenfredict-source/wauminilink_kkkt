@@ -95,3 +95,8 @@ Or simply assign a leadership position - the SMS will be sent automatically.
 **Status**: Configuration ✅ Correct | Network ❌ Issue  
 **Action Required**: Fix network connectivity/DNS resolution
 
+
+
+
+
+

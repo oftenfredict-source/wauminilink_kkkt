@@ -858,4 +858,28 @@ class LeaderController extends Controller
             'other' => 'Other (Custom Position)'
         ];
     }
+
+    /**
+     * Get members filtered by campus (AJAX)
+     */
+    public function getMembersByCampus(Request $request)
+    {
+        $campusId = $request->get('campus_id');
+
+        $query = Member::orderBy('full_name');
+
+        if ($campusId) {
+            $query->where('campus_id', $campusId);
+        } else {
+            // If no campus_id, it might mean main campus or all (depending on requirements)
+            $mainCampus = \App\Models\Campus::where('is_main_campus', true)->first();
+            if ($mainCampus) {
+                $query->where('campus_id', $mainCampus->id);
+            }
+        }
+
+        $members = $query->get(['id', 'full_name', 'member_id']);
+
+        return response()->json($members);
+    }
 }

@@ -34,28 +34,33 @@ class UsharikaDashboardController extends Controller
             abort(403, 'Only Usharika administrators can access this dashboard.');
         }
 
-        // Get all branches
-        $branches = Campus::where('is_main_campus', false)
-            ->where('is_active', true)
+        // Get all branches + main campus for the table
+        $allCampuses = Campus::where('is_active', true)
             ->withCount('members')
+            ->orderBy('is_main_campus', 'desc') // Show main campus first
             ->orderBy('name')
             ->get();
 
-        // Get main campus stats
+        // Get branches (sub-campuses)
+        $branches = $allCampuses->filter(function ($c) {
+            return !$c->is_main_campus;
+        });
+
+        // Get main campus
         $mainCampus = $campus;
         $mainCampusStats = $this->getCampusStatistics($mainCampus);
 
-        // Get branch statistics
+        // Get statistics for all campuses (for the table)
         $branchStats = [];
-        foreach ($branches as $branch) {
+        foreach ($allCampuses as $camp) {
             $branchStats[] = [
-                'branch' => $branch,
-                'stats' => $this->getCampusStatistics($branch),
-                'new_members_this_month' => Member::where('campus_id', $branch->id)
+                'branch' => $camp,
+                'stats' => $this->getCampusStatistics($camp),
+                'new_members_this_month' => Member::where('campus_id', $camp->id)
                     ->whereMonth('created_at', Carbon::now()->month)
                     ->whereYear('created_at', Carbon::now()->year)
                     ->count(),
-                'communities_count' => Community::where('campus_id', $branch->id)
+                'communities_count' => Community::where('campus_id', $camp->id)
                     ->where('is_active', true)
                     ->count(),
             ];
@@ -65,7 +70,7 @@ class UsharikaDashboardController extends Controller
         $campusIds = $branches->pluck('id')->merge([$mainCampus->id]);
         $adultMembers = Member::whereIn('campus_id', $campusIds)->count();
         $childMembers = \App\Models\Child::where('is_church_member', true)
-            ->whereHas('member', function($query) use ($campusIds) {
+            ->whereHas('member', function ($query) use ($campusIds) {
                 $query->whereIn('campus_id', $campusIds);
             })
             ->count();
@@ -100,12 +105,12 @@ class UsharikaDashboardController extends Controller
     {
         $adultMembers = Member::where('campus_id', $campus->id)->count();
         $childMembers = \App\Models\Child::where('is_church_member', true)
-            ->whereHas('member', function($query) use ($campus) {
+            ->whereHas('member', function ($query) use ($campus) {
                 $query->where('campus_id', $campus->id);
             })
             ->count();
         $totalMembers = $adultMembers + $childMembers;
-        
+
         $totalLeaders = Leader::where('campus_id', $campus->id)
             ->where('is_active', true)
             ->count();

@@ -2169,8 +2169,48 @@
                             </a>
                             @endif
                             
+                            {{-- Member Portal for Parish Workers --}}
+                            @if(auth()->user()->isParishWorker() && auth()->user()->member)
+                            <div class="sb-sidenav-menu-heading">{{ __('common.member_portal') }}</div>
+                            <a class="nav-link" href="{{ route('member.dashboard') }}">
+                                <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
+                                {{ __('common.dashboard') }}
+                            </a>
+                            <a class="nav-link" href="{{ route('member.information') }}">
+                                <div class="sb-nav-link-icon"><i class="fas fa-user-circle"></i></div>
+                                {{ __('common.my_information') }}
+                            </a>
+                            <a class="nav-link" href="{{ route('member.finance') }}">
+                                <div class="sb-nav-link-icon"><i class="fas fa-wallet"></i></div>
+                                {{ __('common.my_finance') }}
+                            </a>
+                            <a class="nav-link" href="{{ route('member.announcements') }}">
+                                <div class="sb-nav-link-icon"><i class="fas fa-bullhorn"></i></div>
+                                {{ __('common.announcements') }}
+                                @php
+                                    $member = auth()->user()->member ?? null;
+                                    if ($member) {
+                                        $activeAnnouncements = \App\Models\Announcement::active()->pluck('id');
+                                        $viewedAnnouncementIds = \App\Models\AnnouncementView::where('member_id', $member->id)
+                                            ->whereIn('announcement_id', $activeAnnouncements)
+                                            ->pluck('announcement_id');
+                                        $unreadCount = $activeAnnouncements->diff($viewedAnnouncementIds)->count();
+                                    } else {
+                                        $unreadCount = 0;
+                                    }
+                                @endphp
+                                @if($unreadCount > 0)
+                                    <span class="badge bg-danger ms-2">{{ $unreadCount }}</span>
+                                @endif
+                            </a>
+                            <a class="nav-link" href="{{ route('member.leaders') }}">
+                                <div class="sb-nav-link-icon"><i class="fas fa-users-cog"></i></div>
+                                {{ __('common.leaders') }}
+                            </a>
+                            @endif
+                            
                             {{-- Remove Finance menu for Church Elders (moved to community section) --}}
-                            @if(auth()->user()->isMember() && !auth()->user()->isChurchElder() && !auth()->user()->isEvangelismLeader())
+                            @if(auth()->user()->isMember() && !auth()->user()->isChurchElder() && !auth()->user()->isEvangelismLeader() && !auth()->user()->isParishWorker())
                             {{-- Member Menu --}}
                             <div class="sb-sidenav-menu-heading">Member Portal</div>
                             <a class="nav-link" href="{{ route('member.dashboard') }}">

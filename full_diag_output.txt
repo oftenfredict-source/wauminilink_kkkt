@@ -1,0 +1,11 @@
+FULL DATA DIAGNOSTIC
+
+--- MEMBERS ---
+ID: 41 | Name: ALLY ALLY | Env: []
+ID: 51 | Name: Ally Ally | Env: [02]
+ID: 52 | Name: Helena Shija | Env: [01]
+
+--- COMMUNITY OFFERINGS TODAY ---
+ID: 6 | Date: 2026-01-29 | Type: Sadaka ya Umoja | Amt: 900000.00 | Status: completed
+
+--- GENERAL OFFERINGS (Helena & Ally) ---

@@ -8,8 +8,8 @@
                 <div class="card-body py-2 px-3">
                     <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
                         <div class="d-flex align-items-center gap-3">
-                            <div class="rounded-circle d-flex align-items-center justify-content-center border border-primary border-2" style="width:48px; height:48px; background:rgba(0,123,255,.1);">
-                                <i class="fas fa-wallet text-primary"></i>
+                            <div class="rounded-circle d-flex align-items-center justify-content-center border border-danger border-2" style="width:48px; height:48px; background:rgba(148,0,0,.1);">
+                                <i class="fas fa-wallet text-danger"></i>
                             </div>
                             <div class="lh-sm">
                                 <h5 class="mb-0 fw-semibold text-dark">My Finance</h5>
@@ -51,7 +51,7 @@
 
         <!-- Sadaka ya Umoja -->
         <div class="col-md-4 mb-3">
-            <div class="card border-0 shadow-sm text-white h-100" style="background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%);">
+            <div class="card border-0 shadow-sm text-white h-100" style="background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);">
                 <div class="card-body text-center p-3">
                     <i class="fas fa-users fa-3x mb-2"></i>
                     <h6 class="mb-2">Sadaka ya Umoja</h6>
@@ -97,16 +97,16 @@
                                                 @if($pledge->status == 'completed')
                                                     <span class="badge bg-success">Completed</span>
                                                 @elseif($pledge->status == 'active')
-                                                    <span class="badge bg-primary">Active</span>
+                                                    <span class="badge bg-danger">Active</span>
                                                 @elseif($pledge->status == 'overdue')
-                                                    <span class="badge bg-danger">Overdue</span>
+                                                    <span class="badge bg-dark">Overdue</span>
                                                 @else
                                                     <span class="badge bg-secondary">{{ ucfirst($pledge->status) }}</span>
                                                 @endif
                                             </td>
                                             <td>
                                                 @if($pledge->payments && $pledge->payments->count() > 0)
-                                                    <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#payments{{ $pledge->id }}" aria-expanded="false">
+                                                    <button class="btn btn-sm btn-outline-danger" type="button" data-bs-toggle="collapse" data-bs-target="#payments{{ $pledge->id }}" aria-expanded="false">
                                                         <i class="fas fa-list me-1"></i>View Payments ({{ $pledge->payments->count() }})
                                                     </button>
                                                 @else
@@ -187,7 +187,7 @@
                                             <td>{{ $offering->offering_date->format('M d, Y') }}</td>
                                             <td>{{ $offering->offering_date->format('l') }}</td>
                                             <td>
-                                                <span class="badge bg-info">
+                                                <span class="badge bg-secondary">
                                                     {{ ucfirst(str_replace('_', ' ', $offering->offering_type ?? 'General')) }}
                                                 </span>
                                             </td>
@@ -218,7 +218,7 @@
     <div class="row">
         <div class="col-md-6 mb-3">
             <div class="card border-0 shadow-sm">
-                <div class="card-header bg-primary text-white">
+                <div class="card-header bg-danger text-white">
                     <h6 class="mb-0"><i class="fas fa-list me-2"></i>Recent Tithes</h6>
                 </div>
                 <div class="card-body">
@@ -245,7 +245,7 @@
         </div>
         <div class="col-md-6 mb-3">
             <div class="card border-0 shadow-sm">
-                <div class="card-header bg-info text-white">
+                <div class="card-header bg-secondary text-white">
                     <h6 class="mb-0"><i class="fas fa-list me-2"></i>Recent Donations</h6>
                 </div>
                 <div class="card-body">

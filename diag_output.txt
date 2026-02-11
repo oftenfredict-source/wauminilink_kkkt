@@ -1,0 +1,6 @@
+Checking community_offering_items table...
+
+Checking members for comparison:
+ID: 41 | Name: ALLY ALLY | Envelope: []
+ID: 51 | Name: Ally Ally | Envelope: [02]
+ID: 52 | Name: Helena Shija | Envelope: [01]

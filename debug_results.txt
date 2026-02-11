@@ -1,0 +1,11 @@
+Member: Ester Shayo (ID: 39)
+Campus ID: 2 (Name: Mtaa wa CCP)
+Departments:
+- Department of Youth (Idara ya Vijana) (ID: 1)
+- Department of Women (Kinamama) (ID: 2)
+
+Department (ID: 1): Department of Youth (Idara ya Vijana)
+Total members in this department: 1
+Assignment found: Department 1, Member 39
+Status: active
+Created At: 2026-01-27 13:57:56

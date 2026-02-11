@@ -185,6 +185,7 @@ Route::middleware(['auth', PreventBackHistory::class, 'treasurer'])->group(funct
         ->name('members.view');
     // Leaders management routes
     Route::resource('leaders', LeaderController::class);
+    Route::get('/leaders-members-ajax', [LeaderController::class, 'getMembersByCampus'])->name('leaders.members.ajax');
     Route::post('/leaders/{leader}/deactivate', [LeaderController::class, 'deactivate'])->name('leaders.deactivate');
     Route::post('/leaders/{leader}/reactivate', [LeaderController::class, 'reactivate'])->name('leaders.reactivate');
     // Leadership reports routes

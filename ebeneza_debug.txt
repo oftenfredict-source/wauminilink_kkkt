@@ -1,0 +1,5 @@
+=== Comprehensive Ebeneza Debug ===
+
+Community: ID: 6, Name: Ebeneza, Campus ID: 4
+Offerings count (withTrashed): 1
+- ID: 15, Amount: 60000.00, Status: completed, Deleted: NO

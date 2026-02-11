@@ -221,6 +221,8 @@
         document.addEventListener('DOMContentLoaded', function () {
             const positionSelect = document.getElementById('position');
             const positionTitleField = document.getElementById('position_title_field');
+            const campusSelect = document.getElementById('campus_id');
+            const memberSelect = document.getElementById('member_id');
 
             positionSelect.addEventListener('change', function () {
                 if (this.value === 'other') {
@@ -231,6 +233,40 @@
                     document.getElementById('position_title').required = false;
                 }
             });
+
+            // Handle branch selection change
+            if (campusSelect) {
+                campusSelect.addEventListener('change', function () {
+                    const campusId = this.value;
+                    
+                    // Show loading state
+                    memberSelect.innerHTML = '<option value="">{{ autoTranslate("Loading members...") }}</option>';
+                    memberSelect.disabled = true;
+
+                    fetch(`{{ route('leaders.members.ajax') }}?campus_id=${campusId}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            memberSelect.innerHTML = '<option value="">{{ autoTranslate("Choose a member...") }}</option>';
+                            
+                            if (data.length === 0) {
+                                memberSelect.innerHTML = '<option value="">{{ autoTranslate("No members found in this branch") }}</option>';
+                            } else {
+                                data.forEach(member => {
+                                    const option = document.createElement('option');
+                                    option.value = member.id;
+                                    option.textContent = `${member.full_name} (${member.member_id})`;
+                                    memberSelect.appendChild(option);
+                                });
+                            }
+                            memberSelect.disabled = false;
+                        })
+                        .catch(error => {
+                            console.error('Error fetching members:', error);
+                            memberSelect.innerHTML = '<option value="">{{ autoTranslate("Error loading members") }}</option>';
+                            memberSelect.disabled = false;
+                        });
+                });
+            }
 
             // Show position title field if "other" is pre-selected
             if (positionSelect.value === 'other') {

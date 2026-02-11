@@ -1,0 +1,5 @@
+Index: PRIMARY, Column: id, Unique: Yes
+Index: department_member_department_id_member_id_unique, Column: department_id, Unique: Yes
+Index: department_member_department_id_member_id_unique, Column: member_id, Unique: Yes
+Index: department_member_member_id_foreign, Column: member_id, Unique: No
+Index: department_member_child_id_foreign, Column: child_id, Unique: No

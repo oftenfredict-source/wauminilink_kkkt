@@ -1,0 +1,131 @@
+
+   INFO  Running migrations.  
+
+  2026_01_27_152821_update_department_member_table_for_children  26.84ms FAIL
+
+   Illuminate\Database\QueryException 
+
+  SQLSTATE[42S21]: Column already exists: 1060 Duplicate column name 'child_id' (Connection: mysql, SQL: alter table `department_member` add `child_id` bigint unsigned null after `member_id`)
+
+  at vendor\laravel\framework\src\Illuminate\Database\Connection.php:824
+    820???                     $this->getName(), $query, $this->prepareBindings($bindings), $e
+    821???                 );
+    822???             }
+    823??? 
+  ??? 824???             throw new QueryException(
+    825???                 $this->getName(), $query, $this->prepareBindings($bindings), $e
+    826???             );
+    827???         }
+    828???     }
+
+  1   vendor\laravel\framework\src\Illuminate\Database\Connection.php:570
+      PDOException::("SQLSTATE[42S21]: Column already exists: 1060 Duplicate column name 'child_id'")
+
+  2   vendor\laravel\framework\src\Illuminate\Database\Connection.php:570
+      PDOStatement::execute()
+
+  3   vendor\laravel\framework\src\Illuminate\Database\Connection.php:811
+      Illuminate\Database\Connection::Illuminate\Database\{closure}("alter table `department_member` add `child_id` bigint unsigned null after `member_id`", [])
+
+  4   vendor\laravel\framework\src\Illuminate\Database\Connection.php:778
+      Illuminate\Database\Connection::runQueryCallback("alter table `department_member` add `child_id` bigint unsigned null after `member_id`", [], Object(Closure))
+
+  5   vendor\laravel\framework\src\Illuminate\Database\Connection.php:559
+      Illuminate\Database\Connection::run("alter table `department_member` add `child_id` bigint unsigned null after `member_id`", [], Object(Closure))
+
+  6   vendor\laravel\framework\src\Illuminate\Database\Schema\Blueprint.php:121
+      Illuminate\Database\Connection::statement("alter table `department_member` add `child_id` bigint unsigned null after `member_id`")
+
+  7   vendor\laravel\framework\src\Illuminate\Database\Schema\Builder.php:618
+      Illuminate\Database\Schema\Blueprint::build()
+
+  8   vendor\laravel\framework\src\Illuminate\Database\Schema\Builder.php:460
+      Illuminate\Database\Schema\Builder::build(Object(Illuminate\Database\Schema\Blueprint))
+
+  9   vendor\laravel\framework\src\Illuminate\Support\Facades\Facade.php:363
+      Illuminate\Database\Schema\Builder::table("department_member", Object(Closure))
+
+  10  database\migrations\2026_01_27_152821_update_department_member_table_for_children.php:14
+      Illuminate\Support\Facades\Facade::__callStatic("table")
+
+  11  vendor\laravel\framework\src\Illuminate\Database\Migrations\Migrator.php:514
+      Illuminate\Database\Migrations\Migration@anonymous\C:\xampp\htdocs\WauminiLink_kkkt\database\migrations\2026_01_27_152821_update_department_member_table_for_children.php:7$108::up()
+
+  12  vendor\laravel\framework\src\Illuminate\Database\Migrations\Migrator.php:439
+      Illuminate\Database\Migrations\Migrator::runMethod(Object(Illuminate\Database\MySqlConnection), Object(Illuminate\Database\Migrations\Migration@anonymous\C:\xampp\htdocs\WauminiLink_kkkt\database\migrations\2026_01_27_152821_update_department_member_table_for_children.php:7$108), "up")
+
+  13  vendor\laravel\framework\src\Illuminate\Database\Migrations\Migrator.php:448
+      Illuminate\Database\Migrations\Migrator::Illuminate\Database\Migrations\{closure}()
+
+  14  vendor\laravel\framework\src\Illuminate\Database\Migrations\Migrator.php:250
+      Illuminate\Database\Migrations\Migrator::runMigration(Object(Illuminate\Database\Migrations\Migration@anonymous\C:\xampp\htdocs\WauminiLink_kkkt\database\migrations\2026_01_27_152821_update_department_member_table_for_children.php:7$108), "up")
+
+  15  vendor\laravel\framework\src\Illuminate\Console\View\Components\Task.php:41
+      Illuminate\Database\Migrations\Migrator::Illuminate\Database\Migrations\{closure}()
+
+  16  vendor\laravel\framework\src\Illuminate\Database\Migrations\Migrator.php:809
+      Illuminate\Console\View\Components\Task::render("2026_01_27_152821_update_department_member_table_for_children", Object(Closure))
+
+  17  vendor\laravel\framework\src\Illuminate\Database\Migrations\Migrator.php:250
+      Illuminate\Database\Migrations\Migrator::write("Illuminate\Console\View\Components\Task", "2026_01_27_152821_update_department_member_table_for_children", Object(Closure))
+
+  18  vendor\laravel\framework\src\Illuminate\Database\Migrations\Migrator.php:210
+      Illuminate\Database\Migrations\Migrator::runUp("C:\xampp\htdocs\WauminiLink_kkkt\database\migrations/2026_01_27_152821_update_department_member_table_for_children.php")
+
+  19  vendor\laravel\framework\src\Illuminate\Database\Migrations\Migrator.php:137
+      Illuminate\Database\Migrations\Migrator::runPending([])
+
+  20  vendor\laravel\framework\src\Illuminate\Database\Console\Migrations\MigrateCommand.php:116
+      Illuminate\Database\Migrations\Migrator::run([])
+
+  21  vendor\laravel\framework\src\Illuminate\Database\Migrations\Migrator.php:666
+      Illuminate\Database\Console\Migrations\MigrateCommand::Illuminate\Database\Console\Migrations\{closure}()
+
+  22  vendor\laravel\framework\src\Illuminate\Database\Console\Migrations\MigrateCommand.php:109
+      Illuminate\Database\Migrations\Migrator::usingConnection(Object(Closure))
+
+  23  vendor\laravel\framework\src\Illuminate\Database\Console\Migrations\MigrateCommand.php:88
+      Illuminate\Database\Console\Migrations\MigrateCommand::runMigrations()
+
+  24  vendor\laravel\framework\src\Illuminate\Container\BoundMethod.php:36
+      Illuminate\Database\Console\Migrations\MigrateCommand::handle()
+
+  25  vendor\laravel\framework\src\Illuminate\Container\Util.php:43
+      Illuminate\Container\BoundMethod::Illuminate\Container\{closure}()
+
+  26  vendor\laravel\framework\src\Illuminate\Container\BoundMethod.php:96
+      Illuminate\Container\Util::unwrapIfClosure(Object(Closure))
+
+  27  vendor\laravel\framework\src\Illuminate\Container\BoundMethod.php:35
+      Illuminate\Container\BoundMethod::callBoundMethod(Object(Illuminate\Foundation\Application), Object(Closure))
+
+  28  vendor\laravel\framework\src\Illuminate\Container\Container.php:836
+      Illuminate\Container\BoundMethod::call(Object(Illuminate\Foundation\Application), [])
+
+  29  vendor\laravel\framework\src\Illuminate\Console\Command.php:211
+      Illuminate\Container\Container::call()
+
+  30  vendor\symfony\console\Command\Command.php:318
+      Illuminate\Console\Command::execute(Object(Symfony\Component\Console\Input\ArgvInput), Object(Illuminate\Console\OutputStyle))
+
+  31  vendor\laravel\framework\src\Illuminate\Console\Command.php:180
+      Symfony\Component\Console\Command\Command::run(Object(Symfony\Component\Console\Input\ArgvInput), Object(Illuminate\Console\OutputStyle))
+
+  32  vendor\symfony\console\Application.php:1110
+      Illuminate\Console\Command::run(Object(Symfony\Component\Console\Input\ArgvInput), Object(Symfony\Component\Console\Output\ConsoleOutput))
+
+  33  vendor\symfony\console\Application.php:359
+      Symfony\Component\Console\Application::doRunCommand(Object(Illuminate\Database\Console\Migrations\MigrateCommand), Object(Symfony\Component\Console\Input\ArgvInput), Object(Symfony\Component\Console\Output\ConsoleOutput))
+
+  34  vendor\symfony\console\Application.php:194
+      Symfony\Component\Console\Application::doRun(Object(Symfony\Component\Console\Input\ArgvInput), Object(Symfony\Component\Console\Output\ConsoleOutput))
+
+  35  vendor\laravel\framework\src\Illuminate\Foundation\Console\Kernel.php:197
+      Symfony\Component\Console\Application::run(Object(Symfony\Component\Console\Input\ArgvInput), Object(Symfony\Component\Console\Output\ConsoleOutput))
+
+  36  vendor\laravel\framework\src\Illuminate\Foundation\Application.php:1235
+      Illuminate\Foundation\Console\Kernel::handle(Object(Symfony\Component\Console\Input\ArgvInput), Object(Symfony\Component\Console\Output\ConsoleOutput))
+
+  37  artisan:16
+      Illuminate\Foundation\Application::handleCommand(Object(Symfony\Component\Console\Input\ArgvInput))
+

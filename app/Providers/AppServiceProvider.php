@@ -45,42 +45,30 @@ class AppServiceProvider extends ServiceProvider
         // Handle subdirectory hosting (e.g., /demo/)
         // This ensures asset() helper includes the subdirectory in URLs
         $subdirectory = env('APP_SUBDIRECTORY', '');
+        $assetUrl = env('ASSET_URL', '');
 
         // Auto-detect subdirectory from request if not set in env
-        // Skip auto-detection if:
-        // 1. Already set in env
-        // 2. Local environment (unless explicitly enabled)
-        // 3. Skip flag is set
-        // 4. APP_URL already contains a path (not just domain)
         if (empty($subdirectory) && !$skipAutoDetection && $appEnv !== 'local' && request()) {
             $appUrl = config('app.url');
-            // If APP_URL already contains a path (not just domain), don't auto-detect
             $urlPath = parse_url($appUrl, PHP_URL_PATH);
-            if (empty($urlPath) || $urlPath === '/') {
+
+            // If APP_URL already contains a path (not just domain), use that as subdirectory
+            if (!empty($urlPath) && $urlPath !== '/') {
+                $subdirectory = rtrim($urlPath, '/');
+            } else {
                 // Try to detect from SCRIPT_NAME first (more reliable for subdirectory hosting)
                 if (isset($_SERVER['SCRIPT_NAME'])) {
                     $scriptPath = dirname($_SERVER['SCRIPT_NAME']);
                     if ($scriptPath !== '/' && $scriptPath !== '\\' && $scriptPath !== '.') {
                         $subdirectory = rtrim($scriptPath, '/');
-                    }
-                }
-
-                // Fallback: try to detect from request URI
-                if (empty($subdirectory)) {
-                    $path = parse_url(request()->getRequestUri(), PHP_URL_PATH);
-                    // Extract subdirectory from path (e.g., /demo/... -> /demo)
-                    if (preg_match('#^/([^/]+)/#', $path, $matches)) {
-                        // Check if it's not a route (common Laravel routes)
-                        $commonRoutes = ['login', 'register', 'api', 'storage', 'assets', 'css', 'js', 'images'];
-                        if (!in_array($matches[1], $commonRoutes)) {
-                            $subdirectory = '/' . $matches[1];
-                        }
+                        // Remove '/public' if it's there but we want the app root
+                        $subdirectory = str_replace('/public', '', $subdirectory);
                     }
                 }
             }
         }
 
-        // Set asset URL to include subdirectory
+        // Apply subdirectory to force root URL
         if (!empty($subdirectory)) {
             $appUrl = config('app.url');
             // Ensure subdirectory doesn't already exist in APP_URL
@@ -92,20 +80,17 @@ class AppServiceProvider extends ServiceProvider
             // Also update the public disk URL to include subdirectory
             config(['filesystems.disks.public.url' => $appUrl . '/storage']);
         } else {
-            // For local development with artisan serve, don't force URL - let Laravel auto-detect
-            // Only force URL if APP_URL is explicitly set and we're not in local environment
+            // For production, always try to force the root URL from APP_URL if set
             if ($appEnv !== 'local') {
                 $appUrl = config('app.url');
                 if (!empty($appUrl)) {
-                    URL::forceRootUrl($appUrl);
+                    URL::forceRootUrl(rtrim($appUrl, '/'));
                 }
             }
-            // When APP_ENV is 'local' and no subdirectory, Laravel will auto-detect the URL
-            // This allows artisan serve to work correctly with http://127.0.0.1:8000
         }
 
         // Force HTTPS in production to prevent Mixed Content errors
-        if ($appEnv !== 'local') {
+        if ($appEnv !== 'local' && request()->secure()) {
             URL::forceScheme('https');
         }
 

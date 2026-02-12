@@ -1642,6 +1642,7 @@ Route::middleware(['auth', PreventBackHistory::class])->prefix('member')->name('
     Route::get('/change-password', [MemberDashboardController::class, 'showChangePassword'])->name('change-password');
     Route::post('/change-password', [MemberDashboardController::class, 'updatePassword'])->name('password.update');
     Route::post('/notifications/{notification}/read', [MemberDashboardController::class, 'markNotificationAsRead'])->name('notifications.read');
+    Route::post('/pledges', [MemberDashboardController::class, 'storePledge'])->name('pledges.store');
 });
 
 // Serve storage files directly (bypasses symlink issues)

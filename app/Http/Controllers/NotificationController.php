@@ -11,6 +11,7 @@ use App\Models\Donation;
 use App\Models\Expense;
 use App\Models\Budget;
 use App\Models\PledgePayment;
+use App\Models\FundingRequest;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -22,12 +23,12 @@ class NotificationController extends Controller
             $now = Carbon::now();
             $startDate = $now->toDateString(); // start from today
             $next30Days = $now->copy()->addDays(30);
-            
+
             \Log::info('NotificationController: Fetching data for date range', [
                 'startDate' => $startDate,
                 'endDate' => $next30Days->toDateString()
             ]);
-            
+
             // Get upcoming events (next 30 days)
             $events = SpecialEvent::whereDate('event_date', '>=', $startDate)
                 ->whereDate('event_date', '<=', $next30Days->toDateString())
@@ -37,10 +38,10 @@ class NotificationController extends Controller
                     $eventDate = Carbon::parse($event->event_date)->startOfDay();
                     $eventTime = ($event->start_time && trim($event->start_time) !== '') ? $event->start_time : '23:59:59';
                     $eventDateTime = $eventDate->copy()->setTimeFromTimeString($eventTime);
-                    
+
                     // Calculate days remaining (only for future dates)
                     $daysRemaining = max(0, (int) $now->startOfDay()->diffInDays($eventDate, false));
-                    
+
                     // Only calculate hours if the event is today
                     $hoursRemaining = null;
                     if ($daysRemaining === 0) {
@@ -59,7 +60,7 @@ class NotificationController extends Controller
                         'type' => 'event'
                     ];
                 });
-            
+
             // Get upcoming celebrations (next 30 days)
             $celebrations = Celebration::whereDate('celebration_date', '>=', $startDate)
                 ->whereDate('celebration_date', '<=', $next30Days->toDateString())
@@ -69,10 +70,10 @@ class NotificationController extends Controller
                     $celebrationDate = Carbon::parse($celebration->celebration_date)->startOfDay();
                     $celebrationTime = ($celebration->start_time && trim($celebration->start_time) !== '') ? $celebration->start_time : '23:59:59';
                     $celebrationDateTime = $celebrationDate->copy()->setTimeFromTimeString($celebrationTime);
-                    
+
                     // Calculate days remaining (only for future dates)
                     $daysRemaining = max(0, (int) $now->startOfDay()->diffInDays($celebrationDate, false));
-                    
+
                     // Only calculate hours if the celebration is today
                     $hoursRemaining = null;
                     if ($daysRemaining === 0) {
@@ -92,7 +93,7 @@ class NotificationController extends Controller
                         'type' => 'celebration'
                     ];
                 });
-            
+
             // Get upcoming Sunday services (next 30 days)
             $services = SundayService::whereDate('service_date', '>=', $startDate)
                 ->whereDate('service_date', '<=', $next30Days->toDateString())
@@ -102,10 +103,10 @@ class NotificationController extends Controller
                     $serviceDate = Carbon::parse($service->service_date)->startOfDay();
                     $serviceTime = ($service->start_time && trim($service->start_time) !== '') ? $service->start_time : '23:59:59';
                     $serviceDateTime = $serviceDate->copy()->setTimeFromTimeString($serviceTime);
-                    
+
                     // Calculate days remaining (only for future dates)
                     $daysRemaining = max(0, (int) $now->startOfDay()->diffInDays($serviceDate, false));
-                    
+
                     // Only calculate hours if the service is today
                     $hoursRemaining = null;
                     if ($daysRemaining === 0) {
@@ -127,42 +128,39 @@ class NotificationController extends Controller
                         'type' => 'service'
                     ];
                 });
-            
+
             // Get pending financial approvals (for secretary, pastor, admin)
             $user = auth()->user();
             $pendingApprovals = [];
             $pendingApprovalsCount = 0;
-            
+
             if ($user && ($user->isSecretary() || $user->isPastor() || $user->isAdmin() || $user->canApproveFinances())) {
-                $today = Carbon::today();
-                
+
                 $pendingTithes = Tithe::where('approval_status', 'pending')
-                    ->whereDate('tithe_date', $today)
                     ->count();
-                    
+
                 $pendingOfferings = Offering::where('approval_status', 'pending')
-                    ->whereDate('offering_date', $today)
                     ->count();
-                    
+
                 $pendingDonations = Donation::where('approval_status', 'pending')
-                    ->whereDate('donation_date', $today)
                     ->count();
-                    
+
                 $pendingExpenses = Expense::where('approval_status', 'pending')
-                    ->whereDate('expense_date', $today)
                     ->count();
-                    
+
                 $pendingBudgets = Budget::where('approval_status', 'pending')
-                    ->whereDate('created_at', $today)
                     ->count();
-                    
+
                 $pendingPledgePayments = PledgePayment::where('approval_status', 'pending')
-                    ->whereDate('payment_date', $today)
                     ->count();
-                
-                $pendingApprovalsCount = $pendingTithes + $pendingOfferings + $pendingDonations + 
-                                        $pendingExpenses + $pendingBudgets + $pendingPledgePayments;
-                
+
+                $pendingFundingRequests = FundingRequest::where('status', 'pending')
+                    ->count();
+
+                $pendingApprovalsCount = $pendingTithes + $pendingOfferings + $pendingDonations +
+                    $pendingExpenses + $pendingBudgets + $pendingPledgePayments +
+                    $pendingFundingRequests;
+
                 $pendingApprovals = [
                     'tithes' => $pendingTithes,
                     'offerings' => $pendingOfferings,
@@ -170,14 +168,15 @@ class NotificationController extends Controller
                     'expenses' => $pendingExpenses,
                     'budgets' => $pendingBudgets,
                     'pledge_payments' => $pendingPledgePayments,
+                    'funding_requests' => $pendingFundingRequests,
                     'total' => $pendingApprovalsCount
                 ];
             }
-            
+
             // Get payments needing verification (for treasurer) - expenses approved by pastor but not yet marked as paid
             $paymentsNeedingVerification = [];
             $paymentsNeedingVerificationCount = 0;
-            
+
             if ($user && ($user->isTreasurer() || $user->isAdmin())) {
                 // Get expenses that are approved by pastor but not yet marked as paid
                 $approvedExpensesNeedingPayment = Expense::where('approval_status', 'approved')
@@ -196,14 +195,14 @@ class NotificationController extends Controller
                             'type' => 'expense_payment'
                         ];
                     });
-                
+
                 $paymentsNeedingVerificationCount = $approvedExpensesNeedingPayment->count();
                 $paymentsNeedingVerification = $approvedExpensesNeedingPayment;
             }
-            
+
             // Calculate total notifications (including financial approvals and payments needing verification)
             $totalNotifications = $events->count() + $celebrations->count() + $services->count() + $pendingApprovalsCount + $paymentsNeedingVerificationCount;
-            
+
             \Log::info('NotificationController: Data counts', [
                 'events_count' => $events->count(),
                 'celebrations_count' => $celebrations->count(),
@@ -212,7 +211,7 @@ class NotificationController extends Controller
                 'payments_needing_verification_count' => $paymentsNeedingVerificationCount,
                 'total' => $totalNotifications
             ]);
-            
+
             return response()->json([
                 'success' => true,
                 'data' => [
@@ -232,7 +231,7 @@ class NotificationController extends Controller
                     'last_updated' => $now->format('M j, Y g:i A')
                 ]
             ]);
-            
+
         } catch (\Exception $e) {
             \Log::error('Failed to fetch notification data: ' . $e->getMessage());
             return response()->json([

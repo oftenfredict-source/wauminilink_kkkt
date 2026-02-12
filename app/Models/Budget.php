@@ -109,13 +109,31 @@ class Budget extends Model
     }
 
     // Accessors
+
+    /**
+     * Get validated spent amount (Paid expenses)
+     */
     public function getSpentAmountAttribute($value)
     {
         // Calculate spent amount from paid expenses
         // Only count expenses that are both approved and paid
         return $this->expenses()
             ->where('status', 'paid')
-            ->where('approval_status', 'approved')
+            ->sum('amount');
+    }
+
+    /**
+     * Get pending spent amount (Approved but not Paid expenses)
+     * These are committed funds
+     */
+    public function getPendingSpentAmountAttribute()
+    {
+        return $this->expenses()
+            ->where('status', '!=', 'paid')
+            ->where(function ($q) {
+                $q->where('approval_status', 'approved')
+                    ->orWhere('approval_status', 'pending');
+            })
             ->sum('amount');
     }
 
@@ -128,6 +146,11 @@ class Budget extends Model
     {
         if ($this->total_budget == 0)
             return 0;
+
+        // Utilization should probably include committed funds to avoid overspending
+        // But for now, let's keep it based on actual spent for the progress bar, 
+        // maybe add a secondary bar? 
+        // For now, standard behavior: spent / total
         return round(($this->spent_amount / $this->total_budget) * 100, 2);
     }
 

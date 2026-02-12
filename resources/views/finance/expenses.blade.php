@@ -654,8 +654,8 @@
                             <div class="row g-3">
                                 <div class="col-md-12">
                                     <div class="form-floating mb-3">
-                                        <select class="form-select" id="budget_id" name="budget_id">
-                                            <option value="">Select Budget (Optional)</option>
+                                        <select class="form-select" id="budget_id" name="budget_id" required>
+                                            <option value="">Select Budget *</option>
                                             @foreach($budgets as $budget)
                                                 <option value="{{ $budget->id }}" data-total="{{ $budget->total_budget }}"
                                                     data-spent="{{ $budget->spent_amount }}"
@@ -669,50 +669,7 @@
                                                 </option>
                                             @endforeach
                                         </select>
-                                        <label for="budget_id">Budget Source</label>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-floating mb-3">
-                                        <input type="text" class="form-control" id="expense_name" name="expense_name"
-                                            placeholder="Expense Name" list="expenseLineItems" required>
-                                        <label for="expense_name">Expense Name *</label>
-                                        <datalist id="expenseLineItems"></datalist>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-floating mb-3">
-                                        <select class="form-select" id="expense_category" name="expense_category" required>
-                                            <option value="">Select Category</option>
-                                            @if(isset($expenseCategories))
-                                                <optgroup label="A. INJILI">
-                                                    @foreach($expenseCategories['injili'] as $code => $name)
-                                                        <option value="{{ strtolower(str_replace([' ', '/', '.'], '_', $name)) }}"
-                                                            title="{{ $code }} - {{ $name }}">{{ $name }}</option>
-                                                    @endforeach
-                                                </optgroup>
-                                                <optgroup label="B. UMOJA NA IDARA">
-                                                    @foreach($expenseCategories['idara'] as $code => $name)
-                                                        <option value="{{ strtolower(str_replace([' ', '/', '.'], '_', $name)) }}"
-                                                            title="{{ $code }} - {{ $name }}">{{ $name }}</option>
-                                                    @endforeach
-                                                </optgroup>
-                                                <optgroup label="C. MAJENGO">
-                                                    @foreach($expenseCategories['majengo'] as $code => $name)
-                                                        <option value="{{ strtolower(str_replace([' ', '/', '.'], '_', $name)) }}"
-                                                            title="{{ $code }} - {{ $name }}">{{ $name }}</option>
-                                                    @endforeach
-                                                </optgroup>
-                                            @else
-                                                <optgroup label="Categories Loaded Failed">
-                                                    <option value="other">Other</option>
-                                                </optgroup>
-                                            @endif
-                                            <optgroup label="D. ZINGINEZO">
-                                                <option value="other">Other (Custom Purpose)</option>
-                                            </optgroup>
-                                        </select>
-                                        <label for="expense_category">Category *</label>
+                                        <label for="budget_id">Budget Source *</label>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -730,6 +687,8 @@
                                         <small class="text-muted" id="amountHelpText"></small>
                                     </div>
                                 </div>
+                                <input type="hidden" id="expense_name" name="expense_name" value="">
+                                <input type="hidden" id="expense_category" name="expense_category" value="">
                             </div>
                         </div>
 
@@ -981,25 +940,18 @@
                                 <i class="fas fa-info-circle"></i>Expense Details
                             </div>
                             <div class="row g-3">
-                                <div class="col-md-6">
+                                <div class="col-md-12">
                                     <div class="form-floating mb-3">
-                                        <input type="text" class="form-control" id="ex_expense_name" name="expense_name"
-                                            placeholder="Expense Name" required>
-                                        <label for="ex_expense_name">Expense Name *</label>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-floating mb-3">
-                                        <select class="form-select" id="ex_expense_category" name="expense_category"
-                                            required>
-                                            <option value="utilities">Utilities</option>
-                                            <option value="maintenance">Maintenance</option>
-                                            <option value="supplies">Supplies</option>
-                                            <option value="transport">Transport</option>
-                                            <option value="communication">Communication</option>
-                                            <option value="other">Other</option>
+                                        <select class="form-select" id="ex_budget_id" name="budget_id" required>
+                                            <option value="">Select Budget *</option>
+                                            @foreach($budgets as $budget)
+                                                <option value="{{ $budget->id }}" data-name="{{ $budget->budget_name }}"
+                                                    data-purpose="{{ $budget->purpose }}">
+                                                    {{ $budget->budget_name }} ({{ $budget->fiscal_year }})
+                                                </option>
+                                            @endforeach
                                         </select>
-                                        <label for="ex_expense_category">Category *</label>
+                                        <label for="ex_budget_id">Budget Source *</label>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -1016,28 +968,18 @@
                                         <label for="ex_amount">Amount (TZS) *</label>
                                     </div>
                                 </div>
+                                <input type="hidden" id="ex_expense_name" name="expense_name" value="">
+                                <input type="hidden" id="ex_expense_category" name="expense_category" value="">
                             </div>
                         </div>
 
-                        {{-- Section 2: Budget context & Status --}}
+
+                        {{-- Section 2: Status --}}
                         <div class="p-4 bg-white border-top">
                             <div class="section-header">
-                                <i class="fas fa-wallet"></i>Budget & Status
+                                <i class="fas fa-flag"></i>Status
                             </div>
                             <div class="row g-3">
-                                <div class="col-md-12">
-                                    <div class="form-floating mb-3">
-                                        <select class="form-select" id="ex_budget_id" name="budget_id">
-                                            <option value="">Select Budget (Optional)</option>
-                                            @foreach($budgets as $budget)
-                                                <option value="{{ $budget->id }}">
-                                                    {{ $budget->budget_name }} ({{ $budget->fiscal_year }})
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                        <label for="ex_budget_id">Budget Source</label>
-                                    </div>
-                                </div>
                                 <div class="col-md-12">
                                     <div class="form-floating mb-3">
                                         <select class="form-select" id="ex_status" name="status" required>
@@ -1250,7 +1192,7 @@
                     if (filterHeader) filterHeader.classList.add('active');
                 }
             @endif
-                                                                                                });
+                                                                                                            });
 
         function viewExpense(button) {
             if (!button) return;
@@ -1267,160 +1209,160 @@
                             d.category.toLowerCase() === 'communication' ? 'danger' : 'secondary';
 
             var html = `
-                                                                                                        <div class="row g-4">
-                                                                                                            <!-- Expense Overview Cards -->
-                                                                                                            <div class="col-12">
-                                                                                                                <div class="row g-3">
-                                                                                                                    <div class="col-md-4">
-                                                                                                                        <div class="card bg-primary text-white h-100">
-                                                                                                                            <div class="card-body text-center">
-                                                                                                                                <i class="fas fa-dollar-sign fa-2x mb-2"></i>
-                                                                                                                                <h6 class="card-title">Amount</h6>
-                                                                                                                                <h4 class="mb-0">TZS ${d.amount || '0.00'}</h4>
-                                                                                                                            </div>
-                                                                                                                        </div>
-                                                                                                                    </div>
-                                                                                                                    <div class="col-md-4">
-                                                                                                                        <div class="card bg-${statusClass} text-white h-100">
-                                                                                                                            <div class="card-body text-center">
-                                                                                                                                <i class="fas fa-flag fa-2x mb-2"></i>
-                                                                                                                                <h6 class="card-title">Status</h6>
-                                                                                                                                <h4 class="mb-0">${d.status || '-'}</h4>
-                                                                                                                            </div>
-                                                                                                                        </div>
-                                                                                                                    </div>
-                                                                                                                    <div class="col-md-4">
-                                                                                                                        <div class="card bg-${categoryClass} text-white h-100">
-                                                                                                                            <div class="card-body text-center">
-                                                                                                                                <i class="fas fa-tag fa-2x mb-2"></i>
-                                                                                                                                <h6 class="card-title">Category</h6>
-                                                                                                                                <h4 class="mb-0">${d.category || '-'}</h4>
-                                                                                                                            </div>
-                                                                                                                        </div>
-                                                                                                                    </div>
-                                                                                                                </div>
-                                                                                                            </div>
-
-                                                                                                            <!-- Expense Details -->
-                                                                                                            <div class="col-12">
-                                                                                                                <div class="card">
-                                                                                                                    <div class="card-header bg-light">
-                                                                                                                        <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Expense Information</h6>
-                                                                                                                    </div>
-                                                                                                                    <div class="card-body">
-                                                                                                                        <div class="row g-3">
-                                                                                                                            <div class="col-md-6">
-                                                                                                                                <div class="d-flex align-items-center">
-                                                                                                                                    <i class="fas fa-calendar text-primary me-3"></i>
-                                                                                                                                    <div>
-                                                                                                                                        <small class="text-muted">Date</small>
-                                                                                                                                        <div class="fw-bold">${d.date || '-'}</div>
+                                                                                                                    <div class="row g-4">
+                                                                                                                        <!-- Expense Overview Cards -->
+                                                                                                                        <div class="col-12">
+                                                                                                                            <div class="row g-3">
+                                                                                                                                <div class="col-md-4">
+                                                                                                                                    <div class="card bg-primary text-white h-100">
+                                                                                                                                        <div class="card-body text-center">
+                                                                                                                                            <i class="fas fa-dollar-sign fa-2x mb-2"></i>
+                                                                                                                                            <h6 class="card-title">Amount</h6>
+                                                                                                                                            <h4 class="mb-0">TZS ${d.amount || '0.00'}</h4>
+                                                                                                                                        </div>
                                                                                                                                     </div>
                                                                                                                                 </div>
-                                                                                                                            </div>
-                                                                                                                            <div class="col-md-6">
-                                                                                                                                <div class="d-flex align-items-center">
-                                                                                                                                    <i class="fas fa-file-invoice text-info me-3"></i>
-                                                                                                                                    <div>
-                                                                                                                                        <small class="text-muted">Expense Name</small>
-                                                                                                                                        <div class="fw-bold">${d.name || '-'}</div>
+                                                                                                                                <div class="col-md-4">
+                                                                                                                                    <div class="card bg-${statusClass} text-white h-100">
+                                                                                                                                        <div class="card-body text-center">
+                                                                                                                                            <i class="fas fa-flag fa-2x mb-2"></i>
+                                                                                                                                            <h6 class="card-title">Status</h6>
+                                                                                                                                            <h4 class="mb-0">${d.status || '-'}</h4>
+                                                                                                                                        </div>
                                                                                                                                     </div>
                                                                                                                                 </div>
-                                                                                                                            </div>
-                                                                                                                            <div class="col-md-6">
-                                                                                                                                <div class="d-flex align-items-center">
-                                                                                                                                    <i class="fas fa-building text-warning me-3"></i>
-                                                                                                                                    <div>
-                                                                                                                                        <small class="text-muted">Vendor</small>
-                                                                                                                                        <div class="fw-bold">${d.vendor || '-'}</div>
-                                                                                                                                    </div>
-                                                                                                                                </div>
-                                                                                                                            </div>
-                                                                                                                            <div class="col-md-6">
-                                                                                                                                <div class="d-flex align-items-center">
-                                                                                                                                    <i class="fas fa-wallet text-success me-3"></i>
-                                                                                                                                    <div>
-                                                                                                                                        <small class="text-muted">Budget</small>
-                                                                                                                                        <div class="fw-bold">${d.budget || '-'}</div>
-                                                                                                                                    </div>
-                                                                                                                                </div>
-                                                                                                                            </div>
-                                                                                                                            <div class="col-md-6">
-                                                                                                                                <div class="d-flex align-items-center">
-                                                                                                                                    <i class="fas fa-credit-card text-danger me-3"></i>
-                                                                                                                                    <div>
-                                                                                                                                        <small class="text-muted">Payment Method</small>
-                                                                                                                                        <div class="fw-bold">${d.method || '-'}</div>
-                                                                                                                                    </div>
-                                                                                                                                </div>
-                                                                                                                            </div>
-                                                                                                                            <div class="col-md-6">
-                                                                                                                                <div class="d-flex align-items-center">
-                                                                                                                                    <i class="fas fa-hashtag text-secondary me-3"></i>
-                                                                                                                                    <div>
-                                                                                                                                        <small class="text-muted">Reference Number</small>
-                                                                                                                                        <div class="fw-bold">${d.reference || '-'}</div>
-                                                                                                                                    </div>
-                                                                                                                                </div>
-                                                                                                                            </div>
-                                                                                                                            <div class="col-md-6">
-                                                                                                                                <div class="d-flex align-items-center">
-                                                                                                                                    <i class="fas fa-receipt text-primary me-3"></i>
-                                                                                                                                    <div>
-                                                                                                                                        <small class="text-muted">Receipt Number</small>
-                                                                                                                                        <div class="fw-bold">${d.receipt || '-'}</div>
-                                                                                                                                    </div>
-                                                                                                                                </div>
-                                                                                                                            </div>
-                                                                                                                            <div class="col-md-6">
-                                                                                                                                <div class="d-flex align-items-center">
-                                                                                                                                    <i class="fas fa-flag text-${statusClass} me-3"></i>
-                                                                                                                                    <div>
-                                                                                                                                        <small class="text-muted">Status</small>
-                                                                                                                                        <div class="fw-bold">
-                                                                                                                                            <span class="badge bg-${statusClass}">${d.status || '-'}</span>
+                                                                                                                                <div class="col-md-4">
+                                                                                                                                    <div class="card bg-${categoryClass} text-white h-100">
+                                                                                                                                        <div class="card-body text-center">
+                                                                                                                                            <i class="fas fa-tag fa-2x mb-2"></i>
+                                                                                                                                            <h6 class="card-title">Category</h6>
+                                                                                                                                            <h4 class="mb-0">${d.category || '-'}</h4>
                                                                                                                                         </div>
                                                                                                                                     </div>
                                                                                                                                 </div>
                                                                                                                             </div>
                                                                                                                         </div>
-                                                                                                                    </div>
-                                                                                                                </div>
-                                                                                                            </div>
 
-                                                                                                            <!-- Description and Notes -->
-                                                                                                            ${(d.description && d.description !== '-') || (d.notes && d.notes !== '-') ? `
-                                                                                                            <div class="col-12">
-                                                                                                                <div class="row g-3">
-                                                                                                                    ${d.description && d.description !== '-' ? `
-                                                                                                                    <div class="col-md-6">
-                                                                                                                        <div class="card">
-                                                                                                                            <div class="card-header bg-light">
-                                                                                                                                <h6 class="mb-0"><i class="fas fa-align-left me-2"></i>Description</h6>
-                                                                                                                            </div>
-                                                                                                                            <div class="card-body">
-                                                                                                                                <p class="mb-0">${d.description}</p>
+                                                                                                                        <!-- Expense Details -->
+                                                                                                                        <div class="col-12">
+                                                                                                                            <div class="card">
+                                                                                                                                <div class="card-header bg-light">
+                                                                                                                                    <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Expense Information</h6>
+                                                                                                                                </div>
+                                                                                                                                <div class="card-body">
+                                                                                                                                    <div class="row g-3">
+                                                                                                                                        <div class="col-md-6">
+                                                                                                                                            <div class="d-flex align-items-center">
+                                                                                                                                                <i class="fas fa-calendar text-primary me-3"></i>
+                                                                                                                                                <div>
+                                                                                                                                                    <small class="text-muted">Date</small>
+                                                                                                                                                    <div class="fw-bold">${d.date || '-'}</div>
+                                                                                                                                                </div>
+                                                                                                                                            </div>
+                                                                                                                                        </div>
+                                                                                                                                        <div class="col-md-6">
+                                                                                                                                            <div class="d-flex align-items-center">
+                                                                                                                                                <i class="fas fa-file-invoice text-info me-3"></i>
+                                                                                                                                                <div>
+                                                                                                                                                    <small class="text-muted">Expense Name</small>
+                                                                                                                                                    <div class="fw-bold">${d.name || '-'}</div>
+                                                                                                                                                </div>
+                                                                                                                                            </div>
+                                                                                                                                        </div>
+                                                                                                                                        <div class="col-md-6">
+                                                                                                                                            <div class="d-flex align-items-center">
+                                                                                                                                                <i class="fas fa-building text-warning me-3"></i>
+                                                                                                                                                <div>
+                                                                                                                                                    <small class="text-muted">Vendor</small>
+                                                                                                                                                    <div class="fw-bold">${d.vendor || '-'}</div>
+                                                                                                                                                </div>
+                                                                                                                                            </div>
+                                                                                                                                        </div>
+                                                                                                                                        <div class="col-md-6">
+                                                                                                                                            <div class="d-flex align-items-center">
+                                                                                                                                                <i class="fas fa-wallet text-success me-3"></i>
+                                                                                                                                                <div>
+                                                                                                                                                    <small class="text-muted">Budget</small>
+                                                                                                                                                    <div class="fw-bold">${d.budget || '-'}</div>
+                                                                                                                                                </div>
+                                                                                                                                            </div>
+                                                                                                                                        </div>
+                                                                                                                                        <div class="col-md-6">
+                                                                                                                                            <div class="d-flex align-items-center">
+                                                                                                                                                <i class="fas fa-credit-card text-danger me-3"></i>
+                                                                                                                                                <div>
+                                                                                                                                                    <small class="text-muted">Payment Method</small>
+                                                                                                                                                    <div class="fw-bold">${d.method || '-'}</div>
+                                                                                                                                                </div>
+                                                                                                                                            </div>
+                                                                                                                                        </div>
+                                                                                                                                        <div class="col-md-6">
+                                                                                                                                            <div class="d-flex align-items-center">
+                                                                                                                                                <i class="fas fa-hashtag text-secondary me-3"></i>
+                                                                                                                                                <div>
+                                                                                                                                                    <small class="text-muted">Reference Number</small>
+                                                                                                                                                    <div class="fw-bold">${d.reference || '-'}</div>
+                                                                                                                                                </div>
+                                                                                                                                            </div>
+                                                                                                                                        </div>
+                                                                                                                                        <div class="col-md-6">
+                                                                                                                                            <div class="d-flex align-items-center">
+                                                                                                                                                <i class="fas fa-receipt text-primary me-3"></i>
+                                                                                                                                                <div>
+                                                                                                                                                    <small class="text-muted">Receipt Number</small>
+                                                                                                                                                    <div class="fw-bold">${d.receipt || '-'}</div>
+                                                                                                                                                </div>
+                                                                                                                                            </div>
+                                                                                                                                        </div>
+                                                                                                                                        <div class="col-md-6">
+                                                                                                                                            <div class="d-flex align-items-center">
+                                                                                                                                                <i class="fas fa-flag text-${statusClass} me-3"></i>
+                                                                                                                                                <div>
+                                                                                                                                                    <small class="text-muted">Status</small>
+                                                                                                                                                    <div class="fw-bold">
+                                                                                                                                                        <span class="badge bg-${statusClass}">${d.status || '-'}</span>
+                                                                                                                                                    </div>
+                                                                                                                                                </div>
+                                                                                                                                            </div>
+                                                                                                                                        </div>
+                                                                                                                                    </div>
+                                                                                                                                </div>
                                                                                                                             </div>
                                                                                                                         </div>
-                                                                                                                    </div>
-                                                                                                                    ` : ''}
-                                                                                                                    ${d.notes && d.notes !== '-' ? `
-                                                                                                                    <div class="col-md-6">
-                                                                                                                        <div class="card">
-                                                                                                                            <div class="card-header bg-light">
-                                                                                                                                <h6 class="mb-0"><i class="fas fa-sticky-note me-2"></i>Notes</h6>
-                                                                                                                            </div>
-                                                                                                                            <div class="card-body">
-                                                                                                                                <p class="mb-0">${d.notes}</p>
+
+                                                                                                                        <!-- Description and Notes -->
+                                                                                                                        ${(d.description && d.description !== '-') || (d.notes && d.notes !== '-') ? `
+                                                                                                                        <div class="col-12">
+                                                                                                                            <div class="row g-3">
+                                                                                                                                ${d.description && d.description !== '-' ? `
+                                                                                                                                <div class="col-md-6">
+                                                                                                                                    <div class="card">
+                                                                                                                                        <div class="card-header bg-light">
+                                                                                                                                            <h6 class="mb-0"><i class="fas fa-align-left me-2"></i>Description</h6>
+                                                                                                                                        </div>
+                                                                                                                                        <div class="card-body">
+                                                                                                                                            <p class="mb-0">${d.description}</p>
+                                                                                                                                        </div>
+                                                                                                                                    </div>
+                                                                                                                                </div>
+                                                                                                                                ` : ''}
+                                                                                                                                ${d.notes && d.notes !== '-' ? `
+                                                                                                                                <div class="col-md-6">
+                                                                                                                                    <div class="card">
+                                                                                                                                        <div class="card-header bg-light">
+                                                                                                                                            <h6 class="mb-0"><i class="fas fa-sticky-note me-2"></i>Notes</h6>
+                                                                                                                                        </div>
+                                                                                                                                        <div class="card-body">
+                                                                                                                                            <p class="mb-0">${d.notes}</p>
+                                                                                                                                        </div>
+                                                                                                                                    </div>
+                                                                                                                                </div>
+                                                                                                                                ` : ''}
                                                                                                                             </div>
                                                                                                                         </div>
+                                                                                                                        ` : ''}
                                                                                                                     </div>
-                                                                                                                    ` : ''}
-                                                                                                                </div>
-                                                                                                            </div>
-                                                                                                            ` : ''}
-                                                                                                        </div>
-                                                                                                    `;
+                                                                                                                `;
 
             document.getElementById('viewExpenseBody').innerHTML = html;
             new bootstrap.Modal(document.getElementById('viewExpenseModal')).show();
@@ -1465,11 +1407,11 @@
             var d = button.dataset;
             var form = document.getElementById('editExpenseForm');
             form.action = '/finance/expenses/' + d.id;
-            document.getElementById('ex_expense_name').value = d.name || '';
             document.getElementById('ex_amount').value = d.amount || 0;
             document.getElementById('ex_expense_date').value = d.date || '';
-            document.getElementById('ex_expense_category').value = d.category || '';
             document.getElementById('ex_budget_id').value = d.budgetId || '';
+            document.getElementById('ex_expense_name').value = d.name || '';
+            document.getElementById('ex_expense_category').value = d.category || '';
             document.getElementById('ex_payment_method').value = d.method || '';
             document.getElementById('ex_vendor').value = d.vendor || '';
             document.getElementById('ex_reference_number').value = d.reference || '';
@@ -1577,22 +1519,9 @@
                         lineItems: JSON.parse(selectedOption.dataset.lineItems || '[]')
                     };
 
-                    // Update expense name suggestions
-                    const datalist = document.getElementById('expenseLineItems');
-                    if (datalist) {
-                        datalist.innerHTML = '';
-                        currentBudget.lineItems.forEach(item => {
-                            const option = document.createElement('option');
-                            option.value = item.item_name;
-                            datalist.appendChild(option);
-                        });
-                    }
-
-                    // Auto-select category if budget has a purpose
-                    const categorySelect = document.getElementById('expense_category');
-                    if (categorySelect && currentBudget.purpose) {
-                        categorySelect.value = currentBudget.purpose;
-                    }
+                    // Auto-sync category and name with budget
+                    document.getElementById('expense_name').value = selectedOption.text.split('(')[0].trim();
+                    document.getElementById('expense_category').value = currentBudget.purpose;
 
                     // Set max attribute on amount input to prevent exceeding budget total
                     if (currentBudget.total > 0) {
@@ -1889,12 +1818,12 @@
                     const fundDiv = document.createElement('div');
                     fundDiv.className = 'd-flex justify-content-between align-items-center mb-2 p-2 border rounded bg-white';
                     fundDiv.innerHTML = `
-                                                                                                                <div>
-                                                                                                                    <i class="fas fa-coins me-2 text-primary"></i>
-                                                                                                                    <strong>${formatOfferingType(type)}</strong>
-                                                                                                                </div>
-                                                                                                                <span class="text-success fw-bold">TZS ${amountValue.toLocaleString()}</span>
-                                                                                                            `;
+                                                                                                                            <div>
+                                                                                                                                <i class="fas fa-coins me-2 text-primary"></i>
+                                                                                                                                <strong>${formatOfferingType(type)}</strong>
+                                                                                                                            </div>
+                                                                                                                            <span class="text-success fw-bold">TZS ${amountValue.toLocaleString()}</span>
+                                                                                                                        `;
                     availableFundsDisplay.appendChild(fundDiv);
                 });
 
@@ -1902,9 +1831,9 @@
                 const totalDiv = document.createElement('div');
                 totalDiv.className = 'd-flex justify-content-between align-items-center mt-2 p-2 border rounded bg-light fw-bold';
                 totalDiv.innerHTML = `
-                                                                                                            <span>TOTAL AVAILABLE</span>
-                                                                                                            <span class="text-primary">TZS ${totalAvailable.toLocaleString()}</span>
-                                                                                                        `;
+                                                                                                                        <span>TOTAL AVAILABLE</span>
+                                                                                                                        <span class="text-primary">TZS ${totalAvailable.toLocaleString()}</span>
+                                                                                                                    `;
                 availableFundsDisplay.appendChild(totalDiv);
             }
 
@@ -1934,9 +1863,9 @@
                     const div = document.createElement('div');
                     div.className = 'd-flex justify-content-between align-items-center mb-2 p-2 border rounded bg-primary bg-opacity-10';
                     div.innerHTML = `
-                                                                                                                <span class="fw-bold">${data.primary_offering_type.replace('_', ' ').toUpperCase()} <span class="badge bg-primary">Primary</span></span>
-                                                                                                                <span class="text-primary fw-bold">TZS ${primaryAmount.toLocaleString()}</span>
-                                                                                                            `;
+                                                                                                                            <span class="fw-bold">${data.primary_offering_type.replace('_', ' ').toUpperCase()} <span class="badge bg-primary">Primary</span></span>
+                                                                                                                            <span class="text-primary fw-bold">TZS ${primaryAmount.toLocaleString()}</span>
+                                                                                                                        `;
                     primaryFundsDiv.appendChild(div);
 
                     // Show how much will be used from primary
@@ -1946,9 +1875,9 @@
                             const usedDiv = document.createElement('div');
                             usedDiv.className = 'd-flex justify-content-between align-items-center mb-2 p-2 border rounded bg-info bg-opacity-10';
                             usedDiv.innerHTML = `
-                                                                                                                        <span>Amount to be used:</span>
-                                                                                                                        <span class="text-info fw-bold">TZS ${primaryAllocation.amount.toLocaleString()}</span>
-                                                                                                                    `;
+                                                                                                                                    <span>Amount to be used:</span>
+                                                                                                                                    <span class="text-info fw-bold">TZS ${primaryAllocation.amount.toLocaleString()}</span>
+                                                                                                                                `;
                             primaryFundsDiv.appendChild(usedDiv);
                         }
                     }
@@ -1962,9 +1891,9 @@
                     const shortfallDiv = document.createElement('div');
                     shortfallDiv.className = 'd-flex justify-content-between align-items-center mb-2 p-2 border rounded bg-danger bg-opacity-25 fw-bold';
                     shortfallDiv.innerHTML = `
-                                                                                                                <span>SHORTFALL AMOUNT</span>
-                                                                                                                <span class="text-danger">TZS ${data.shortfall.toLocaleString()}</span>
-                                                                                                            `;
+                                                                                                                            <span>SHORTFALL AMOUNT</span>
+                                                                                                                            <span class="text-danger">TZS ${data.shortfall.toLocaleString()}</span>
+                                                                                                                        `;
                     additionalFundingDiv.appendChild(shortfallDiv);
 
                     // Show available offering types for selection
@@ -1977,9 +1906,9 @@
                             const typeDiv = document.createElement('div');
                             typeDiv.className = 'd-flex justify-content-between align-items-center mb-1 p-2 border rounded';
                             typeDiv.innerHTML = `
-                                                                                                                        <span>${type.replace('_', ' ').toUpperCase()}</span>
-                                                                                                                        <span class="text-success">TZS ${amount.toLocaleString()}</span>
-                                                                                                                    `;
+                                                                                                                                    <span>${type.replace('_', ' ').toUpperCase()}</span>
+                                                                                                                                    <span class="text-success">TZS ${amount.toLocaleString()}</span>
+                                                                                                                                `;
                             availableDiv.appendChild(typeDiv);
                         });
 
@@ -2013,15 +1942,15 @@
                 }
 
                 primaryInfoDiv.innerHTML = `
-                                                                                                            <div class="d-flex align-items-center">
-                                                                                                                <i class="fas fa-info-circle me-2"></i>
-                                                                                                                <div>
-                                                                                                                    <strong>Primary Offering (${formatOfferingType(primaryType)}) will be used:</strong>
-                                                                                                                    <span class="ms-2 fw-bold text-primary">TZS ${usedAmount.toLocaleString()}</span>
-                                                                                                                    <span class="text-muted ms-2">(Available: TZS ${availableAmount.toLocaleString()})</span>
-                                                                                                                </div>
-                                                                                                            </div>
-                                                                                                        `;
+                                                                                                                        <div class="d-flex align-items-center">
+                                                                                                                            <i class="fas fa-info-circle me-2"></i>
+                                                                                                                            <div>
+                                                                                                                                <strong>Primary Offering (${formatOfferingType(primaryType)}) will be used:</strong>
+                                                                                                                                <span class="ms-2 fw-bold text-primary">TZS ${usedAmount.toLocaleString()}</span>
+                                                                                                                                <span class="text-muted ms-2">(Available: TZS ${availableAmount.toLocaleString()})</span>
+                                                                                                                            </div>
+                                                                                                                        </div>
+                                                                                                                    `;
             }
 
             function showManualFundingSelection(availableTypes, shortfall, primaryOfferingType, primaryOfferingUsed) {
@@ -2069,30 +1998,30 @@
                 const inputDiv = document.createElement('div');
                 inputDiv.className = 'col-md-12 mb-3';
                 inputDiv.innerHTML = `
-                                                                                                            <div class="card border border-primary">
-                                                                                                                <div class="card-body">
-                                                                                                                    <div class="row align-items-center">
-                                                                                                                        <div class="col-md-5">
-                                                                                                                            <label class="form-label">Primary Offering Type</label>
-                                                                                                                            <input type="text" class="form-control" value="${formatOfferingType(primaryType)}" readonly style="background-color: #e7f3ff;">
-                                                                                                                            <input type="hidden" name="additional_funding[${inputIndex}][offering_type]" value="${primaryType}">
+                                                                                                                        <div class="card border border-primary">
+                                                                                                                            <div class="card-body">
+                                                                                                                                <div class="row align-items-center">
+                                                                                                                                    <div class="col-md-5">
+                                                                                                                                        <label class="form-label">Primary Offering Type</label>
+                                                                                                                                        <input type="text" class="form-control" value="${formatOfferingType(primaryType)}" readonly style="background-color: #e7f3ff;">
+                                                                                                                                        <input type="hidden" name="additional_funding[${inputIndex}][offering_type]" value="${primaryType}">
+                                                                                                                                    </div>
+                                                                                                                                    <div class="col-md-5">
+                                                                                                                                        <label class="form-label">Amount (TZS)</label>
+                                                                                                                                        <input type="number" class="form-control funding-amount-input" 
+                                                                                                                                               name="additional_funding[${inputIndex}][amount]" 
+                                                                                                                                               value="${amount}" 
+                                                                                                                                               readonly 
+                                                                                                                                               style="background-color: #e7f3ff;">
+                                                                                                                                        <small class="text-muted"><i class="fas fa-info-circle"></i> Automatically used from primary offering</small>
+                                                                                                                                    </div>
+                                                                                                                                    <div class="col-md-2">
+                                                                                                                                        <span class="badge bg-primary">Primary</span>
+                                                                                                                                    </div>
+                                                                                                                                </div>
+                                                                                                                            </div>
                                                                                                                         </div>
-                                                                                                                        <div class="col-md-5">
-                                                                                                                            <label class="form-label">Amount (TZS)</label>
-                                                                                                                            <input type="number" class="form-control funding-amount-input" 
-                                                                                                                                   name="additional_funding[${inputIndex}][amount]" 
-                                                                                                                                   value="${amount}" 
-                                                                                                                                   readonly 
-                                                                                                                                   style="background-color: #e7f3ff;">
-                                                                                                                            <small class="text-muted"><i class="fas fa-info-circle"></i> Automatically used from primary offering</small>
-                                                                                                                        </div>
-                                                                                                                        <div class="col-md-2">
-                                                                                                                            <span class="badge bg-primary">Primary</span>
-                                                                                                                        </div>
-                                                                                                                    </div>
-                                                                                                                </div>
-                                                                                                            </div>
-                                                                                                        `;
+                                                                                                                    `;
 
                 inputsContainer.appendChild(inputDiv);
             }
@@ -2104,37 +2033,37 @@
                 const inputDiv = document.createElement('div');
                 inputDiv.className = 'col-md-12 mb-3';
                 inputDiv.innerHTML = `
-                                                                                                            <div class="card border">
-                                                                                                                <div class="card-body">
-                                                                                                                    <div class="row align-items-end">
-                                                                                                                        <div class="col-md-5">
-                                                                                                                            <label class="form-label">Offering Type *</label>
-                                                                                                                            <select class="form-select funding-type-select" name="additional_funding[${inputIndex}][offering_type]" required>
-                                                                                                                                <option value="">Select Offering Type</option>
-                                                                                                                                ${Object.keys(availableTypes).map(type => {
+                                                                                                                        <div class="card border">
+                                                                                                                            <div class="card-body">
+                                                                                                                                <div class="row align-items-end">
+                                                                                                                                    <div class="col-md-5">
+                                                                                                                                        <label class="form-label">Offering Type *</label>
+                                                                                                                                        <select class="form-select funding-type-select" name="additional_funding[${inputIndex}][offering_type]" required>
+                                                                                                                                            <option value="">Select Offering Type</option>
+                                                                                                                                            ${Object.keys(availableTypes).map(type => {
                     const available = parseFloat(availableTypes[type]) || 0;
                     return `<option value="${type}" data-available="${available}">${formatOfferingType(type)} (Available: TZS ${available.toLocaleString()})</option>`;
                 }).join('')}
-                                                                                                                            </select>
+                                                                                                                                        </select>
+                                                                                                                                    </div>
+                                                                                                                                    <div class="col-md-5">
+                                                                                                                                        <label class="form-label">Amount (TZS) *</label>
+                                                                                                                                        <input type="number" class="form-control funding-amount-input" 
+                                                                                                                                               name="additional_funding[${inputIndex}][amount]" 
+                                                                                                                                               min="0" step="0.01" 
+                                                                                                                                               placeholder="Enter amount"
+                                                                                                                                               required>
+                                                                                                                                        <small class="text-muted">Max available: <span class="max-available">TZS 0</span></small>
+                                                                                                                                    </div>
+                                                                                                                                    <div class="col-md-2">
+                                                                                                                                        <button type="button" class="btn btn-outline-danger w-100" onclick="removeFundingInput(this)" title="Remove">
+                                                                                                                                            <i class="fas fa-trash"></i>
+                                                                                                                                        </button>
+                                                                                                                                    </div>
+                                                                                                                                </div>
+                                                                                                                            </div>
                                                                                                                         </div>
-                                                                                                                        <div class="col-md-5">
-                                                                                                                            <label class="form-label">Amount (TZS) *</label>
-                                                                                                                            <input type="number" class="form-control funding-amount-input" 
-                                                                                                                                   name="additional_funding[${inputIndex}][amount]" 
-                                                                                                                                   min="0" step="0.01" 
-                                                                                                                                   placeholder="Enter amount"
-                                                                                                                                   required>
-                                                                                                                            <small class="text-muted">Max available: <span class="max-available">TZS 0</span></small>
-                                                                                                                        </div>
-                                                                                                                        <div class="col-md-2">
-                                                                                                                            <button type="button" class="btn btn-outline-danger w-100" onclick="removeFundingInput(this)" title="Remove">
-                                                                                                                                <i class="fas fa-trash"></i>
-                                                                                                                            </button>
-                                                                                                                        </div>
-                                                                                                                    </div>
-                                                                                                                </div>
-                                                                                                            </div>
-                                                                                                        `;
+                                                                                                                    `;
 
                 inputsContainer.appendChild(inputDiv);
 
@@ -2263,9 +2192,9 @@
                     const div = document.createElement('div');
                     div.className = 'd-flex justify-content-between align-items-center mb-2 p-2 border rounded';
                     div.innerHTML = `
-                                                                                                                <span class="fw-bold">${type.replace('_', ' ').toUpperCase()}</span>
-                                                                                                                <span class="text-success">TZS ${amount.toLocaleString()}</span>
-                                                                                                            `;
+                                                                                                                            <span class="fw-bold">${type.replace('_', ' ').toUpperCase()}</span>
+                                                                                                                            <span class="text-success">TZS ${amount.toLocaleString()}</span>
+                                                                                                                        `;
                     currentFundsDiv.appendChild(div);
                 });
 
@@ -2273,9 +2202,9 @@
                 const totalDiv = document.createElement('div');
                 totalDiv.className = 'd-flex justify-content-between align-items-center mb-2 p-2 border rounded bg-light fw-bold';
                 totalDiv.innerHTML = `
-                                                                                                            <span>TOTAL AVAILABLE</span>
-                                                                                                            <span class="text-primary">TZS ${totalAvailable.toLocaleString()}</span>
-                                                                                                        `;
+                                                                                                                        <span>TOTAL AVAILABLE</span>
+                                                                                                                        <span class="text-primary">TZS ${totalAvailable.toLocaleString()}</span>
+                                                                                                                    `;
                 currentFundsDiv.appendChild(totalDiv);
 
                 // Calculate and display required additional funds
@@ -2287,9 +2216,9 @@
                         const div = document.createElement('div');
                         div.className = 'd-flex justify-content-between align-items-center mb-2 p-2 border rounded bg-warning bg-opacity-25';
                         div.innerHTML = `
-                                                                                                                    <span class="fw-bold">${fund.offering_type.replace('_', ' ').toUpperCase()}</span>
-                                                                                                                    <span class="text-warning fw-bold">TZS ${fund.amount.toLocaleString()}</span>
-                                                                                                                `;
+                                                                                                                                <span class="fw-bold">${fund.offering_type.replace('_', ' ').toUpperCase()}</span>
+                                                                                                                                <span class="text-warning fw-bold">TZS ${fund.amount.toLocaleString()}</span>
+                                                                                                                            `;
                         requiredFundsDiv.appendChild(div);
                     });
                 }
@@ -2298,9 +2227,9 @@
                 const shortfallDiv = document.createElement('div');
                 shortfallDiv.className = 'd-flex justify-content-between align-items-center mb-2 p-2 border rounded bg-danger bg-opacity-25 fw-bold';
                 shortfallDiv.innerHTML = `
-                                                                                                            <span>TOTAL SHORTFALL</span>
-                                                                                                            <span class="text-danger">TZS ${shortfall.toLocaleString()}</span>
-                                                                                                        `;
+                                                                                                                        <span>TOTAL SHORTFALL</span>
+                                                                                                                        <span class="text-danger">TZS ${shortfall.toLocaleString()}</span>
+                                                                                                                    `;
                 requiredFundsDiv.appendChild(shortfallDiv);
             }
 
@@ -2808,14 +2737,14 @@
                                 icon: 'error',
                                 title: 'Invalid Expense Amount',
                                 html: `<div class="text-start">
-                                                                                                                            <p><strong>The expense amount cannot exceed the budget total amount.</strong></p>
-                                                                                                                            <ul class="text-start">
-                                                                                                                                <li>Expense Amount: <strong class="text-danger">TZS ${expenseAmount.toLocaleString()}</strong></li>
-                                                                                                                                <li>Budget Total: <strong class="text-info">TZS ${budgetTotal.toLocaleString()}</strong></li>
-                                                                                                                                <li>Excess: <strong class="text-danger">TZS ${(expenseAmount - budgetTotal).toLocaleString()}</strong></li>
-                                                                                                                            </ul>
-                                                                                                                            <p class="mt-2">Please reduce the expense amount to be within the budget limit.</p>
-                                                                                                                        </div>`,
+                                                                                                                                        <p><strong>The expense amount cannot exceed the budget total amount.</strong></p>
+                                                                                                                                        <ul class="text-start">
+                                                                                                                                            <li>Expense Amount: <strong class="text-danger">TZS ${expenseAmount.toLocaleString()}</strong></li>
+                                                                                                                                            <li>Budget Total: <strong class="text-info">TZS ${budgetTotal.toLocaleString()}</strong></li>
+                                                                                                                                            <li>Excess: <strong class="text-danger">TZS ${(expenseAmount - budgetTotal).toLocaleString()}</strong></li>
+                                                                                                                                        </ul>
+                                                                                                                                        <p class="mt-2">Please reduce the expense amount to be within the budget limit.</p>
+                                                                                                                                    </div>`,
                                 confirmButtonText: 'OK',
                                 confirmButtonColor: '#dc3545',
                                 width: '500px'
@@ -2838,16 +2767,16 @@
                                 icon: 'error',
                                 title: 'Would Exceed Budget Limit',
                                 html: `<div class="text-start">
-                                                                                                                            <p><strong>This expense would exceed the budget limit when combined with existing expenses.</strong></p>
-                                                                                                                            <ul class="text-start">
-                                                                                                                                <li>Expense Amount: <strong>TZS ${expenseAmount.toLocaleString()}</strong></li>
-                                                                                                                                <li>Already Spent: <strong>TZS ${currentSpent.toLocaleString()}</strong></li>
-                                                                                                                                <li>Pending Expenses: <strong>TZS ${pendingExpenses.toLocaleString()}</strong></li>
-                                                                                                                                <li>Budget Total: <strong>TZS ${budgetTotal.toLocaleString()}</strong></li>
-                                                                                                                                <li>Remaining Budget: <strong class="text-info">TZS ${remainingBudget.toLocaleString()}</strong></li>
-                                                                                                                            </ul>
-                                                                                                                            <p class="mt-2">Maximum expense amount allowed: <strong class="text-success">TZS ${remainingBudget.toLocaleString()}</strong></p>
-                                                                                                                        </div>`,
+                                                                                                                                        <p><strong>This expense would exceed the budget limit when combined with existing expenses.</strong></p>
+                                                                                                                                        <ul class="text-start">
+                                                                                                                                            <li>Expense Amount: <strong>TZS ${expenseAmount.toLocaleString()}</strong></li>
+                                                                                                                                            <li>Already Spent: <strong>TZS ${currentSpent.toLocaleString()}</strong></li>
+                                                                                                                                            <li>Pending Expenses: <strong>TZS ${pendingExpenses.toLocaleString()}</strong></li>
+                                                                                                                                            <li>Budget Total: <strong>TZS ${budgetTotal.toLocaleString()}</strong></li>
+                                                                                                                                            <li>Remaining Budget: <strong class="text-info">TZS ${remainingBudget.toLocaleString()}</strong></li>
+                                                                                                                                        </ul>
+                                                                                                                                        <p class="mt-2">Maximum expense amount allowed: <strong class="text-success">TZS ${remainingBudget.toLocaleString()}</strong></p>
+                                                                                                                                    </div>`,
                                 confirmButtonText: 'OK',
                                 confirmButtonColor: '#dc3545',
                                 width: '500px'

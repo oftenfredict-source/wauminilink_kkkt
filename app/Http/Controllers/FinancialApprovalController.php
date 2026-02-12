@@ -23,7 +23,7 @@ class FinancialApprovalController extends Controller
     {
         // Middleware is applied at route level
     }
-    
+
     /**
      * Check if user can view approval dashboard (secretary can view but not approve)
      */
@@ -32,28 +32,28 @@ class FinancialApprovalController extends Controller
         if (!auth()->check()) {
             abort(401, 'Please log in to access this page.');
         }
-        
+
         $user = auth()->user();
-        
+
         // Secretary, Pastor, Admin can view
         $canView = false;
-        
+
         if ($user->role === 'secretary') {
             $canView = true;
         }
-        
+
         if ($user->role === 'pastor') {
             $canView = true;
         }
-        
+
         if ($user->role === 'admin') {
             $canView = true;
         }
-        
+
         if ($user->can_approve_finances) {
             $canView = true;
         }
-        
+
         if (!$canView) {
             abort(403, 'Unauthorized access. Only Secretaries, Pastors and authorized users can view financial approval records.');
         }
@@ -67,32 +67,32 @@ class FinancialApprovalController extends Controller
         if (!auth()->check()) {
             abort(401, 'Please log in to access this page.');
         }
-        
+
         $user = auth()->user();
-        
+
         // Simple permission check - secretary, pastor/admin can approve
         $canApprove = false;
-        
+
         // Check if user is secretary
         if ($user->role === 'secretary') {
             $canApprove = true;
         }
-        
+
         // Check if user has explicit approval permission
         if ($user->can_approve_finances) {
             $canApprove = true;
         }
-        
+
         // Check if user is pastor
         if ($user->role === 'pastor') {
             $canApprove = true;
         }
-        
+
         // Check if user is admin
         if ($user->role === 'admin') {
             $canApprove = true;
         }
-        
+
         if (!$canApprove) {
             abort(403, 'Unauthorized access. Only Secretaries, Pastors and authorized users can approve financial records.');
         }
@@ -105,115 +105,122 @@ class FinancialApprovalController extends Controller
     {
         $this->checkViewPermission();
         $today = Carbon::today();
-        
+
         // Get pending records (show all pending, not just today's)
         $pendingTithes = Tithe::with(['member', 'approver', 'evangelismLeader', 'campus'])
             ->where('approval_status', 'pending')
             ->orderBy('created_at', 'desc')
             ->get();
-            
+
         $pendingOfferings = Offering::with(['member', 'approver', 'evangelismLeader', 'campus'])
             ->where('approval_status', 'pending')
             ->orderBy('created_at', 'desc')
             ->get();
-            
+
         $pendingDonations = Donation::with(['member', 'approver'])
             ->where('approval_status', 'pending')
             ->orderBy('created_at', 'desc')
             ->get();
-            
+
         // Get expenses that have sufficient funds or have additional funding provided
         // Show all pending expenses, not just today's
         $pendingExpenses = Expense::with(['budget', 'approver'])
             ->where('approval_status', 'pending')
-            ->where(function($query) {
+            ->where(function ($query) {
                 $query->whereNull('budget_id') // Non-budget expenses are always fundable
-                      ->orWhere('approval_notes', 'LIKE', '%additional funding%') // Include expenses with additional funding
-                      ->orWhere('approval_notes', 'LIKE', '%Fund allocation with additional funding%') // Include expenses with additional funding
-                      ->orWhereHas('budget', function($budgetQuery) {
-                          // Only include budget expenses that have sufficient allocated funds
-                          $budgetQuery->whereRaw('
+                    ->orWhere('approval_notes', 'LIKE', '%additional funding%') // Include expenses with additional funding
+                    ->orWhere('approval_notes', 'LIKE', '%Fund allocation with additional funding%') // Include expenses with additional funding
+                    ->orWhereHas('budget', function ($budgetQuery) {
+                        // Only include budget expenses that have sufficient allocated funds
+                        $budgetQuery->whereRaw('
                               (SELECT COALESCE(SUM(allocated_amount - used_amount), 0) 
                                FROM budget_offering_allocations 
                                WHERE budget_id = budgets.id) >= expenses.amount
                           ');
-                      });
+                    });
             })
             ->orderBy('created_at', 'desc')
             ->get();
-            
+
         $pendingBudgets = Budget::with(['approver'])
             ->where('approval_status', 'pending')
             ->orderBy('created_at', 'desc')
             ->get();
-            
+
         // Get pending pledge payments (not pledges themselves)
         $pendingPledgePayments = PledgePayment::with(['pledge.member', 'approver'])
             ->where('approval_status', 'pending')
             ->orderBy('created_at', 'desc')
             ->get();
-            
+
         // Get pending community offerings (from Evangelism Leader, ready for Secretary)
         $pendingCommunityOfferings = CommunityOffering::with(['community', 'service', 'evangelismLeader', 'churchElder'])
             ->where('status', 'pending_secretary')
             ->orderBy('handover_to_evangelism_at', 'asc')
             ->get();
 
-        // Get summary statistics
-        $totalPending = $pendingTithes->count() + $pendingOfferings->count() + 
-                       $pendingDonations->count() + $pendingExpenses->count() + 
-                       $pendingBudgets->count() + $pendingPledgePayments->count() +
-                       $pendingCommunityOfferings->count();
+        // Get pending funding requests
+        $pendingFundingRequests = FundingRequest::with(['expense', 'budget', 'approver'])
+            ->where('status', 'pending')
+            ->orderBy('created_at', 'desc')
+            ->get();
 
-        $totalPendingAmount = $pendingTithes->sum('amount') + $pendingOfferings->sum('amount') + 
-                             $pendingDonations->sum('amount') + $pendingExpenses->sum('amount') +
-                             $pendingPledgePayments->sum('amount') + $pendingCommunityOfferings->sum('amount');
+        // Get summary statistics
+        $totalPending = $pendingTithes->count() + $pendingOfferings->count() +
+            $pendingDonations->count() + $pendingExpenses->count() +
+            $pendingBudgets->count() + $pendingPledgePayments->count() +
+            $pendingCommunityOfferings->count() + $pendingFundingRequests->count();
+
+        $totalPendingAmount = $pendingTithes->sum('amount') + $pendingOfferings->sum('amount') +
+            $pendingDonations->sum('amount') + $pendingExpenses->sum('amount') +
+            $pendingPledgePayments->sum('amount') + $pendingCommunityOfferings->sum('amount') +
+            $pendingFundingRequests->sum('requested_amount');
 
         // Get recent approvals (last 7 days)
         $recentApprovals = collect();
-        
+
         $recentApprovals = $recentApprovals->merge(
             Tithe::with(['member', 'approver'])
                 ->where('approval_status', 'approved')
                 ->where('approved_at', '>=', Carbon::now()->subDays(7))
                 ->get()
-                ->map(function($item) {
+                ->map(function ($item) {
                     $item->type = 'Tithe';
                     $item->date = $item->tithe_date;
                     return $item;
                 })
         );
-        
+
         $recentApprovals = $recentApprovals->merge(
             Offering::with(['member', 'approver'])
                 ->where('approval_status', 'approved')
                 ->where('approved_at', '>=', Carbon::now()->subDays(7))
                 ->get()
-                ->map(function($item) {
+                ->map(function ($item) {
                     $item->type = 'Offering';
                     $item->date = $item->offering_date;
                     return $item;
                 })
         );
-        
+
         $recentApprovals = $recentApprovals->merge(
             Donation::with(['member', 'approver'])
                 ->where('approval_status', 'approved')
                 ->where('approved_at', '>=', Carbon::now()->subDays(7))
                 ->get()
-                ->map(function($item) {
+                ->map(function ($item) {
                     $item->type = 'Donation';
                     $item->date = $item->donation_date;
                     return $item;
                 })
         );
-        
+
         $recentApprovals = $recentApprovals->merge(
             PledgePayment::with(['pledge.member', 'approver'])
                 ->where('approval_status', 'approved')
                 ->where('approved_at', '>=', Carbon::now()->subDays(7))
                 ->get()
-                ->map(function($item) {
+                ->map(function ($item) {
                     $item->type = 'Pledge Payment';
                     $item->date = $item->payment_date;
                     $item->member = $item->pledge->member ?? null;
@@ -223,16 +230,16 @@ class FinancialApprovalController extends Controller
         );
 
         $recentApprovals = $recentApprovals->sortByDesc('approved_at')->take(10);
-        
+
         // Process recent approvals to get approver display names from Leader/Member relationship
-        $recentApprovals = $recentApprovals->map(function($record) {
+        $recentApprovals = $recentApprovals->map(function ($record) {
             if ($record->approver) {
                 $approverUser = $record->approver;
                 $approverDisplayName = $approverUser->name; // Default to user's name
-                
+
                 // Try to find the member by email match
                 $member = Member::where('email', $approverUser->email)->first();
-                
+
                 if ($member) {
                     // Check if this member is assigned as a pastor
                     $pastorLeader = Leader::with('member')
@@ -240,7 +247,7 @@ class FinancialApprovalController extends Controller
                         ->where('position', 'pastor')
                         ->where('is_active', true)
                         ->first();
-                    
+
                     if ($pastorLeader && $pastorLeader->member) {
                         $approverDisplayName = $pastorLeader->member->full_name;
                     } else {
@@ -254,33 +261,33 @@ class FinancialApprovalController extends Controller
                             ->where('position', 'pastor')
                             ->where('is_active', true)
                             ->first();
-                        
+
                         if ($activePastor && $activePastor->member) {
                             $approverDisplayName = $activePastor->member->full_name;
                         }
                     }
                 }
-                
+
                 // Add the display name as an attribute
                 $record->approver_display_name = $approverDisplayName;
             } else {
                 $record->approver_display_name = 'System';
             }
-            
+
             return $record;
         });
 
         // Get the current authenticated user
         $currentUser = auth()->user();
-        
+
         // Get the approver name - try to get from Leader/Member relationship first
         $approverName = $currentUser->name; // Default to user's name
-        
+
         // If user is a pastor, try to get the name from Leader/Member relationship
         if ($currentUser->isPastor()) {
             // Try to find the member by email match
             $member = Member::where('email', $currentUser->email)->first();
-            
+
             if ($member) {
                 // Check if this member is assigned as a pastor
                 $pastorLeader = Leader::with('member')
@@ -288,7 +295,7 @@ class FinancialApprovalController extends Controller
                     ->where('position', 'pastor')
                     ->where('is_active', true)
                     ->first();
-                
+
                 if ($pastorLeader && $pastorLeader->member) {
                     $approverName = $pastorLeader->member->full_name;
                 } else {
@@ -301,7 +308,7 @@ class FinancialApprovalController extends Controller
                     ->where('position', 'pastor')
                     ->where('is_active', true)
                     ->first();
-                
+
                 if ($activePastor && $activePastor->member) {
                     $approverName = $activePastor->member->full_name;
                 }
@@ -319,12 +326,13 @@ class FinancialApprovalController extends Controller
 
         return view('finance.approval.dashboard', compact(
             'pendingTithes',
-            'pendingOfferings', 
+            'pendingOfferings',
             'pendingDonations',
             'pendingExpenses',
             'pendingBudgets',
             'pendingPledgePayments',
             'pendingCommunityOfferings',
+            'pendingFundingRequests',
             'totalPending',
             'totalPendingAmount',
             'recentApprovals',
@@ -350,14 +358,14 @@ class FinancialApprovalController extends Controller
         // Handle pledge payments separately
         if ($request->type === 'pledge_payment') {
             $record = PledgePayment::with('pledge.member')->findOrFail($request->id);
-            
+
             $record->update([
                 'approval_status' => 'approved',
                 'approved_by' => auth()->id(),
                 'approved_at' => now(),
                 'approval_notes' => $request->approval_notes
             ]);
-            
+
             // Update the pledge's amount_paid when payment is approved
             $pledge = $record->pledge;
             $newAmountPaid = $pledge->amount_paid + $record->amount;
@@ -365,12 +373,12 @@ class FinancialApprovalController extends Controller
                 'amount_paid' => $newAmountPaid,
                 'status' => $newAmountPaid >= $pledge->pledge_amount ? 'completed' : 'active'
             ]);
-            
+
             // Send notification to member
             if ($pledge->member) {
                 $this->sendMemberApprovalNotification($record, 'pledge_payment');
             }
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Pledge payment approved successfully'
@@ -378,7 +386,7 @@ class FinancialApprovalController extends Controller
         }
 
         $model = $this->getModel($request->type);
-        
+
         // Only load member relationship for models that have it
         $query = $model->newQuery();
         if (in_array($request->type, ['tithe', 'offering', 'pledge', 'donation'])) {
@@ -390,8 +398,10 @@ class FinancialApprovalController extends Controller
         $approvalNotes = $request->approval_notes;
         if ($request->type === 'expense' && $record->approval_notes) {
             // Check if existing approval_notes contains fund breakdown
-            if (strpos($record->approval_notes, 'Fund allocation') !== false || 
-                strpos($record->approval_notes, 'additional funding') !== false) {
+            if (
+                strpos($record->approval_notes, 'Fund allocation') !== false ||
+                strpos($record->approval_notes, 'additional funding') !== false
+            ) {
                 // Preserve the original fund breakdown
                 $approvalNotes = $record->approval_notes;
                 // If user provided additional notes, append them
@@ -435,18 +445,18 @@ class FinancialApprovalController extends Controller
             'special' => 'special',
             'thanksgiving' => 'thanksgiving',
         ];
-        
+
         // Get the offering type from mapping, or use the donation type if it's a custom type
         $donationType = strtolower($donation->donation_type);
         $offeringType = $offeringTypeMapping[$donationType] ?? $donation->donation_type;
-        
+
         // If it's a custom donation type that doesn't match standard offering types,
         // check if it matches any existing offering type (case-insensitive)
         if (!isset($offeringTypeMapping[$donationType])) {
             $existingOfferingType = Offering::whereRaw('LOWER(offering_type) = ?', [strtolower($donation->donation_type)])
                 ->where('approval_status', 'approved')
                 ->value('offering_type');
-            
+
             if ($existingOfferingType) {
                 $offeringType = $existingOfferingType;
             } else {
@@ -454,18 +464,18 @@ class FinancialApprovalController extends Controller
                 $offeringType = 'general';
             }
         }
-        
+
         // Check if an offering was already created from this donation
         // We'll check by looking for an offering with the same amount, date, and notes containing donation ID
         $existingOffering = Offering::where('amount', $donation->amount)
             ->where('offering_date', $donation->donation_date)
             ->where('offering_type', $offeringType)
-            ->where(function($query) use ($donation) {
+            ->where(function ($query) use ($donation) {
                 $query->where('notes', 'like', '%Donation ID: ' . $donation->id . '%')
-                      ->orWhere('notes', 'like', '%From Donation #' . $donation->id . '%');
+                    ->orWhere('notes', 'like', '%From Donation #' . $donation->id . '%');
             })
             ->first();
-        
+
         if ($existingOffering) {
             // Offering already exists, skip creation
             \Log::info('Offering already exists for donation', [
@@ -474,7 +484,7 @@ class FinancialApprovalController extends Controller
             ]);
             return;
         }
-        
+
         // Create the offering
         $offering = Offering::create([
             'member_id' => $donation->member_id, // Can be null for non-member donations
@@ -483,9 +493,9 @@ class FinancialApprovalController extends Controller
             'offering_type' => $offeringType,
             'payment_method' => $donation->payment_method ?? 'cash',
             'reference_number' => $donation->reference_number,
-            'notes' => ($donation->notes ? $donation->notes . "\n\n" : '') . 
-                      'From Donation #' . $donation->id . 
-                      ($donation->donor_name && !$donation->member_id ? ' (Donor: ' . $donation->donor_name . ')' : ''),
+            'notes' => ($donation->notes ? $donation->notes . "\n\n" : '') .
+                'From Donation #' . $donation->id .
+                ($donation->donor_name && !$donation->member_id ? ' (Donor: ' . $donation->donor_name . ')' : ''),
             'recorded_by' => $donation->recorded_by ?? auth()->user()->name ?? 'System',
             'is_verified' => false, // Treasurer will verify later
             'approval_status' => 'approved', // Auto-approved since donation was approved
@@ -493,14 +503,14 @@ class FinancialApprovalController extends Controller
             'approved_at' => now(),
             'approval_notes' => 'Auto-created from approved donation #' . $donation->id
         ]);
-        
+
         \Log::info('Created offering from donation', [
             'donation_id' => $donation->id,
             'offering_id' => $offering->id,
             'offering_type' => $offeringType,
             'amount' => $donation->amount
         ]);
-        
+
         return $offering;
     }
 
@@ -519,14 +529,14 @@ class FinancialApprovalController extends Controller
         // Handle pledge payments separately
         if ($request->type === 'pledge_payment') {
             $record = PledgePayment::findOrFail($request->id);
-            
+
             $record->update([
                 'approval_status' => 'rejected',
                 'approved_by' => auth()->id(),
                 'approved_at' => now(),
                 'rejection_reason' => $request->rejection_reason
             ]);
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Pledge payment rejected successfully'
@@ -534,7 +544,7 @@ class FinancialApprovalController extends Controller
         }
 
         $model = $this->getModel($request->type);
-        
+
         // Only load member relationship for models that have it
         $query = $model->newQuery();
         if (in_array($request->type, ['tithe', 'offering', 'pledge', 'donation'])) {
@@ -574,14 +584,14 @@ class FinancialApprovalController extends Controller
                 // Handle pledge payments separately
                 if ($recordData['type'] === 'pledge_payment') {
                     $record = PledgePayment::with('pledge.member')->findOrFail($recordData['id']);
-                    
+
                     $record->update([
                         'approval_status' => 'approved',
                         'approved_by' => auth()->id(),
                         'approved_at' => now(),
                         'approval_notes' => $request->approval_notes
                     ]);
-                    
+
                     // Update the pledge's amount_paid when payment is approved
                     $pledge = $record->pledge;
                     $newAmountPaid = $pledge->amount_paid + $record->amount;
@@ -589,18 +599,18 @@ class FinancialApprovalController extends Controller
                         'amount_paid' => $newAmountPaid,
                         'status' => $newAmountPaid >= $pledge->pledge_amount ? 'completed' : 'active'
                     ]);
-                    
+
                     // Send notification to member
                     if ($pledge->member) {
                         $this->sendMemberApprovalNotification($record, 'pledge_payment');
                     }
-                    
+
                     $approvedCount++;
                     continue;
                 }
 
                 $model = $this->getModel($recordData['type']);
-                
+
                 // Only load member relationship for models that have it
                 $query = $model->newQuery();
                 if (in_array($recordData['type'], ['tithe', 'offering', 'pledge', 'donation'])) {
@@ -639,7 +649,7 @@ class FinancialApprovalController extends Controller
     public function pendingByType($type)
     {
         $model = $this->getModel($type);
-        
+
         // Only load member relationship for models that have it
         $query = $model->newQuery();
         if (in_array($type, ['tithe', 'offering', 'pledge', 'donation'])) {
@@ -647,7 +657,7 @@ class FinancialApprovalController extends Controller
         } else {
             $query->with('approver');
         }
-        
+
         $records = $query->where('approval_status', 'pending')
             ->orderBy('created_at', 'desc')
             ->paginate(20);
@@ -661,7 +671,7 @@ class FinancialApprovalController extends Controller
     public function approvedByType($type)
     {
         $model = $this->getModel($type);
-        
+
         // Only load member relationship for models that have it
         $query = $model->newQuery();
         if (in_array($type, ['tithe', 'offering', 'pledge', 'donation'])) {
@@ -669,7 +679,7 @@ class FinancialApprovalController extends Controller
         } else {
             $query->with('approver');
         }
-        
+
         $records = $query->where('approval_status', 'approved')
             ->orderBy('approved_at', 'desc')
             ->paginate(20);
@@ -683,7 +693,7 @@ class FinancialApprovalController extends Controller
     public function rejectedByType($type)
     {
         $model = $this->getModel($type);
-        
+
         // Only load member relationship for models that have it
         $query = $model->newQuery();
         if (in_array($type, ['tithe', 'offering', 'pledge', 'donation'])) {
@@ -691,7 +701,7 @@ class FinancialApprovalController extends Controller
         } else {
             $query->with('approver');
         }
-        
+
         $records = $query->where('approval_status', 'rejected')
             ->orderBy('approved_at', 'desc')
             ->paginate(20);
@@ -705,14 +715,14 @@ class FinancialApprovalController extends Controller
     public function viewDetails($type, $id)
     {
         $this->checkApprovalPermission();
-        
+
         // Handle pledge payments separately
         if ($type === 'pledge_payment') {
             $record = PledgePayment::with(['pledge.member', 'approver'])->findOrFail($id);
             $recordDate = $record->payment_date ? \Carbon\Carbon::parse($record->payment_date) : null;
         } else {
             $model = $this->getModel($type);
-            
+
             // Only load member relationship for models that have it
             $query = $model->newQuery();
             if (in_array($type, ['tithe', 'offering', 'pledge', 'donation'])) {
@@ -721,7 +731,7 @@ class FinancialApprovalController extends Controller
                 $query->with('approver');
             }
             $record = $query->findOrFail($id);
-            
+
             // Get the appropriate date field based on record type
             if ($type === 'budget') {
                 $recordDate = $record->start_date ? \Carbon\Carbon::parse($record->start_date) : ($record->created_at ? \Carbon\Carbon::parse($record->created_at) : null);
@@ -729,7 +739,7 @@ class FinancialApprovalController extends Controller
                 $recordDate = $record->offering_date ?? $record->tithe_date ?? $record->donation_date ?? $record->expense_date ?? $record->pledge_date ?? $record->created_at;
             }
         }
-        
+
         // Format the data for display
         $data = [
             'type' => ucfirst($type === 'pledge_payment' ? 'Pledge Payment' : $type),
@@ -744,7 +754,7 @@ class FinancialApprovalController extends Controller
             'approved_by' => $record->approver->name ?? null,
             'approved_at' => $record->approved_at ? $record->approved_at->format('M d, Y H:i') : null,
         ];
-        
+
         // Add type-specific fields
         if ($type === 'offering') {
             $data['offering_type'] = $record->offering_type ?? null;
@@ -768,19 +778,23 @@ class FinancialApprovalController extends Controller
             $data['expense_category'] = $record->expense_category ?? null;
             $data['budget_id'] = $record->budget_id ?? null;
             $data['budget_name'] = $record->budget->budget_name ?? null;
-            
+
             // Parse additional funding from approval_notes
             $data['additional_funding'] = null;
             if ($record->approval_notes) {
                 // Check if approval_notes contains additional funding information
-                if (strpos($record->approval_notes, 'additional funding') !== false || 
-                    strpos($record->approval_notes, 'Fund allocation with additional funding') !== false) {
+                if (
+                    strpos($record->approval_notes, 'additional funding') !== false ||
+                    strpos($record->approval_notes, 'Fund allocation with additional funding') !== false
+                ) {
                     // Try to extract JSON from approval_notes
                     $notes = $record->approval_notes;
-                    
+
                     // Try to find JSON array pattern - match from "Fund allocation" or ":" to the end
-                    if (preg_match('/Fund allocation[^:]*:\s*(\[.*\])/s', $notes, $matches) || 
-                        preg_match('/:\s*(\[.*\])/s', $notes, $matches)) {
+                    if (
+                        preg_match('/Fund allocation[^:]*:\s*(\[.*\])/s', $notes, $matches) ||
+                        preg_match('/:\s*(\[.*\])/s', $notes, $matches)
+                    ) {
                         try {
                             $fundBreakdown = json_decode($matches[1], true);
                             if (is_array($fundBreakdown) && !empty($fundBreakdown)) {
@@ -823,7 +837,7 @@ class FinancialApprovalController extends Controller
             $data['reference_number'] = $record->reference_number ?? null;
             $data['purpose'] = $record->pledge->purpose ?? null;
         }
-        
+
         return response()->json($data);
     }
 
@@ -881,8 +895,8 @@ class FinancialApprovalController extends Controller
 
         $summary['total_income'] = $summary['tithes']['total'] + $summary['offerings']['total'] + $summary['donations']['total'];
         $summary['net_income'] = $summary['total_income'] - $summary['expenses']['total'];
-        $summary['total_pending'] = $summary['tithes']['pending'] + $summary['offerings']['pending'] + 
-                                   $summary['donations']['pending'] + $summary['expenses']['pending'];
+        $summary['total_pending'] = $summary['tithes']['pending'] + $summary['offerings']['pending'] +
+            $summary['donations']['pending'] + $summary['expenses']['pending'];
 
         return response()->json($summary);
     }
@@ -893,28 +907,28 @@ class FinancialApprovalController extends Controller
     public function exportPending()
     {
         $this->checkApprovalPermission();
-        
+
         // Simple CSV export for now
         $headers = [
             'Content-Type' => 'text/csv',
             'Content-Disposition' => 'attachment; filename="pending_records.csv"',
         ];
-        
-        $callback = function() {
+
+        $callback = function () {
             $file = fopen('php://output', 'w');
-            
+
             // Add CSV headers
             fputcsv($file, ['Type', 'Amount', 'Date', 'Member', 'Status']);
-            
+
             // Add pending records
             $today = Carbon::today();
-            
+
             $pendingTithes = Tithe::with('member')
                 ->where('approval_status', 'pending')
                 ->whereDate('tithe_date', $today)
                 ->get();
-                
-            foreach($pendingTithes as $record) {
+
+            foreach ($pendingTithes as $record) {
                 fputcsv($file, [
                     'Tithe',
                     $record->amount,
@@ -923,10 +937,10 @@ class FinancialApprovalController extends Controller
                     'Pending'
                 ]);
             }
-            
+
             fclose($file);
         };
-        
+
         return response()->stream($callback, 200, $headers);
     }
 
@@ -937,7 +951,7 @@ class FinancialApprovalController extends Controller
     {
         try {
             $member = $record->member;
-            
+
             if (!$member) {
                 \Log::warning("No member found for {$type} record ID: {$record->id}");
                 return;
@@ -945,12 +959,12 @@ class FinancialApprovalController extends Controller
 
             // Prepare notification data
             $paymentType = $this->getPaymentTypeName($type);
-            
+
             // For offerings, use specific offering type if available
             if ($type === 'offering' && isset($record->offering_type)) {
                 $paymentType = $this->getOfferingTypeName($record->offering_type);
             }
-            
+
             $notificationData = [
                 'payment_type' => $paymentType,
                 'amount' => $this->getAmount($record, $type),
@@ -960,10 +974,10 @@ class FinancialApprovalController extends Controller
             // Send notification to member
             $notification = new \App\Notifications\PaymentApprovalNotification($notificationData);
             $member->notify($notification);
-            
+
             // Send SMS notification directly
             $notification->sendSmsNotification($member);
-            
+
             \Log::info("Payment approval notification sent to member", [
                 'member_id' => $member->id,
                 'member_name' => $member->full_name,
@@ -1094,25 +1108,25 @@ class FinancialApprovalController extends Controller
     public function fundingRequests()
     {
         $this->checkApprovalPermission();
-        
+
         $pendingRequests = FundingRequest::with(['expense', 'budget'])
             ->where('status', 'pending')
             ->orderBy('created_at', 'desc')
             ->paginate(20);
-            
+
         $approvedRequests = FundingRequest::with(['expense', 'budget', 'approver'])
             ->where('status', 'approved')
             ->orderBy('approved_at', 'desc')
             ->paginate(20);
-            
+
         $rejectedRequests = FundingRequest::with(['expense', 'budget', 'approver'])
             ->where('status', 'rejected')
             ->orderBy('approved_at', 'desc')
             ->paginate(20);
 
         return view('finance.approval.funding-requests', compact(
-            'pendingRequests', 
-            'approvedRequests', 
+            'pendingRequests',
+            'approvedRequests',
             'rejectedRequests'
         ));
     }
@@ -1123,7 +1137,7 @@ class FinancialApprovalController extends Controller
     public function approveFundingRequest(Request $request, FundingRequest $fundingRequest)
     {
         $this->checkApprovalPermission();
-        
+
         $request->validate([
             'approval_notes' => 'nullable|string|max:1000',
             'allocations' => 'required|array',
@@ -1172,7 +1186,7 @@ class FinancialApprovalController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to approve funding request: ' . $e->getMessage()
@@ -1186,7 +1200,7 @@ class FinancialApprovalController extends Controller
     public function rejectFundingRequest(Request $request, FundingRequest $fundingRequest)
     {
         $this->checkApprovalPermission();
-        
+
         $request->validate([
             'rejection_reason' => 'required|string|max:1000'
         ]);
@@ -1219,7 +1233,7 @@ class FinancialApprovalController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to reject funding request: ' . $e->getMessage()
@@ -1233,9 +1247,9 @@ class FinancialApprovalController extends Controller
     public function getFundingRequestDetails(FundingRequest $fundingRequest)
     {
         $this->checkApprovalPermission();
-        
+
         $fundingRequest->load(['expense', 'budget', 'approver']);
-        
+
         return response()->json([
             'success' => true,
             'funding_request' => $fundingRequest

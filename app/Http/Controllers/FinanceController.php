@@ -592,63 +592,30 @@ class FinanceController extends Controller
             ->orderBy('start_date', 'desc')
             ->get();
 
-        // Categorize budgets
-        $injiliPurposes = ['ministry', 'missions', 'worship', 'outreach', 'special_events', 'operations'];
-        $umojaPurposes = ['youth', 'children', 'thanksgiving'];
-        $majengoPurposes = ['building'];
-
-        $injiliBudgets = $allBudgets->filter(function ($b) use ($injiliPurposes) {
-            return in_array($b->purpose, $injiliPurposes);
+        // Categorize budgets based on budget_type
+        $injiliBudgets = $allBudgets->filter(function ($b) {
+            return $b->budget_type === 'injili' || $b->budget_type === 'operational';
         });
 
-        $umojaBudgets = $allBudgets->filter(function ($b) use ($umojaPurposes) {
-            return in_array($b->purpose, $umojaPurposes);
+        $umojaBudgets = $allBudgets->filter(function ($b) {
+            return $b->budget_type === 'umoja' || $b->budget_type === 'program';
         });
 
-        $majengoBudgets = $allBudgets->filter(function ($b) use ($majengoPurposes) {
-            return in_array($b->purpose, $majengoPurposes);
+        $majengoBudgets = $allBudgets->filter(function ($b) {
+            return $b->budget_type === 'majengo' || $b->budget_type === 'capital';
         });
 
-        $otherBudgets = $allBudgets->filter(function ($b) use ($injiliPurposes, $umojaPurposes, $majengoPurposes) {
-            return !in_array($b->purpose, $injiliPurposes) &&
-                !in_array($b->purpose, $umojaPurposes) &&
-                !in_array($b->purpose, $majengoPurposes);
+        $otherBudgets = $allBudgets->filter(function ($b) {
+            return $b->budget_type === 'other' || $b->budget_type === 'special' || !in_array($b->budget_type, ['injili', 'umoja', 'majengo', 'operational', 'program', 'capital']);
         });
 
         // Fetch available offering amounts for unallocated fund display
         $availableOfferings = $this->budgetFundingService->getAvailableAmountsAfterAllocations();
 
-        // Define mapping for categories
-        $injiliOfferingTypes = ['general', 'missions', 'special', 'outreach', 'worship', 'evangelism'];
-        $umojaOfferingTypes = ['thanksgiving', 'youth', 'children', 'women', 'men'];
-        $majengoOfferingTypes = ['building_fund'];
-
-        $injiliAvailable = 0;
-        foreach ($injiliOfferingTypes as $type) {
-            $injiliAvailable += $availableOfferings[$type] ?? 0;
-        }
-
-        $umojaAvailable = 0;
-        foreach ($umojaOfferingTypes as $type) {
-            $umojaAvailable += $availableOfferings[$type] ?? 0;
-        }
-
-        $majengoAvailable = 0;
-        foreach ($majengoOfferingTypes as $type) {
-            $majengoAvailable += $availableOfferings[$type] ?? 0;
-        }
-
-        // Calculate other available
-        $otherAvailable = 0;
-        foreach ($availableOfferings as $type => $amount) {
-            if (
-                !in_array($type, $injiliOfferingTypes) &&
-                !in_array($type, $umojaOfferingTypes) &&
-                !in_array($type, $majengoOfferingTypes)
-            ) {
-                $otherAvailable += $amount;
-            }
-        }
+        $injiliAvailable = $availableOfferings['injili'] ?? 0;
+        $umojaAvailable = $availableOfferings['umoja'] ?? 0;
+        $majengoAvailable = $availableOfferings['majengo'] ?? 0;
+        $otherAvailable = $availableOfferings['other'] ?? 0;
 
         // Summary totals per category
         $categorySummaries = [
@@ -700,7 +667,7 @@ class FinanceController extends Controller
     public function storeBudget(Request $request)
     {
         $validated = $request->validate([
-            'budget_name' => 'required|string',
+            'budget_name' => 'nullable|string',
             'budget_type' => 'required|string',
             'purpose' => 'required|string',
             'custom_purpose' => 'required_if:purpose,other|nullable|string|max:255',
@@ -723,6 +690,21 @@ class FinanceController extends Controller
         if ($validated['purpose'] === 'other' && !empty($validated['custom_purpose'])) {
             $validated['purpose'] = strtolower(str_replace([' ', '-'], '_', $validated['custom_purpose']));
         }
+
+        // Auto-generate budget name if not provided
+        if (empty($validated['budget_name'])) {
+            $typeName = ucfirst($validated['budget_type']);
+            if ($validated['budget_type'] == 'umoja')
+                $typeName = 'Umoja na Idara';
+            if ($validated['budget_type'] == 'majengo')
+                $typeName = 'Majengo';
+            if ($validated['budget_type'] == 'other')
+                $typeName = 'Zinginezo';
+
+            $displayPurpose = str_replace('_', ' ', ucfirst($validated['purpose']));
+            $validated['budget_name'] = "{$typeName} - {$displayPurpose} ({$validated['fiscal_year']})";
+        }
+
         unset($validated['custom_purpose']);
 
         $validated['created_by'] = auth()->user()->name ?? 'System';
@@ -731,8 +713,8 @@ class FinanceController extends Controller
         $validated['status'] = 'active';
         $validated['approval_status'] = 'pending';
 
-        // Set primary offering type based on purpose (handles custom types)
-        $validated['primary_offering_type'] = $this->budgetFundingService->getSuggestedPrimaryOfferingType($validated['purpose']);
+        // Set primary offering type based on purpose and budget type (handles categorical mapping)
+        $validated['primary_offering_type'] = $this->budgetFundingService->getSuggestedPrimaryOfferingType($validated['purpose'], $validated['budget_type']);
         $validated['requires_approval'] = true;
 
         $budget = Budget::create($validated);
@@ -866,22 +848,33 @@ class FinanceController extends Controller
                 ], 400);
             }
 
-            // Get total income from offerings
-            $totalIncome = Offering::where('offering_type', $offeringType)
-                ->where('approval_status', 'approved')
-                ->sum('amount');
+            $offeringAmounts = $this->budgetFundingService->getAvailableOfferingAmounts();
+            $totalIncome = $offeringAmounts[$offeringType] ?? 0;
 
-            // Get all budgets using this offering type
-            $allBudgetsWithSameOffering = Budget::where('primary_offering_type', $offeringType)
-                ->where('status', 'active')
-                ->pluck('id');
+            $categories = ['injili', 'umoja', 'majengo'];
+            $isCategory = in_array(strtolower($offeringType), $categories);
 
-            // Get total used amount from ALL allocations for budgets with this offering type
-            $totalUsedFromAllBudgets = \App\Models\BudgetOfferingAllocation::whereIn('budget_id', $allBudgetsWithSameOffering)
+            if ($isCategory) {
+                $mapping = $this->budgetFundingService->getIncomeCategoryMapping();
+                $typesInCategory = $mapping[strtolower($offeringType)] ?? [];
+
+                // Get all budgets using this category as primary OR using any specific type in this category
+                $budgetIds = Budget::whereIn('primary_offering_type', array_merge([$offeringType], $typesInCategory))
+                    ->where('status', 'active')
+                    ->pluck('id');
+            } else {
+                // Get all budgets using this specific offering type
+                $budgetIds = Budget::where('primary_offering_type', $offeringType)
+                    ->where('status', 'active')
+                    ->pluck('id');
+            }
+
+            // Get total used amount from ALL allocations for matched budgets
+            $usedAmount = \App\Models\BudgetOfferingAllocation::whereIn('budget_id', $budgetIds)
                 ->sum('used_amount');
 
-            // Get total pending expenses from ALL budgets using this offering type
-            $totalPendingFromAllBudgets = (float) \App\Models\Expense::whereIn('budget_id', $allBudgetsWithSameOffering)
+            // Get total pending expenses from ALL matched budgets
+            $pendingExpensesAmount = (float) \App\Models\Expense::whereIn('budget_id', $budgetIds)
                 ->where(function ($query) {
                     $query->where('status', '!=', 'paid')
                         ->where(function ($q) {
@@ -892,8 +885,6 @@ class FinanceController extends Controller
                 ->sum('amount');
 
             // Calculate available amount
-            $usedAmount = $totalUsedFromAllBudgets;
-            $pendingExpensesAmount = $totalPendingFromAllBudgets;
             $totalCommitted = $usedAmount + $pendingExpensesAmount;
             $availableAmount = $totalIncome - $totalCommitted;
 
@@ -901,11 +892,12 @@ class FinanceController extends Controller
                 'success' => true,
                 'fund_summary' => [
                     'offering_type' => $offeringType,
+                    'is_category' => $isCategory,
                     'total_income' => $totalIncome,
                     'used_amount' => $usedAmount,
                     'pending_expenses_amount' => $pendingExpensesAmount,
                     'total_committed' => $totalCommitted,
-                    'available_amount' => $availableAmount
+                    'available_amount' => max(0, $availableAmount)
                 ]
             ]);
 
@@ -1014,16 +1006,25 @@ class FinanceController extends Controller
                 ], 400);
             }
 
-            // Get total income from offerings
-            $totalIncome = Offering::where('offering_type', $primaryOfferingType)
-                ->where('approval_status', 'approved')
-                ->sum('amount');
+            $offeringAmounts = $this->budgetFundingService->getAvailableOfferingAmounts();
+            $totalIncome = $offeringAmounts[$primaryOfferingType] ?? 0;
 
-            // IMPORTANT: Get used amount from ALL budgets using this offering type, not just this budget
+            // Check if primary offering type is a category
+            $categories = ['injili', 'umoja', 'majengo'];
+            $isCategory = in_array(strtolower($primaryOfferingType), $categories);
+
+            // IMPORTANT: Get used amount from ALL budgets using this offering type OR types in this category
             // This ensures the fund summary shows the correct available amount across all budgets
-            $allBudgetsWithSameOffering = Budget::where('primary_offering_type', $primaryOfferingType)
-                ->where('status', 'active')
-                ->pluck('id');
+            if ($isCategory) {
+                $typesInCategory = $this->budgetFundingService->getIncomeCategoryMapping()[strtolower($primaryOfferingType)] ?? [];
+                $allBudgetsWithSameOffering = Budget::whereIn('primary_offering_type', array_merge([$primaryOfferingType], $typesInCategory))
+                    ->where('status', 'active')
+                    ->pluck('id');
+            } else {
+                $allBudgetsWithSameOffering = Budget::where('primary_offering_type', $primaryOfferingType)
+                    ->where('status', 'active')
+                    ->pluck('id');
+            }
 
             // Get total used amount from ALL allocations for budgets with this offering type
             $totalUsedFromAllBudgets = \App\Models\BudgetOfferingAllocation::whereIn('budget_id', $allBudgetsWithSameOffering)
@@ -1095,6 +1096,7 @@ class FinanceController extends Controller
                     'pending_expenses_amount' => $pendingExpensesAmount,
                     'total_committed' => $totalCommitted,
                     'available_amount' => $availableAmount,
+                    'is_category' => $isCategory,
                     'used_percentage' => round($committedPercentage, 2), // Show committed percentage
                     'paid_percentage' => round($usedPercentage, 2),
                     'pending_percentage' => round($pendingPercentage, 2),
@@ -1165,7 +1167,24 @@ class FinanceController extends Controller
             $primaryOfferingUsed = 0;
             $primaryOfferingAvailable = 0;
             if ($budget->primary_offering_type) {
-                $primaryOfferingAvailable = $currentFunds[$budget->primary_offering_type] ?? 0;
+                $primaryOfferingType = $budget->primary_offering_type;
+
+                // Check if it's a category
+                $categories = ['injili', 'umoja', 'majengo'];
+                $isCategory = in_array(strtolower($primaryOfferingType), $categories);
+
+                if ($isCategory) {
+                    $mapping = $this->budgetFundingService->getIncomeCategoryMapping();
+                    $typesInCategory = $mapping[strtolower($primaryOfferingType)] ?? [];
+
+                    // Sum up availability from all types in this category that are in currentFunds
+                    foreach (array_merge([$primaryOfferingType], $typesInCategory) as $type) {
+                        $primaryOfferingAvailable += $currentFunds[$type] ?? 0;
+                    }
+                } else {
+                    $primaryOfferingAvailable = $currentFunds[$primaryOfferingType] ?? 0;
+                }
+
                 // Use the full available amount from primary offering (up to expense amount)
                 $primaryOfferingUsed = min($primaryOfferingAvailable, $expenseAmount);
             }
@@ -1217,24 +1236,42 @@ class FinanceController extends Controller
     {
         $allocation = [];
         $remainingAmount = $expenseAmount;
+        $primaryOfferingType = $budget->primary_offering_type;
 
-        // ONLY use primary offering type for the expense payment
-        if ($budget->primary_offering_type && isset($currentFunds[$budget->primary_offering_type])) {
-            $primaryAvailable = $currentFunds[$budget->primary_offering_type];
-            $primaryAllocation = min($remainingAmount, $primaryAvailable);
-
-            if ($primaryAllocation > 0) {
-                $allocation[] = [
-                    'offering_type' => $budget->primary_offering_type,
-                    'amount' => $primaryAllocation,
-                    'is_primary' => true
-                ];
-                $remainingAmount -= $primaryAllocation;
-            }
+        if (!$primaryOfferingType) {
+            return $allocation;
         }
 
-        // Note: We don't automatically allocate from other offering types
-        // This will be handled manually by the user when there's insufficient funds
+        // Check if primary is a category
+        $categories = ['injili', 'umoja', 'majengo'];
+        $isCategory = in_array(strtolower($primaryOfferingType), $categories);
+
+        $typesToTry = [$primaryOfferingType];
+        if ($isCategory) {
+            $mapping = $this->budgetFundingService->getIncomeCategoryMapping();
+            $typesInCategory = $mapping[strtolower($primaryOfferingType)] ?? [];
+            $typesToTry = array_merge($typesToTry, $typesInCategory);
+        }
+
+        // Try to allocate from any of the matching types in currentFunds
+        foreach ($typesToTry as $type) {
+            if ($remainingAmount <= 0)
+                break;
+
+            if (isset($currentFunds[$type])) {
+                $available = $currentFunds[$type];
+                $toUse = min($remainingAmount, $available);
+
+                if ($toUse > 0) {
+                    $allocation[] = [
+                        'offering_type' => $type,
+                        'amount' => $toUse,
+                        'is_primary' => true // It's part of the primary category/type
+                    ];
+                    $remainingAmount -= $toUse;
+                }
+            }
+        }
 
         return $allocation;
     }
@@ -1267,7 +1304,7 @@ class FinanceController extends Controller
     public function updateBudget(Request $request, Budget $budget)
     {
         $validated = $request->validate([
-            'budget_name' => 'required|string',
+            'budget_name' => 'nullable|string',
             'budget_type' => 'required|string',
             'fiscal_year' => 'required|integer',
             'start_date' => 'required|date',
@@ -1359,31 +1396,28 @@ class FinanceController extends Controller
     public function storeExpense(Request $request)
     {
         $validated = $request->validate([
-            'budget_id' => 'nullable|exists:budgets,id',
-            'expense_category' => 'required|string',
-            'expense_name' => 'required|string',
+            'budget_id' => 'required|exists:budgets,id',
+            'expense_category' => 'nullable|string',
+            'expense_name' => 'nullable|string',
             'amount' => [
                 'required',
                 'numeric',
                 'min:0',
                 function ($attribute, $value, $fail) use ($request) {
-                    // If budget is selected, validate that expense amount doesn't exceed budget total
-                    if ($request->filled('budget_id')) {
-                        $budget = Budget::find($request->budget_id);
-                        if ($budget) {
-                            // Check if expense amount itself exceeds budget total
-                            if ($value > $budget->total_budget) {
-                                $fail("The expense amount (TZS " . number_format($value) . ") cannot exceed the budget total amount (TZS " . number_format($budget->total_budget) . ").");
-                            }
+                    // Budget is now required, validate that expense amount doesn't exceed budget total
+                    $budget = Budget::find($request->budget_id);
+                    if ($budget) {
+                        if ($value > $budget->total_budget) {
+                            $fail("The expense amount (TZS " . number_format((float) $value) . ") cannot exceed the budget total amount (TZS " . number_format((float) $budget->total_budget) . ").");
+                        }
 
-                            // Also check if expense would exceed budget when combined with already spent
-                            $currentSpent = $budget->spent_amount;
-                            $newTotalSpent = $currentSpent + $value;
+                        // Also check if expense would exceed budget when combined with already spent
+                        $currentSpent = $budget->spent_amount;
+                        $newTotalSpent = $currentSpent + $value;
 
-                            if ($newTotalSpent > $budget->total_budget) {
-                                $remainingBudget = $budget->total_budget - $currentSpent;
-                                $fail("The expense amount (TZS " . number_format($value) . ") would exceed the budget limit. Remaining budget: TZS " . number_format($remainingBudget) . ". Budget total: TZS " . number_format($budget->total_budget) . ".");
-                            }
+                        if ($newTotalSpent > $budget->total_budget) {
+                            $remainingBudget = $budget->total_budget - $currentSpent;
+                            $fail("The expense amount (TZS " . number_format((float) $value) . ") would exceed the budget limit. Remaining budget: TZS " . number_format((float) $remainingBudget) . ". Budget total: TZS " . number_format((float) $budget->total_budget) . ".");
                         }
                     }
                 }
@@ -1399,6 +1433,19 @@ class FinanceController extends Controller
             'additional_funding.*.offering_type' => 'required_with:additional_funding|string',
             'additional_funding.*.amount' => 'required_with:additional_funding|numeric|min:0'
         ]);
+
+        // Auto-populate name and category if it's from a budget
+        if ($request->filled('budget_id')) {
+            $budget = Budget::find($request->budget_id);
+            if ($budget) {
+                if (empty($validated['expense_name'])) {
+                    $validated['expense_name'] = $budget->budget_name;
+                }
+                if (empty($validated['expense_category'])) {
+                    $validated['expense_category'] = $budget->purpose;
+                }
+            }
+        }
 
         $validated['recorded_by'] = auth()->user()->name ?? 'System';
         $validated['status'] = 'pending';
@@ -1438,7 +1485,7 @@ class FinanceController extends Controller
                         $remainingBudget = $budget->total_budget - $currentSpent;
                         return redirect()->back()
                             ->withInput()
-                            ->with('error', "Expense amount (TZS " . number_format($expense->amount) . ") would exceed budget limit. Remaining budget: TZS " . number_format($remainingBudget));
+                            ->with('error', "Expense amount (TZS " . number_format((float) $expense->amount) . ") would exceed budget limit. Remaining budget: TZS " . number_format((float) $remainingBudget));
                     }
 
                     // If user provided additional funding, use it to create fund breakdown
@@ -1585,9 +1632,9 @@ class FinanceController extends Controller
     public function updateExpense(Request $request, Expense $expense)
     {
         $validated = $request->validate([
-            'budget_id' => 'nullable|exists:budgets,id',
-            'expense_category' => 'required|string',
-            'expense_name' => 'required|string',
+            'budget_id' => 'required|exists:budgets,id',
+            'expense_category' => 'nullable|string',
+            'expense_name' => 'nullable|string',
             'amount' => 'required|numeric|min:0',
             'expense_date' => 'required|date',
             'payment_method' => 'required|string',
@@ -1598,6 +1645,19 @@ class FinanceController extends Controller
             'notes' => 'nullable|string',
             'status' => 'nullable|in:pending,approved,paid'
         ]);
+
+        // Auto-populate name and category from budget
+        if ($request->filled('budget_id')) {
+            $budget = Budget::find($request->budget_id);
+            if ($budget) {
+                if (empty($validated['expense_name'])) {
+                    $validated['expense_name'] = $budget->budget_name;
+                }
+                if (empty($validated['expense_category'])) {
+                    $validated['expense_category'] = $budget->purpose;
+                }
+            }
+        }
 
         $expense->update($validated);
 
@@ -1755,7 +1815,7 @@ class FinanceController extends Controller
             if ($expense->budget_id) {
                 $budget = Budget::find($expense->budget_id);
                 if ($budget) {
-                    $budget->increment('spent_amount', $expense->amount);
+                    $budget->increment('spent_amount', (float) $expense->amount);
 
                     // Deduct from offering allocations if there are any allocations
                     $hasAllocations = $budget->offeringAllocations()->exists();

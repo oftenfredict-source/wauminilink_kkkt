@@ -3338,6 +3338,16 @@
                         url: '/finance/approval/dashboard#pledge-payments'
                     });
                 }
+
+                if (pendingApprovals.funding_requests > 0) {
+                    items.push({
+                        type: 'Funding Requests',
+                        count: pendingApprovals.funding_requests,
+                        icon: 'fa-hand-holding-usd',
+                        color: 'warning',
+                        url: '/finance/approval/dashboard#funding-requests'
+                    });
+                }
                 
                 return items.map((item, index) => {
                     return `

@@ -1,5 +1,6 @@
 <div class="table-responsive">
-    <table class="table table-hover align-middle mb-0" id="dataTable{{ $category }}" width="100%" cellspacing="0">
+    <table class="table table-hover align-middle mb-0" id="dataTable{{ str_replace(' ', '', $category) }}" width="100%"
+        cellspacing="0">
         <thead class="bg-light text-muted small">
             <tr>
                 <th class="d-none d-md-table-cell">Budget Name</th>
@@ -34,17 +35,35 @@
                         </div>
                     </td>
                     <td>
-                        <span
-                            class="badge {{ $budget->budget_type == 'operational' ? 'bg-info' : 'bg-primary' }}">{{ ucfirst($budget->budget_type) }}</span>
+                        <span class="badge 
+                                        @if($budget->budget_type == 'injili' || $budget->budget_type == 'operational') bg-primary 
+                                        @elseif($budget->budget_type == 'umoja' || $budget->budget_type == 'program') bg-success 
+                                        @elseif($budget->budget_type == 'majengo' || $budget->budget_type == 'capital') bg-warning 
+                                        @elseif($budget->budget_type == 'other' || $budget->budget_type == 'special' || $budget->budget_type == 'zinginezo') bg-info 
+                                        @else bg-secondary @endif">
+                            {{ $budget->budget_type == 'umoja' ? 'Umoja' : ucfirst($budget->budget_type) }}
+                        </span>
                     </td>
                     <td class="d-none d-lg-table-cell">{{ $budget->fiscal_year }}</td>
                     <td class="text-end fw-bold">
                         TZS {{ number_format($budget->total_budget, 0) }}
                     </td>
-                    <td class="d-none d-xl-table-cell text-end">TZS {{ number_format($budget->spent_amount, 0) }}</td>
+                    <td class="d-none d-xl-table-cell text-end">
+                        <div>TZS {{ number_format($budget->spent_amount, 0) }}</div>
+                        @if($budget->pending_spent_amount > 0)
+                            <small class="text-muted" title="Approved/Pending Expenses">
+                                +{{ number_format($budget->pending_spent_amount, 0) }} committed
+                            </small>
+                        @endif
+                    </td>
                     <td
                         class="d-none d-xl-table-cell text-end font-monospace {{ $budget->remaining_amount < 0 ? 'text-danger' : '' }}">
-                        TZS {{ number_format($budget->remaining_amount, 0) }}
+                        TZS {{ number_format($budget->remaining_amount - $budget->pending_spent_amount, 0) }}
+                        @if($budget->pending_spent_amount > 0)
+                            <div class="small text-muted" title="Real remaining after commitments">
+                                ({{ number_format($budget->remaining_amount, 0) }} cash)
+                            </div>
+                        @endif
                     </td>
                     <td>
                         <div class="progress" style="height: 12px; border-radius: 10px;">

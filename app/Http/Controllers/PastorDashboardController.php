@@ -21,6 +21,7 @@ use App\Models\ParishWorkerReport;
 use App\Models\CandleAction;
 use App\Models\Campus;
 use App\Models\User;
+use App\Models\FundingRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -58,38 +59,35 @@ class PastorDashboardController extends Controller
         // Get pending records for today
         $pendingTithes = Tithe::with(['member', 'approver'])
             ->where('approval_status', 'pending')
-            ->whereDate('tithe_date', $today)
             ->count();
 
         $pendingOfferings = Offering::with(['member', 'approver'])
             ->where('approval_status', 'pending')
-            ->whereDate('offering_date', $today)
             ->count();
 
         $pendingDonations = Donation::with(['member', 'approver'])
             ->where('approval_status', 'pending')
-            ->whereDate('donation_date', $today)
             ->count();
 
         $pendingExpenses = Expense::with(['budget', 'approver'])
             ->where('approval_status', 'pending')
-            ->whereDate('expense_date', $today)
             ->count();
 
         $pendingBudgets = Budget::with(['approver'])
             ->where('approval_status', 'pending')
-            ->whereDate('created_at', $today)
             ->count();
 
         $pendingPledges = Pledge::with(['member', 'approver'])
             ->where('approval_status', 'pending')
-            ->whereDate('pledge_date', $today)
             ->count();
 
         // Get pending pledge payments (actual payments that need approval)
         $pendingPledgePayments = PledgePayment::with(['pledge.member', 'approver'])
             ->where('approval_status', 'pending')
-            ->whereDate('payment_date', $today)
+            ->count();
+
+        $pendingFundingRequests = FundingRequest::with(['expense', 'budget', 'approver'])
+            ->where('status', 'pending')
             ->count();
 
         // Get pending child to member transitions
@@ -256,20 +254,17 @@ class PastorDashboardController extends Controller
 
         // Get pending amount (including pledge payments)
         $pendingAmount = Tithe::where('approval_status', 'pending')
-            ->whereDate('tithe_date', $today)
             ->sum('amount') +
             Offering::where('approval_status', 'pending')
-                ->whereDate('offering_date', $today)
                 ->sum('amount') +
             Donation::where('approval_status', 'pending')
-                ->whereDate('donation_date', $today)
                 ->sum('amount') +
             Pledge::where('approval_status', 'pending')
-                ->whereDate('pledge_date', $today)
                 ->sum('pledge_amount') +
             PledgePayment::where('approval_status', 'pending')
-                ->whereDate('payment_date', $today)
-                ->sum('amount');
+                ->sum('amount') +
+            FundingRequest::where('status', 'pending')
+                ->sum('requested_amount');
 
         // Get tasks from Evangelism Leaders and Church Elders
         $evangelismTasks = EvangelismTask::with(['evangelismLeader', 'campus', 'community', 'member'])
@@ -359,6 +354,7 @@ class PastorDashboardController extends Controller
             'pendingBudgets',
             'pendingPledges',
             'pendingPledgePayments',
+            'pendingFundingRequests',
             'pendingTransitions',
             'pendingAmount',
             'monthlyTithes',

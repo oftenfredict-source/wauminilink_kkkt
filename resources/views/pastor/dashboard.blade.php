@@ -131,7 +131,7 @@
                                             <i class="fas fa-clock fa-lg"></i>
                                         </div>
                                         <h4 class="fw-bold mb-1 summary-number">
-                                            {{ $pendingTithes + $pendingOfferings + $pendingDonations + $pendingExpenses + $pendingBudgets + $pendingPledges + ($pendingPledgePayments ?? 0) + ($pendingTransitions ?? 0) }}
+                                            {{ $pendingTithes + $pendingOfferings + $pendingDonations + $pendingExpenses + $pendingBudgets + $pendingPledges + ($pendingPledgePayments ?? 0) + ($pendingFundingRequests ?? 0) + ($pendingTransitions ?? 0) }}
                                         </h4>
                                         <p class="mb-0 text-white-75 small summary-label">Pending Records</p>
                                     </div>
@@ -453,6 +453,18 @@
                                                         {{ $pendingPledgePayments ?? 0 }}
                                                     </h5>
                                                     <small class="text-muted pending-label">Pledge Payments</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-2 col-md-4 col-sm-6 col-6">
+                                                <div class="text-center p-3 border rounded-3 bg-warning bg-opacity-10">
+                                                    <div class="bg-warning bg-opacity-20 rounded-circle d-inline-flex align-items-center justify-content-center mb-2 pending-icon"
+                                                        style="width: 50px; height: 50px;">
+                                                        <i class="fas fa-hand-holding-usd fa-lg text-warning"></i>
+                                                    </div>
+                                                    <h5 class="fw-bold text-warning mb-1 pending-number">
+                                                        {{ $pendingFundingRequests ?? 0 }}
+                                                    </h5>
+                                                    <small class="text-muted pending-label">Funding Requests</small>
                                                 </div>
                                             </div>
                                         </div>
@@ -1907,19 +1919,19 @@
                 icon: 'info',
                 title: '🕊️ New Bereavement Event',
                 html: `
-                    <div style="text-align: left;">
-                        <p style="margin-bottom: 8px;"><strong>${notification.deceased_name}</strong></p>
-                        <p style="margin-bottom: 4px; font-size: 0.9em; color: #666;">
-                            <i class="fas fa-calendar me-1"></i>Incident Date: ${incidentDate}
-                        </p>
-                        <p style="margin-bottom: 4px; font-size: 0.9em; color: #666;">
-                            <i class="fas fa-church me-1"></i>${notification.campus_name}
-                        </p>
-                        <p style="margin-bottom: 0; font-size: 0.85em; color: #888;">
-                            ${notification.message}
-                        </p>
-                    </div>
-                `,
+                        <div style="text-align: left;">
+                            <p style="margin-bottom: 8px;"><strong>${notification.deceased_name}</strong></p>
+                            <p style="margin-bottom: 4px; font-size: 0.9em; color: #666;">
+                                <i class="fas fa-calendar me-1"></i>Incident Date: ${incidentDate}
+                            </p>
+                            <p style="margin-bottom: 4px; font-size: 0.9em; color: #666;">
+                                <i class="fas fa-church me-1"></i>${notification.campus_name}
+                            </p>
+                            <p style="margin-bottom: 0; font-size: 0.85em; color: #888;">
+                                ${notification.message}
+                            </p>
+                        </div>
+                    `,
                 toast: true,
                 position: 'top-end',
                 showConfirmButton: true,

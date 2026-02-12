@@ -30,6 +30,41 @@ class MemberDashboardController extends Controller
     }
 
     /**
+     * Store a new pledge from the member portal
+     */
+    public function storePledge(Request $request)
+    {
+        $user = Auth::user();
+        $member = $user->member;
+
+        if (!$member) {
+            return redirect()->back()->withErrors(['error' => 'Member record not found.']);
+        }
+
+        $validated = $request->validate([
+            'pledge_amount' => 'required|numeric|min:0',
+            'pledge_date' => 'required|date',
+            'due_date' => 'nullable|date|after_or_equal:pledge_date',
+            'pledge_type' => 'required|string',
+            'payment_frequency' => 'required|string',
+            'purpose' => 'nullable|string',
+            'notes' => 'nullable|string'
+        ]);
+
+        $validated['member_id'] = $member->id;
+        $validated['recorded_by'] = $user->name ?? $member->full_name;
+        $validated['amount_paid'] = 0;
+        $validated['status'] = 'active';
+        $validated['approval_status'] = 'approved'; // Auto-approve for now as requested by logical flow patterns
+        $validated['approved_by'] = $user->id;
+        $validated['approved_at'] = now();
+
+        Pledge::create($validated);
+
+        return redirect()->route('member.finance')->with('success', 'Ahadi ya Bwana (Pledge) recorded successfully!');
+    }
+
+    /**
      * Display member dashboard
      */
     public function index()

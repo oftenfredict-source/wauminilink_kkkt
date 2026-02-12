@@ -86,7 +86,8 @@
                                             <i class="fas fa-user-tie fa-2x"></i>
                                         </div>
                                         <h3 class="fw-bold mb-1" style="font-size: 1.2rem;">
-                                            {{ $approverName ?? $currentUser->name ?? auth()->user()->name }}</h3>
+                                            {{ $approverName ?? $currentUser->name ?? auth()->user()->name }}
+                                        </h3>
                                         <p class="mb-0 text-white-75">Approver</p>
                                     </div>
                                 </div>
@@ -123,11 +124,7 @@
                                                 <i class="fas fa-download me-2"></i>
                                                 Export
                                             </button>
-                                            <a href="{{ route('finance.approval.funding-requests') }}"
-                                                class="btn btn-warning px-4 py-2 rounded-pill shadow-sm fw-bold text-white">
-                                                <i class="fas fa-hand-holding-usd me-2"></i>
-                                                Funding
-                                            </a>
+
                                         </div>
                                     </div>
                                 </div>
@@ -217,16 +214,7 @@
                                                         class="badge bg-warning text-dark ms-2 px-2 py-1">{{ $pendingCommunityOfferings->count() }}</span>
                                                 </button>
                                             </li>
-                                            <li class="nav-item" role="presentation">
-                                                <button class="nav-link rounded-pill me-2 mb-3 px-3 py-2"
-                                                    id="funding-requests-tab" data-bs-toggle="tab"
-                                                    data-bs-target="#funding-requests" type="button" role="tab">
-                                                    <i class="fas fa-hand-holding-usd me-2"></i>
-                                                    <span class="fw-bold">Funding Requests</span>
-                                                    <span
-                                                        class="badge bg-warning text-dark ms-2 px-2 py-1">{{ $pendingFundingRequests->count() }}</span>
-                                                </button>
-                                            </li>
+
                                         </ul>
                                     </div>
                                     <div class="card-body">
@@ -266,10 +254,7 @@
                                                 @include('finance.approval.partials.community-offerings-table', ['records' => $pendingCommunityOfferings, 'canApprove' => $canApprove])
                                             </div>
 
-                                            <!-- Funding Requests Tab -->
-                                            <div class="tab-pane fade" id="funding-requests" role="tabpanel">
-                                                @include('finance.approval.partials.funding-requests-table', ['records' => $pendingFundingRequests, 'canApprove' => $canApprove])
-                                            </div>
+
                                         </div>
                                     </div>
                                 </div>
@@ -982,85 +967,85 @@
 
                     // Populate the modal with the record details
                     modalBody.innerHTML = `
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6 class="text-primary mb-3"><i class="fas fa-info-circle me-2"></i>Basic Information</h6>
-                        <div class="mb-2"><strong>Type:</strong> ${data.type || 'N/A'}</div>
-                        <div class="mb-2"><strong>Amount:</strong> ${data.amount ? `TZS ${data.amount.toLocaleString()}` : (data.total_budget ? `TZS ${data.total_budget.toLocaleString()}` : 'N/A')}</div>
-                        <div class="mb-2"><strong>Date:</strong> ${formatDate(data.date)}</div>
-                        <div class="mb-2"><strong>Status:</strong> <span class="badge bg-warning">Pending Approval</span></div>
-                        ${data.type === 'Expense' && data.expense_category ? `<div class="mb-2"><strong>Category:</strong> ${data.expense_category.charAt(0).toUpperCase() + data.expense_category.slice(1)}</div>` : ''}
-                        ${data.type === 'Expense' && data.budget_name ? `<div class="mb-2"><strong>Budget:</strong> ${data.budget_name}</div>` : ''}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-primary mb-3"><i class="fas fa-info-circle me-2"></i>Basic Information</h6>
+                            <div class="mb-2"><strong>Type:</strong> ${data.type || 'N/A'}</div>
+                            <div class="mb-2"><strong>Amount:</strong> ${data.amount ? `TZS ${data.amount.toLocaleString()}` : (data.total_budget ? `TZS ${data.total_budget.toLocaleString()}` : 'N/A')}</div>
+                            <div class="mb-2"><strong>Date:</strong> ${formatDate(data.date)}</div>
+                            <div class="mb-2"><strong>Status:</strong> <span class="badge bg-warning">Pending Approval</span></div>
+                            ${data.type === 'Expense' && data.expense_category ? `<div class="mb-2"><strong>Category:</strong> ${data.expense_category.charAt(0).toUpperCase() + data.expense_category.slice(1)}</div>` : ''}
+                            ${data.type === 'Expense' && data.budget_name ? `<div class="mb-2"><strong>Budget:</strong> ${data.budget_name}</div>` : ''}
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-primary mb-3"><i class="fas fa-user me-2"></i>${data.type === 'Budget' ? 'Budget Information' : (data.type === 'Expense' ? 'Expense Information' : 'Member/Donor Information')}</h6>
+                            ${data.type === 'Budget' ? `
+                                <div class="mb-2"><strong>Budget Name:</strong> ${data.budget_name || 'N/A'}</div>
+                                <div class="mb-2"><strong>Budget Type:</strong> ${data.budget_type ? data.budget_type.charAt(0).toUpperCase() + data.budget_type.slice(1) : 'N/A'}</div>
+                                <div class="mb-2"><strong>Fiscal Year:</strong> ${data.fiscal_year || 'N/A'}</div>
+                            ` : data.type === 'Expense' ? `
+                                ${data.vendor ? `<div class="mb-2"><strong>Vendor:</strong> ${data.vendor}</div>` : ''}
+                                ${data.payment_method ? `<div class="mb-2"><strong>Payment Method:</strong> ${data.payment_method.charAt(0).toUpperCase() + data.payment_method.slice(1).replace(/_/g, ' ')}</div>` : ''}
+                                ${data.reference_number ? `<div class="mb-2"><strong>Reference Number:</strong> ${data.reference_number}</div>` : ''}
+                                ${data.receipt_number ? `<div class="mb-2"><strong>Receipt Number:</strong> ${data.receipt_number}</div>` : ''}
+                            ` : `
+                                <div class="mb-2"><strong>Name:</strong> ${data.member_name || data.donor_name || 'Anonymous'}</div>
+                            `}
+                            <div class="mb-2"><strong>Recorded By:</strong> ${data.recorded_by || 'System'}</div>
+                            <div class="mb-2"><strong>Created:</strong> ${formatDateTime(data.created_at)}</div>
+                        </div>
                     </div>
-                    <div class="col-md-6">
-                        <h6 class="text-primary mb-3"><i class="fas fa-user me-2"></i>${data.type === 'Budget' ? 'Budget Information' : (data.type === 'Expense' ? 'Expense Information' : 'Member/Donor Information')}</h6>
-                        ${data.type === 'Budget' ? `
-                            <div class="mb-2"><strong>Budget Name:</strong> ${data.budget_name || 'N/A'}</div>
-                            <div class="mb-2"><strong>Budget Type:</strong> ${data.budget_type ? data.budget_type.charAt(0).toUpperCase() + data.budget_type.slice(1) : 'N/A'}</div>
-                            <div class="mb-2"><strong>Fiscal Year:</strong> ${data.fiscal_year || 'N/A'}</div>
-                        ` : data.type === 'Expense' ? `
-                            ${data.vendor ? `<div class="mb-2"><strong>Vendor:</strong> ${data.vendor}</div>` : ''}
-                            ${data.payment_method ? `<div class="mb-2"><strong>Payment Method:</strong> ${data.payment_method.charAt(0).toUpperCase() + data.payment_method.slice(1).replace(/_/g, ' ')}</div>` : ''}
-                            ${data.reference_number ? `<div class="mb-2"><strong>Reference Number:</strong> ${data.reference_number}</div>` : ''}
-                            ${data.receipt_number ? `<div class="mb-2"><strong>Receipt Number:</strong> ${data.receipt_number}</div>` : ''}
-                        ` : `
-                            <div class="mb-2"><strong>Name:</strong> ${data.member_name || data.donor_name || 'Anonymous'}</div>
-                        `}
-                        <div class="mb-2"><strong>Recorded By:</strong> ${data.recorded_by || 'System'}</div>
-                        <div class="mb-2"><strong>Created:</strong> ${formatDateTime(data.created_at)}</div>
-                    </div>
-                </div>
-                ${data.type === 'Expense' && data.additional_funding ? `
-                    <div class="row mt-3">
-                        <div class="col-12">
-                            <div class="card border-warning">
-                                <div class="card-header bg-warning text-dark">
-                                    <h6 class="mb-0"><i class="fas fa-hand-holding-usd me-2"></i>Additional Funding Sources</h6>
-                                </div>
-                                <div class="card-body">
-                                    ${formatAdditionalFunding(data.additional_funding)}
-                                    <div class="alert alert-info mt-3 mb-0">
-                                        <i class="fas fa-info-circle me-2"></i>
-                                        <strong>Note:</strong> This expense requires additional funding sources to cover the expense amount. The above funding sources have been allocated by the user.
+                    ${data.type === 'Expense' && data.additional_funding ? `
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <div class="card border-warning">
+                                    <div class="card-header bg-warning text-dark">
+                                        <h6 class="mb-0"><i class="fas fa-hand-holding-usd me-2"></i>Additional Funding Sources</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        ${formatAdditionalFunding(data.additional_funding)}
+                                        <div class="alert alert-info mt-3 mb-0">
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            <strong>Note:</strong> This expense requires additional funding sources to cover the expense amount. The above funding sources have been allocated by the user.
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                ` : ''}
-                ${data.notes || data.description ? `
-                    <div class="row mt-3">
-                        <div class="col-12">
-                            <h6 class="text-primary mb-3"><i class="fas fa-sticky-note me-2"></i>${data.type === 'Budget' ? 'Description' : (data.type === 'Expense' ? 'Description' : 'Notes')}</h6>
-                            <p class="text-muted">${data.notes || data.description || ''}</p>
+                    ` : ''}
+                    ${data.notes || data.description ? `
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <h6 class="text-primary mb-3"><i class="fas fa-sticky-note me-2"></i>${data.type === 'Budget' ? 'Description' : (data.type === 'Expense' ? 'Description' : 'Notes')}</h6>
+                                <p class="text-muted">${data.notes || data.description || ''}</p>
+                            </div>
                         </div>
-                    </div>
-                ` : ''}
-                ${data.type === 'Budget' && (data.start_date || data.end_date || data.purpose) ? `
-                    <div class="row mt-3">
-                        <div class="col-12">
-                            <h6 class="text-primary mb-3"><i class="fas fa-calendar me-2"></i>Budget Details</h6>
-                            ${data.start_date ? `<div class="mb-2"><strong>Start Date:</strong> ${data.start_date}</div>` : ''}
-                            ${data.end_date ? `<div class="mb-2"><strong>End Date:</strong> ${data.end_date}</div>` : ''}
-                            ${data.purpose ? `<div class="mb-2"><strong>Purpose:</strong> ${data.purpose}</div>` : ''}
-                            ${data.allocated_amount !== undefined ? `<div class="mb-2"><strong>Allocated Amount:</strong> TZS ${data.allocated_amount.toLocaleString()}</div>` : ''}
-                            ${data.spent_amount !== undefined ? `<div class="mb-2"><strong>Spent Amount:</strong> TZS ${data.spent_amount.toLocaleString()}</div>` : ''}
+                    ` : ''}
+                    ${data.type === 'Budget' && (data.start_date || data.end_date || data.purpose) ? `
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <h6 class="text-primary mb-3"><i class="fas fa-calendar me-2"></i>Budget Details</h6>
+                                ${data.start_date ? `<div class="mb-2"><strong>Start Date:</strong> ${data.start_date}</div>` : ''}
+                                ${data.end_date ? `<div class="mb-2"><strong>End Date:</strong> ${data.end_date}</div>` : ''}
+                                ${data.purpose ? `<div class="mb-2"><strong>Purpose:</strong> ${data.purpose}</div>` : ''}
+                                ${data.allocated_amount !== undefined ? `<div class="mb-2"><strong>Allocated Amount:</strong> TZS ${data.allocated_amount.toLocaleString()}</div>` : ''}
+                                ${data.spent_amount !== undefined ? `<div class="mb-2"><strong>Spent Amount:</strong> TZS ${data.spent_amount.toLocaleString()}</div>` : ''}
+                            </div>
                         </div>
-                    </div>
-                ` : ''}
-            `;
+                    ` : ''}
+                `;
                 })
                 .catch(error => {
                     console.error('Error fetching details:', error);
                     modalBody.innerHTML = `
-                <div class="text-center text-danger">
-                    <i class="fas fa-exclamation-triangle mb-2"></i>
-                    <p>Failed to load details. Please try again.</p>
-                    <button class="btn btn-sm btn-outline-primary" onclick="viewDetails('${type}', ${id})">
-                        <i class="fas fa-redo me-1"></i>Retry
-                    </button>
-                </div>
-            `;
+                    <div class="text-center text-danger">
+                        <i class="fas fa-exclamation-triangle mb-2"></i>
+                        <p>Failed to load details. Please try again.</p>
+                        <button class="btn btn-sm btn-outline-primary" onclick="viewDetails('${type}', ${id})">
+                            <i class="fas fa-redo me-1"></i>Retry
+                        </button>
+                    </div>
+                `;
                 });
         }
 
@@ -1075,9 +1060,9 @@
             alertDiv.style.minWidth = '300px';
 
             alertDiv.innerHTML = `
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        `;
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
 
             document.body.appendChild(alertDiv);
 

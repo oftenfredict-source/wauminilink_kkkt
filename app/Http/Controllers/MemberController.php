@@ -150,6 +150,7 @@ class MemberController extends Controller
             'children.*.disability_type' => 'nullable|string|max:255',
             'children.*.vulnerable_status' => 'nullable|boolean',
             'children.*.vulnerable_type' => 'nullable|string|max:255',
+            'children.*.envelope_number' => 'nullable|string|max:100',
 
             // Address fields - make required
             'nida_number' => 'nullable|string|max:20',
@@ -185,6 +186,7 @@ class MemberController extends Controller
             'spouse_church_member' => ['nullable', 'required_if:marital_status,married', Rule::in(['yes', 'no'])],
             'spouse_campus_id' => 'nullable|exists:campuses,id',
             'spouse_community_id' => 'nullable|exists:communities,id',
+            'spouse_envelope_number' => 'nullable|string|max:100',
 
             // Spouse Welfare Fields
             'spouse_orphan_status' => ['nullable', Rule::in(['mother_deceased', 'father_deceased', 'both_deceased', 'not_orphan'])],
@@ -272,6 +274,33 @@ class MemberController extends Controller
                 }
                 if (empty($request->input('spouse_community_id'))) {
                     $v->errors()->add('spouse_community_id', 'Spouse fellowship is required when spouse is a church member.');
+                }
+            }
+
+            // Mandate spouse envelope number if married
+            if ($request->input('marital_status') === 'married') {
+                if (empty($request->input('spouse_envelope_number'))) {
+                    $v->errors()->add('spouse_envelope_number', 'Spouse envelope number is required.');
+                }
+            }
+
+            // Mandate envelope number for children aged 18+
+            $count = (int) $request->input('children_count', 0);
+            if ($count > 0) {
+                $children = $request->input('children', []);
+                for ($i = 0; $i < $count; $i++) {
+                    if (isset($children[$i]['date_of_birth']) && !empty($children[$i]['date_of_birth'])) {
+                        try {
+                            $dob = Carbon::parse($children[$i]['date_of_birth']);
+                            if ($dob->diffInYears(now()) >= 18) {
+                                if (empty($children[$i]['envelope_number'])) {
+                                    $v->errors()->add("children.$i.envelope_number", 'Envelope number is required for children aged 18 and above.');
+                                }
+                            }
+                        } catch (\Exception $e) {
+                            // Date validation already handled above
+                        }
+                    }
                 }
             }
         });
@@ -561,6 +590,7 @@ class MemberController extends Controller
                         'disability_type' => $childData['disability_type'] ?? null,
                         'vulnerable_status' => isset($childData['vulnerable_status']) && $childData['vulnerable_status'] ? true : false,
                         'vulnerable_type' => $childData['vulnerable_type'] ?? null,
+                        'envelope_number' => $childData['envelope_number'] ?? null,
                     ];
 
                     // Only add campus and fellowship if child is a church member
@@ -671,6 +701,7 @@ class MemberController extends Controller
                         'membership_type' => 'permanent',
                         'campus_id' => $spouseCampusId, // Use spouse's selected campus
                         'community_id' => $spouseCommunityId, // Use spouse's selected community
+                        'envelope_number' => $request->spouse_envelope_number,
                         'full_name' => $member->spouse_full_name,
                         'email' => $member->spouse_email,
                         'phone_number' => $member->spouse_phone_number,

@@ -504,17 +504,30 @@ class BudgetFundingService
             'umoja' => [
                 'Sadaka ya Umoja',
                 'sadaka_umoja',
-                'umoja'
+                'umoja',
+                'kwaya',
+                'jumuiya',
+                'alpha_na_omega',
+                'ombeni',
+                'tumaini',
+                'sifuni',
+                'amsha_amshoa'
             ],
             'majengo' => [
                 'building_fund',
                 'sadaka_jengo',
-                'Ahadi ya Jengo'
+                'Ahadi ya Jengo',
+                'jengo_senta',
+                'jengo_kifumbu',
+                'jengo_mweka'
             ],
             'other' => [
                 'other',
                 'mengineyo',
-                'special_offering'
+                'special_offering',
+                'kitega_uchumi',
+                'investment',
+                'saccos'
             ]
         ];
     }
@@ -543,13 +556,21 @@ class BudgetFundingService
             return 'majengo';
         }
 
-        // Umoja fallbacks
-        if (stripos($typeLower, 'umoja') !== false || $typeLower === 'sadaka_umoja' || $typeLower === 'unity') {
+        // Umoja & Vikundi fallbacks
+        if (
+            stripos($typeLower, 'umoja') !== false || stripos($typeLower, 'kwaya') !== false ||
+            stripos($typeLower, 'jumuiya') !== false || stripos($typeLower, 'group') !== false ||
+            $typeLower === 'sadaka_umoja' || $typeLower === 'unity'
+        ) {
             return 'umoja';
         }
 
-        // Other (Vikundi) fallbacks
-        if (stripos($typeLower, 'kwaya') !== false || stripos($typeLower, 'jumuiya') !== false || stripos($typeLower, 'group') !== false) {
+        // Other (Investment/Special) fallbacks
+        if (
+            stripos($typeLower, 'kitega') !== false || stripos($typeLower, 'investment') !== false ||
+            stripos($typeLower, 'saccos') !== false || stripos($typeLower, 'special') !== false ||
+            $typeLower === 'mengineyo'
+        ) {
             return 'other';
         }
 

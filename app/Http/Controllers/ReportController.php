@@ -484,36 +484,55 @@ class ReportController extends Controller
         // Fetch Estimates from Budget (if available)
         $budgets = Budget::where('fiscal_year', $year)
             ->where('approval_status', 'approved')
-            ->with('lineItems')
             ->get();
 
         foreach ($budgets as $budget) {
-            foreach ($budget->lineItems as $item) {
-                // Try to match item_name to income names
-                foreach ($gospelIncome as &$gospel) {
-                    if (stripos($item->item_name, $gospel['name']) !== false) {
-                        $gospel['estimate'] += $item->amount;
+            $budgetPurposeSlug = strtolower(str_replace([' ', '/', '.', '-', '(', ')'], '_', trim($budget->purpose)));
+
+            // A. Income Estimates
+            if ($budget->budget_type === 'injili') {
+                foreach ($gospelIncome as &$income) {
+                    $nameSlug = strtolower(str_replace([' ', '/', '.', '-', '(', ')'], '_', trim($income['name'])));
+                    if ($budgetPurposeSlug === $nameSlug || stripos($nameSlug, $budgetPurposeSlug) !== false || stripos($budgetPurposeSlug, $nameSlug) !== false) {
+                        $income['estimate'] += $budget->total_budget;
                     }
                 }
-                foreach ($groupIncome as &$group) {
-                    if (stripos($item->item_name, $group['name']) !== false) {
-                        $group['estimate'] += $item->amount;
+            } elseif ($budget->budget_type === 'umoja' || $budget->budget_type === 'other') {
+                foreach ($groupIncome as &$income) {
+                    $nameSlug = strtolower(str_replace([' ', '/', '.', '-', '(', ')'], '_', trim($income['name'])));
+                    if ($budgetPurposeSlug === $nameSlug || stripos($nameSlug, $budgetPurposeSlug) !== false || stripos($budgetPurposeSlug, $nameSlug) !== false) {
+                        $income['estimate'] += $budget->total_budget;
                     }
                 }
-                // Match expenses
+            } elseif ($budget->budget_type === 'majengo') {
+                foreach ($buildingIncome as &$income) {
+                    $nameSlug = strtolower(str_replace([' ', '/', '.', '-', '(', ')'], '_', trim($income['name'])));
+                    if ($budgetPurposeSlug === $nameSlug || stripos($nameSlug, $budgetPurposeSlug) !== false || stripos($budgetPurposeSlug, $nameSlug) !== false) {
+                        $income['estimate'] += $budget->total_budget;
+                    }
+                }
+            }
+
+            // B. Expense Estimates (MATUMIZI)
+            if ($budget->budget_type === 'injili') {
                 foreach ($gospelExpenses as &$exp) {
-                    if (stripos($item->item_name, $exp['name']) !== false) {
-                        $exp['estimate'] += $item->amount;
+                    $expNameSlug = strtolower(str_replace([' ', '/', '.', '-', '(', ')'], '_', trim($exp['name'])));
+                    if ($budgetPurposeSlug === $expNameSlug || stripos($expNameSlug, $budgetPurposeSlug) !== false || stripos($budgetPurposeSlug, $expNameSlug) !== false) {
+                        $exp['estimate'] += $budget->total_budget;
                     }
                 }
+            } elseif ($budget->budget_type === 'umoja' || $budget->budget_type === 'other') {
                 foreach ($groupExpenses as &$exp) {
-                    if (stripos($item->item_name, $exp['name']) !== false) {
-                        $exp['estimate'] += $item->amount;
+                    $expNameSlug = strtolower(str_replace([' ', '/', '.', '-', '(', ')'], '_', trim($exp['name'])));
+                    if ($budgetPurposeSlug === $expNameSlug || stripos($expNameSlug, $budgetPurposeSlug) !== false || stripos($budgetPurposeSlug, $expNameSlug) !== false) {
+                        $exp['estimate'] += $budget->total_budget;
                     }
                 }
+            } elseif ($budget->budget_type === 'majengo') {
                 foreach ($buildingExpenses as &$exp) {
-                    if (stripos($item->item_name, $exp['name']) !== false) {
-                        $exp['estimate'] += $item->amount;
+                    $expNameSlug = strtolower(str_replace([' ', '/', '.', '-', '(', ')'], '_', trim($exp['name'])));
+                    if ($budgetPurposeSlug === $expNameSlug || stripos($expNameSlug, $budgetPurposeSlug) !== false || stripos($budgetPurposeSlug, $expNameSlug) !== false) {
+                        $exp['estimate'] += $budget->total_budget;
                     }
                 }
             }

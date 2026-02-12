@@ -32,6 +32,7 @@ class Child extends Model
         'city_town',
         'current_church_attended',
         'phone_number',
+        'envelope_number',
         'lives_outside_main_area',
         'orphan_status',
         'disability_status',
@@ -58,8 +59,8 @@ class Child extends Model
     public function departments()
     {
         return $this->belongsToMany(Department::class, 'department_member')
-                    ->withPivot('status', 'assigned_at')
-                    ->withTimestamps();
+            ->withPivot('status', 'assigned_at')
+            ->withTimestamps();
     }
 
     public function community()
@@ -82,7 +83,7 @@ class Child extends Model
         if (!$this->is_church_member || !$this->date_of_birth) {
             return false;
         }
-        
+
         $age = $this->getAge();
         if ($age < 18) {
             return false;
@@ -145,12 +146,12 @@ class Child extends Model
         $parents = collect();
         if ($this->member) {
             $parents->push($this->member);
-            
+
             // Check for spouse if they are also a church member
             if ($this->member->spouse_member_id && $this->member->spouseMember) {
                 $parents->push($this->member->spouseMember);
             }
-            
+
             // Check if current linked member is a spouse of another member
             if ($this->member->mainMember) {
                 $parents->push($this->member->mainMember);
@@ -208,7 +209,7 @@ class Child extends Model
     public function getAgeGroup()
     {
         $age = $this->getAge();
-        
+
         if ($age < 3) {
             return 'infant';
         } elseif ($age >= 3 && $age <= 12) {
@@ -216,7 +217,7 @@ class Child extends Model
         } elseif ($age >= 13 && $age <= 17) {
             return 'teenager';
         }
-        
+
         return null; // 18 or older
     }
 
@@ -228,7 +229,7 @@ class Child extends Model
     public function getRecommendedServiceType()
     {
         $ageGroup = $this->getAgeGroup();
-        
+
         switch ($ageGroup) {
             case 'sunday_school':
                 return 'children_service'; // Sunday School
@@ -291,32 +292,32 @@ class Child extends Model
     {
         $maxAttempts = 1000; // Prevent infinite loop
         $attempts = 0;
-        
+
         do {
             // Generate random number between 10 and 999 (2-3 digits)
             $enrollId = rand(10, 999);
             $attempts++;
-            
+
             if ($attempts >= $maxAttempts) {
                 // If we can't find a unique ID, try sequential search
                 // Check both members and children tables
                 for ($id = 10; $id <= 999; $id++) {
-                    $existsInMembers = \App\Models\Member::where('biometric_enroll_id', (string)$id)->exists();
-                    $existsInChildren = self::where('biometric_enroll_id', (string)$id)->exists();
-                    
+                    $existsInMembers = \App\Models\Member::where('biometric_enroll_id', (string) $id)->exists();
+                    $existsInChildren = self::where('biometric_enroll_id', (string) $id)->exists();
+
                     if (!$existsInMembers && !$existsInChildren) {
-                        return (string)$id;
+                        return (string) $id;
                     }
                 }
                 throw new \Exception('Cannot generate unique biometric enroll ID. All IDs (10-999) are taken.');
             }
-            
+
         } while (
-            \App\Models\Member::where('biometric_enroll_id', (string)$enrollId)->exists() ||
-            self::where('biometric_enroll_id', (string)$enrollId)->exists()
+            \App\Models\Member::where('biometric_enroll_id', (string) $enrollId)->exists() ||
+            self::where('biometric_enroll_id', (string) $enrollId)->exists()
         );
-        
-        return (string)$enrollId;
+
+        return (string) $enrollId;
     }
 
     /**

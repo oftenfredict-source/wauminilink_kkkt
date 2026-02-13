@@ -96,6 +96,7 @@ return [
     'children_list' => 'Children List',
     'filters' => 'Filters',
     'search_placeholder' => 'Search members...',
+    'no_members_found' => 'No members found',
     'region' => 'Region',
     'district' => 'District',
     'ward' => 'Ward',

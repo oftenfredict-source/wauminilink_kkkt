@@ -6,6 +6,7 @@ use App\Models\CommunityOffering;
 use App\Models\Community;
 use App\Models\SundayService;
 use App\Models\User;
+use App\Models\BranchOffering;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -83,7 +84,27 @@ class CommunityOfferingController extends Controller
                 ->where('status', 'pending_evangelism')
                 ->count();
 
-            return view('evangelism-leader.offerings.index', compact('offerings', 'confirmedOfferings', 'consolidatedTotal', 'consolidatedCount'));
+            // Fetch Branch Offerings
+            $branchOfferings = BranchOffering::where('campus_id', $campus->id)
+                ->whereIn('status', ['pending_secretary']) // Or other relevant statuses
+                ->with(['service', 'churchElder'])
+                ->orderBy('offering_date', 'desc')
+                ->paginate(10, ['*'], 'branch_page');
+
+            $confirmedBranchOfferings = BranchOffering::where('campus_id', $campus->id)
+                ->where('status', 'completed')
+                ->with(['service'])
+                ->orderBy('updated_at', 'desc')
+                ->paginate(10, ['*'], 'confirmed_branch_page');
+
+            return view('evangelism-leader.offerings.index', compact(
+                'offerings',
+                'confirmedOfferings',
+                'consolidatedTotal',
+                'consolidatedCount',
+                'branchOfferings',
+                'confirmedBranchOfferings'
+            ));
         } elseif ($user->isSecretary() || $user->isAdmin() || $user->isPastor()) {
             // Secretary/Admin/Pastor sees submissions ready for secretary OR still with leader
             $offerings = CommunityOffering::whereIn('status', ['pending_evangelism', 'pending_secretary'])

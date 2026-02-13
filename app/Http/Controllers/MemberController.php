@@ -1099,6 +1099,11 @@ class MemberController extends Controller
         // Get base query for distincts (respecting branch access)
         $baseQuery = clone $query;
 
+        // Apply community filter BEFORE executing query
+        if ($request->filled('community_id')) {
+            $query->where('community_id', $request->community_id);
+        }
+
         // Distincts for filter dropdowns (filtered by branch access)
         $regions = (clone $baseQuery)->distinct()->pluck('region')->filter()->sort()->values();
         $districts = (clone $baseQuery)->distinct()->pluck('district')->filter()->sort()->values();
@@ -1128,6 +1133,32 @@ class MemberController extends Controller
                 ->orderBy('name')
                 ->get();
         }
+
+        // Get communities for filter dropdown
+        $communitiesQuery = \App\Models\Community::orderBy('name');
+
+        // Filter communities by campus if user is not admin and belongs to a campus
+        if (auth()->check() && !auth()->user()->isAdmin()) {
+            $userCampus = auth()->user()->getCampus();
+            if ($userCampus) {
+                if ($userCampus->is_main_campus) {
+                    // Main campus can see all communities (optional, or limit to main campus/sub-campuses)
+                    // For now, let's allow seeing all communities or filter by selected campus if present
+                    if ($request->filled('campus_id')) {
+                        $communitiesQuery->where('campus_id', $request->campus_id);
+                    }
+                } else {
+                    // Branch users can only see their branch's communities
+                    $communitiesQuery->where('campus_id', $userCampus->id);
+                }
+            }
+        } elseif ($request->filled('campus_id')) {
+            // If admin selects a campus, filter communities by that campus
+            $communitiesQuery->where('campus_id', $request->campus_id);
+        }
+
+        $communities = $communitiesQuery->get();
+
 
         // Count members by type for tabs
         $baseCountQuery = Member::query();
@@ -1259,7 +1290,7 @@ class MemberController extends Controller
             return response()->json($formattedMembers);
         }
 
-        return view('members.view', compact('members', 'regions', 'districts', 'wards', 'tribes', 'children', 'campuses', 'permanentCount', 'temporaryCount', 'allCount', 'childrenCount'));
+        return view('members.view', compact('members', 'regions', 'districts', 'wards', 'tribes', 'children', 'campuses', 'communities', 'permanentCount', 'temporaryCount', 'allCount', 'childrenCount'));
     }
 
     public function view()

@@ -13,6 +13,7 @@ use App\Models\Offering;
 use App\Models\CommunityOffering;
 use App\Models\Donation;
 use App\Models\Pledge;
+use App\Models\AhadiPledge;
 use App\Models\PledgePayment;
 use App\Models\SpecialEvent;
 use App\Models\Celebration;
@@ -211,10 +212,30 @@ class MemberDashboardController extends Controller
 
         // Get pledges - use pledge_amount column
         $totalPledges = Pledge::where('member_id', $member->id)->sum('pledge_amount');
+
+        // Add AhadiPledge totals (cash based)
+        $totalAhadiPledges = AhadiPledge::where('member_id', $member->id)
+            ->where('item_type', 'Fedha (Cash)')
+            ->sum('quantity_promised');
+
+        $totalInKindValue = AhadiPledge::where('member_id', $member->id)
+            ->where('item_type', '!=', 'Fedha (Cash)')
+            ->sum('estimated_value');
+
+        $totalCombinedPledges = $totalPledges + $totalAhadiPledges + $totalInKindValue;
+
         $totalPledgePayments = PledgePayment::whereHas('pledge', function ($query) use ($member) {
             $query->where('member_id', $member->id);
         })->approved()->sum('amount');
-        $remainingPledges = $totalPledges - $totalPledgePayments;
+
+        // Add AhadiPledge fulfillments (calculated if possible, but status based for now or quantity fulfilled)
+        // Note: Currently AhadiPledge doesn't have a linked 'Payment' table like Pledge does, it uses quantity_fulfilled
+        $totalAhadiPayments = AhadiPledge::where('member_id', $member->id)
+            ->where('item_type', 'Fedha (Cash)')
+            ->sum('quantity_fulfilled');
+
+        $grandTotalPayments = $totalPledgePayments + $totalAhadiPayments;
+        $remainingPledges = $totalCombinedPledges - $grandTotalPayments;
 
         // Recent transactions
         $recentTithes = Tithe::where('member_id', $member->id)
@@ -242,8 +263,8 @@ class MemberDashboardController extends Controller
             'monthly_offerings' => $monthlyOfferings,
             'total_donations' => $totalDonations,
             'monthly_donations' => $monthlyDonations,
-            'total_pledges' => $totalPledges,
-            'total_pledge_payments' => $totalPledgePayments,
+            'total_pledges' => $totalCombinedPledges,
+            'total_pledge_payments' => $grandTotalPayments,
             'remaining_pledges' => $remainingPledges,
             'recent_tithes' => $recentTithes,
             'recent_offerings' => $recentOfferings,
@@ -355,7 +376,13 @@ class MemberDashboardController extends Controller
             ->orderBy('offering_date', 'desc')
             ->get();
 
-        return view('members.finance', compact('member', 'financialSummary', 'pledges', 'allOfferings'));
+        // Get all AhadiPledges for detailed view
+        $ahadiPledges = AhadiPledge::where('member_id', $member->id)
+            ->orderBy('year', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return view('members.finance', compact('member', 'financialSummary', 'pledges', 'ahadiPledges', 'allOfferings'));
     }
 
     /**

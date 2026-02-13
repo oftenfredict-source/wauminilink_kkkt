@@ -2,11 +2,10 @@
 <!-- This partial contains the filters and members table, as in the original view -->
 
 <!-- Filters & Search - Collapsible on Mobile -->
-<form method="GET" action="{{ route('members.index') }}" class="card mb-3 border-0 shadow-sm" id="filtersForm">
+<form method="GET" action="{{ route('members.index') }}" class="card mb-3 border-0 shadow-sm" id="filtersForm-{{ $membershipType ?? 'default' }}">
     <!-- Preserve tab selection -->
-    @if(request('membership_type'))
-        <input type="hidden" name="membership_type" value="{{ request('membership_type') }}">
-    @endif
+    <input type="hidden" name="membership_type" value="{{ $membershipType ?? request('membership_type') ?? 'all' }}">
+    
     @if(request('type'))
         <input type="hidden" name="type" value="{{ request('type') }}">
     @endif
@@ -14,37 +13,37 @@
         <input type="hidden" name="archived" value="{{ request('archived') }}">
     @endif
     <!-- Filter Header -->
-    <div class="card-header bg-white border-bottom p-2 px-3 filter-header" onclick="toggleFilters()">
+    <div class="card-header bg-white border-bottom p-2 px-3 filter-header" onclick="toggleFilters('{{ $membershipType ?? 'default' }}')">
         <div class="d-flex align-items-center justify-content-between">
             <div class="d-flex align-items-center gap-2">
                 <i class="fas fa-filter text-danger"></i>
                 <span class="fw-semibold">{{ __('common.filters') }}</span>
-                @if(request('search') || request('gender') || request('ward') || request('campus_id'))
+                @if(request('search') || request('gender') || request('ward') || request('campus_id') || request('community_id'))
                     <span class="badge bg-danger rounded-pill"
-                        id="activeFiltersCount">{{ (request('search') ? 1 : 0) + (request('gender') ? 1 : 0) + (request('ward') ? 1 : 0) + (request('campus_id') ? 1 : 0) }}</span>
+                        id="activeFiltersCount-{{ $membershipType ?? 'default' }}">{{ (request('search') ? 1 : 0) + (request('gender') ? 1 : 0) + (request('ward') ? 1 : 0) + (request('campus_id') ? 1 : 0) + (request('community_id') ? 1 : 0) }}</span>
                 @endif
             </div>
-            <i class="fas fa-chevron-down text-muted d-md-none" id="filterToggleIcon"></i>
+            <i class="fas fa-chevron-down text-muted d-md-none" id="filterToggleIcon-{{ $membershipType ?? 'default' }}"></i>
         </div>
     </div>
 
     <!-- Filter Body - Collapsible on Mobile -->
-    <div class="card-body p-3" id="filterBody">
+    <div class="card-body p-3" id="filterBody-{{ $membershipType ?? 'default' }}">
         <!-- Search - Always visible and compact -->
         <div class="mb-3">
             <div class="input-group input-group-sm">
                 <span class="input-group-text bg-light"><i class="fas fa-search text-muted"></i></span>
-                <input type="text" name="search" id="searchInput" value="{{ request('search') }}" class="form-control"
+                <input type="text" name="search" id="searchInput-{{ $membershipType ?? 'default' }}" value="{{ request('search') }}" class="form-control"
                     placeholder="{{ __('common.search_placeholder') }}">
             </div>
         </div>
 
         <!-- Advanced Filters - Compact Grid -->
-        <div class="row g-2 mb-3" id="advancedFilters">
+        <div class="row g-2 mb-3" id="advancedFilters-{{ $membershipType ?? 'default' }}">
             @if(isset($campuses) && $campuses->count() > 0)
                 <div class="col-6 col-md-3">
                     <label class="form-label small text-muted mb-1">{{ __('common.branch') }}</label>
-                    <select name="campus_id" id="campusFilter" class="form-select form-select-sm">
+                    <select name="campus_id" id="campusFilter-{{ $membershipType ?? 'default' }}" class="form-select form-select-sm filter-select">
                         <option value="">{{ __('common.all') }}</option>
                         @foreach($campuses as $campus)
                             <option value="{{ $campus->id }}" {{ request('campus_id') == $campus->id ? 'selected' : '' }}>
@@ -54,9 +53,22 @@
                     </select>
                 </div>
             @endif
+            @if(isset($communities) && $communities->count() > 0)
+                <div class="col-6 col-md-3">
+                    <label class="form-label small text-muted mb-1">{{ __('common.community') }}</label>
+                    <select name="community_id" id="communityFilter-{{ $membershipType ?? 'default' }}" class="form-select form-select-sm filter-select">
+                        <option value="">{{ __('common.all') }}</option>
+                        @foreach($communities as $community)
+                            <option value="{{ $community->id }}" {{ request('community_id') == $community->id ? 'selected' : '' }}>
+                                {{ $community->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+            @endif
             <div class="col-6 col-md-3">
                 <label class="form-label small text-muted mb-1">{{ __('common.gender') }}</label>
-                <select name="gender" id="genderFilter" class="form-select form-select-sm">
+                <select name="gender" id="genderFilter-{{ $membershipType ?? 'default' }}" class="form-select form-select-sm filter-select">
                     <option value="">{{ __('common.all') }}</option>
                     <option value="male" {{ request('gender') === 'male' ? 'selected' : '' }}>{{ __('common.male') }}
                     </option>
@@ -68,7 +80,7 @@
 
             <div class="col-6 col-md-3">
                 <label class="form-label small text-muted mb-1">{{ __('common.ward') }}</label>
-                <select name="ward" id="wardFilter" class="form-select form-select-sm">
+                <select name="ward" id="wardFilter-{{ $membershipType ?? 'default' }}" class="form-select form-select-sm filter-select">
                     <option value="">{{ __('common.all') }}</option>
                     @foreach(($wards ?? []) as $ward)
                         <option value="{{ $ward }}" {{ request('ward') === $ward ? 'selected' : '' }}>{{ $ward }}</option>
@@ -82,7 +94,7 @@
             <button type="submit" class="btn btn-danger btn-sm flex-fill">
                 <i class="fas fa-filter me-1"></i>{{ __('common.apply') }}
             </button>
-            <a href="{{ route('members.index') }}" class="btn btn-outline-secondary btn-sm">
+            <a href="{{ route('members.index', ['membership_type' => $membershipType ?? 'all']) }}" class="btn btn-outline-secondary btn-sm">
                 <i class="fas fa-redo me-1"></i>{{ __('common.reset') }}
             </a>
         </div>
@@ -90,74 +102,72 @@
 </form>
 
 <script>
-    function toggleFilters() {
-        // Only toggle on mobile devices
-        if (window.innerWidth > 768) {
-            return; // Don't toggle on desktop
-        }
-
-        const filterBody = document.getElementById('filterBody');
-        const filterIcon = document.getElementById('filterToggleIcon');
-
-        if (!filterBody || !filterIcon) return;
-
-        // Check computed style to see if it's visible
-        const computedStyle = window.getComputedStyle(filterBody);
-        const isVisible = computedStyle.display !== 'none';
-
-        if (isVisible) {
-            filterBody.style.display = 'none';
-            filterIcon.classList.remove('fa-chevron-up');
-            filterIcon.classList.add('fa-chevron-down');
-        } else {
-            filterBody.style.display = 'block';
-            filterIcon.classList.remove('fa-chevron-down');
-            filterIcon.classList.add('fa-chevron-up');
-        }
+    // Ensure function is defined only once globally (or handle redeclaration gracefully)
+    if (typeof window.toggleFilters !== 'function') {
+        window.toggleFilters = function(type) {
+            const body = document.getElementById('filterBody-' + type);
+            const icon = document.getElementById('filterToggleIcon-' + type);
+            if (body && icon) {
+                if (body.style.display === 'none') {
+                    body.style.display = 'block';
+                    icon.classList.remove('fa-chevron-down');
+                    icon.classList.add('fa-chevron-up');
+                } else {
+                    body.style.display = 'none';
+                    icon.classList.remove('fa-chevron-up');
+                    icon.classList.add('fa-chevron-down');
+                }
+            }
+        };
     }
 
-    // Handle window resize
-    window.addEventListener('resize', function () {
-        const filterBody = document.getElementById('filterBody');
-        const filterIcon = document.getElementById('filterToggleIcon');
-
-        if (!filterBody || !filterIcon) return;
-
-        if (window.innerWidth > 768) {
-            // Always show on desktop
-            filterBody.style.display = 'block';
-            filterIcon.style.display = 'none';
-        } else {
-            // On mobile, show chevron
-            filterIcon.style.display = 'block';
+    // Auto-submit on change for this specific form instance
+    document.addEventListener('DOMContentLoaded', function() {
+        const type = '{{ $membershipType ?? "default" }}';
+        const form = document.getElementById('filtersForm-' + type);
+        if (form) {
+            const selects = form.querySelectorAll('.filter-select');
+            selects.forEach(select => {
+                select.addEventListener('change', function() {
+                     // Show loading state if desired
+                     // Submit form
+                     form.submit();
+                });
+            });
         }
     });
-
     // Initialize on page load
     document.addEventListener('DOMContentLoaded', function () {
-        const filterBody = document.getElementById('filterBody');
-        const filterIcon = document.getElementById('filterToggleIcon');
+        const filterBody = document.getElementById('filterBody-{{ $membershipType ?? "default" }}');
+        const filterIcon = document.getElementById('filterToggleIcon-{{ $membershipType ?? "default" }}');
 
         if (!filterBody || !filterIcon) return;
 
         if (window.innerWidth <= 768) {
             // Mobile: start collapsed
             filterBody.style.display = 'none';
-            filterIcon.classList.remove('fa-chevron-up');
-            filterIcon.classList.add('fa-chevron-down');
+            if (filterIcon) {
+                filterIcon.classList.remove('fa-chevron-up');
+                filterIcon.classList.add('fa-chevron-down');
+            }
         } else {
             // Desktop: always show
             filterBody.style.display = 'block';
-            filterIcon.style.display = 'none';
+            if (filterIcon) {
+                filterIcon.style.display = 'none';
+            }
         }
 
         // Show filters if any are active
-        @if(request('search') || request('gender') || request('ward') || request('campus_id'))
+        @if(request('search') || request('gender') || request('ward') || request('campus_id') || request('community_id'))
             if (window.innerWidth <= 768) {
-                toggleFilters(); // Expand if filters are active
+                // Ensure toggleFilters is available before calling
+                if (typeof window.toggleFilters === 'function') {
+                    window.toggleFilters('{{ $membershipType ?? "default" }}');
+                }
             }
         @endif
-});
+    });
 </script>
 
 <!-- Members Table -->

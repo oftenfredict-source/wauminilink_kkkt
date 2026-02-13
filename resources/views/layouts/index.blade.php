@@ -2525,10 +2525,21 @@
                                 <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
                                 {{ __('common.dashboard') }}
                             </a>
-                            <a class="nav-link" href="{{ route('evangelism-leader.register-member') }}">
-                                <div class="sb-nav-link-icon"><i class="fas fa-user-plus"></i></div>
-                                {{ __('common.register_member') }}
+                            <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapseEvangelismMembers" aria-expanded="false" aria-controls="collapseEvangelismMembers">
+                                <div class="sb-nav-link-icon"><i class="fas fa-users"></i></div>
+                                {{ __('common.members') }}
+                                <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
                             </a>
+                            <div class="collapse" id="collapseEvangelismMembers" aria-labelledby="headingEvangelismMembers" data-bs-parent="#sidenavAccordion">
+                                <nav class="sb-sidenav-menu-nested nav">
+                                    <a class="nav-link" href="{{ route('evangelism-leader.register-member') }}">
+                                        <i class="fas fa-user-plus me-2"></i>{{ __('common.register_member') }}
+                                    </a>
+                                    <a class="nav-link" href="{{ route('members.index') }}">
+                                        <i class="fas fa-eye me-2"></i>View Member
+                                    </a>
+                                </nav>
+                            </div>
                             <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapseEvangelismReports" aria-expanded="false" aria-controls="collapseEvangelismReports">
                                 <div class="sb-nav-link-icon"><i class="fas fa-file-alt"></i></div>
                                 {{ __('common.community_reports') }}
@@ -2603,9 +2614,7 @@
                                     <a class="nav-link" href="{{ route('evangelism-leader.branch-services.index') }}">
                                         <i class="fas fa-calendar-alt me-2"></i>Sunday Services
                                     </a>
-                                    <a class="nav-link" href="{{ route('evangelism-leader.branch-offerings.index') }}">
-                                        <i class="fas fa-money-bill-wave me-2"></i>Branch Offerings
-                                    </a>
+
                                 </nav>
                             </div>
                             <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapseEvangelismRequests" aria-expanded="false" aria-controls="collapseEvangelismRequests">
@@ -2633,10 +2642,7 @@
                                 <div class="sb-nav-link-icon"><i class="fas fa-heart-broken"></i></div>
                                 Bereavement Management
                             </a>
-                            <a class="nav-link" href="{{ route('evangelism-leader.finance.index') }}">
-                                <div class="sb-nav-link-icon"><i class="fas fa-coins"></i></div>
-                                Finance Management
-                            </a>
+
                             <div class="sb-sidenav-menu-heading">Account</div>
                             <a class="nav-link" href="{{ route('leader.change-password') }}">
                                 <div class="sb-nav-link-icon"><i class="fas fa-key"></i></div>

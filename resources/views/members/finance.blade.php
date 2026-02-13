@@ -13,7 +13,12 @@
                                     <i class="fas fa-wallet text-danger"></i>
                                 </div>
                                 <div class="lh-sm">
-                                    <h5 class="mb-0 fw-semibold text-dark">My Finance</h5>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <h5 class="mb-0 fw-semibold text-dark">My Finance</h5>
+                                        @if($member->envelope_number)
+                                            <span class="badge bg-danger rounded-pill">No: {{ $member->envelope_number }}</span>
+                                        @endif
+                                    </div>
                                     <small class="text-muted">Financial contributions and records</small>
                                 </div>
                             </div>
@@ -70,94 +75,68 @@
         <div class="row mb-4">
             <div class="col-12">
                 <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-warning text-white">
-                        <h6 class="mb-0"><i class="fas fa-file-contract me-2"></i>Ahadi ya Bwana</h6>
+                    <div class="card-header bg-warning text-white d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0"><i class="fas fa-file-contract me-2"></i>Ahadi ya Bwana (Cash & In-kind)</h6>
                     </div>
                     <div class="card-body">
-                        @if(isset($pledges) && $pledges->count() > 0)
+                        @if((isset($pledges) && $pledges->count() > 0) || (isset($ahadiPledges) && $ahadiPledges->count() > 0))
                             <div class="table-responsive">
                                 <table class="table table-hover">
                                     <thead>
                                         <tr>
-                                            <th>Pledge Amount</th>
-                                            <th>Start Date</th>
-                                            <th>End Date</th>
-                                            <th>Amount Paid</th>
-                                            <th>Remaining Amount</th>
+                                            <th>Item/Type</th>
+                                            <th>Year/Date</th>
+                                            <th>Promised</th>
+                                            <th>Fulfilled</th>
+                                            <th>Value (TZS)</th>
                                             <th>Status</th>
-                                            <th>Payment History</th>
                                         </tr>
                                     </thead>
                                     <tbody>
+                                        {{-- Traditional Pledges --}}
                                         @foreach($pledges as $pledge)
                                             <tr>
-                                                <td><strong>TZS {{ number_format($pledge->pledge_amount, 2) }}</strong></td>
+                                                <td><strong>Pledge</strong></td>
                                                 <td>{{ $pledge->pledge_date ? $pledge->pledge_date->format('M d, Y') : 'N/A' }}</td>
-                                                <td>{{ $pledge->due_date ? $pledge->due_date->format('M d, Y') : 'No due date' }}
-                                                </td>
+                                                <td>TZS {{ number_format($pledge->pledge_amount, 2) }}</td>
                                                 <td>TZS {{ number_format($pledge->amount_paid, 2) }}</td>
-                                                <td><strong class="text-danger">TZS
-                                                        {{ number_format($pledge->remaining_amount, 2) }}</strong></td>
+                                                <td>TZS {{ number_format($pledge->pledge_amount, 2) }}</td>
                                                 <td>
                                                     @if($pledge->status == 'completed')
                                                         <span class="badge bg-success">Completed</span>
                                                     @elseif($pledge->status == 'active')
                                                         <span class="badge bg-danger">Active</span>
-                                                    @elseif($pledge->status == 'overdue')
-                                                        <span class="badge bg-dark">Overdue</span>
                                                     @else
                                                         <span class="badge bg-secondary">{{ ucfirst($pledge->status) }}</span>
                                                     @endif
                                                 </td>
+                                            </tr>
+                                        @endforeach
+
+                                        {{-- Ahadi Pledges (New System) --}}
+                                        @foreach($ahadiPledges as $ahadi)
+                                            <tr>
+                                                <td><strong>{{ $ahadi->item_type }}</strong></td>
+                                                <td>{{ $ahadi->year }}</td>
+                                                <td>{{ number_format($ahadi->quantity_promised, 1) }} {{ $ahadi->unit }}</td>
+                                                <td>{{ number_format($ahadi->quantity_fulfilled, 1) }} {{ $ahadi->unit }}</td>
                                                 <td>
-                                                    @if($pledge->payments && $pledge->payments->count() > 0)
-                                                        <button class="btn btn-sm btn-outline-danger" type="button"
-                                                            data-bs-toggle="collapse" data-bs-target="#payments{{ $pledge->id }}"
-                                                            aria-expanded="false">
-                                                            <i class="fas fa-list me-1"></i>View Payments
-                                                            ({{ $pledge->payments->count() }})
-                                                        </button>
+                                                    @if($ahadi->estimated_value)
+                                                        TZS {{ number_format($ahadi->estimated_value, 2) }}
                                                     @else
-                                                        <span class="text-muted">No payments yet</span>
+                                                        <span class="text-muted">N/A</span>
+                                                    @endif
+                                                </td>
+                                                <td>
+                                                    @if($ahadi->status == 'fully_fulfilled')
+                                                        <span class="badge bg-success">Completed</span>
+                                                    @elseif($ahadi->status == 'partially_fulfilled')
+                                                        <span class="badge bg-warning text-dark">Partial</span>
+                                                    @else
+                                                        <span class="badge bg-danger">Promised</span>
                                                     @endif
                                                 </td>
                                             </tr>
-                                            @if($pledge->payments && $pledge->payments->count() > 0)
-                                                <tr>
-                                                    <td colspan="7" class="p-0">
-                                                        <div class="collapse" id="payments{{ $pledge->id }}">
-                                                            <div class="card card-body border-0 bg-light">
-                                                                <h6 class="mb-3">Payment History:</h6>
-                                                                <div class="table-responsive">
-                                                                    <table class="table table-sm table-bordered">
-                                                                        <thead>
-                                                                            <tr>
-                                                                                <th>Payment Date</th>
-                                                                                <th>Amount</th>
-                                                                                <th>Payment Method</th>
-                                                                                <th>Reference Number</th>
-                                                                            </tr>
-                                                                        </thead>
-                                                                        <tbody>
-                                                                            @foreach($pledge->payments as $payment)
-                                                                                <tr>
-                                                                                    <td>{{ $payment->payment_date->format('M d, Y') }}</td>
-                                                                                    <td><strong>TZS
-                                                                                            {{ number_format($payment->amount, 2) }}</strong>
-                                                                                    </td>
-                                                                                    <td>{{ ucfirst($payment->payment_method ?? 'N/A') }}
-                                                                                    </td>
-                                                                                    <td>{{ $payment->reference_number ?? 'N/A' }}</td>
-                                                                                </tr>
-                                                                            @endforeach
-                                                                        </tbody>
-                                                                    </table>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            @endif
                                         @endforeach
                                     </tbody>
                                 </table>

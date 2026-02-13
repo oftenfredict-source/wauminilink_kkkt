@@ -765,6 +765,11 @@ Route::get('/dashboard', function () {
 
     $user = auth()->user();
 
+    // 1. Super Administrator prioritized check
+    if ($user->isAdmin()) {
+        return redirect()->route('admin.dashboard');
+    }
+
     // If user has member_id, check for active leadership positions first
     if ($user->member_id) {
         // Check if user has any active leadership positions
@@ -786,9 +791,7 @@ Route::get('/dashboard', function () {
         }
 
         // If they have active positions, check role-based dashboards
-        if ($user->isAdmin()) {
-            return redirect()->route('admin.dashboard');
-        } elseif ($user->isEvangelismLeader()) {
+        if ($user->isEvangelismLeader()) {
             return redirect()->route('evangelism-leader.dashboard');
         } elseif ($user->isParishWorker()) {
             return redirect()->route('parish-worker.dashboard');
@@ -805,9 +808,7 @@ Route::get('/dashboard', function () {
     }
 
     // For users without member_id, check role-based dashboards
-    if ($user->isAdmin()) {
-        return redirect()->route('admin.dashboard');
-    } elseif ($user->isPastor()) {
+    if ($user->isPastor()) {
         return redirect()->route('dashboard.pastor');
     } elseif ($user->isTreasurer()) {
         return redirect()->route('finance.dashboard');

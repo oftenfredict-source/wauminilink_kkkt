@@ -1096,27 +1096,27 @@
                 Swal.fire({
                     title: '{{ __('common.extend_membership') }}',
                     html: `
-                    <p>{{ __('common.select_duration_extend') }}:</p>
-                    <select id="extension-duration" class="form-select mb-3">
-                        <option value="1">1 {{ __('common.month') }}</option>
-                        <option value="3" selected>3 {{ __('common.months') }}</option>
-                        <option value="6">6 {{ __('common.months') }}</option>
-                        <option value="12">1 {{ __('common.year') }}</option>
-                        <option value="24">2 {{ __('common.years') }}</option>
-                        <option value="custom">{{ __('common.custom_duration') }}</option>
-                    </select>
-                    <div id="custom-duration-container" style="display: none;" class="mb-3">
-                        <label class="form-label small text-muted">{{ __('common.enter_duration') }}:</label>
-                        <div class="input-group">
-                            <input type="number" id="custom-duration" class="form-control" min="1" placeholder="e.g. 2">
-                            <select id="custom-unit" class="form-select" style="max-width: 120px; flex: 0 0 auto;">
-                                <option value="months">{{ __('common.months') }}</option>
-                                <option value="years">{{ __('common.years') }}</option>
+                            <p>{{ __('common.select_duration_extend') }}:</p>
+                            <select id="extension-duration" class="form-select mb-3">
+                                <option value="1">1 {{ __('common.month') }}</option>
+                                <option value="3" selected>3 {{ __('common.months') }}</option>
+                                <option value="6">6 {{ __('common.months') }}</option>
+                                <option value="12">1 {{ __('common.year') }}</option>
+                                <option value="24">2 {{ __('common.years') }}</option>
+                                <option value="custom">{{ __('common.custom_duration') }}</option>
                             </select>
-                        </div>
-                    </div>
-                    <textarea id="extension-notes" class="form-control" placeholder="{{ __('common.notes') }} ({{ __('common.optional') }})" rows="2"></textarea>
-                `,
+                            <div id="custom-duration-container" style="display: none;" class="mb-3">
+                                <label class="form-label small text-muted">{{ __('common.enter_duration') }}:</label>
+                                <div class="input-group">
+                                    <input type="number" id="custom-duration" class="form-control" min="1" placeholder="e.g. 2">
+                                    <select id="custom-unit" class="form-select" style="max-width: 120px; flex: 0 0 auto;">
+                                        <option value="months">{{ __('common.months') }}</option>
+                                        <option value="years">{{ __('common.years') }}</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <textarea id="extension-notes" class="form-control" placeholder="{{ __('common.notes') }} ({{ __('common.optional') }})" rows="2"></textarea>
+                        `,
                     icon: 'info',
                     showCancelButton: true,
                     confirmButtonColor: '#0dcaf0',
@@ -1225,10 +1225,10 @@
                 Swal.fire({
                     title: '{{ __('common.delete_member') }}',
                     html: `
-                    <p>{{ __('common.confirm_delete_member') }}</p>
-                    <p class="text-danger small mt-2"><strong>{{ __('common.warning') }}:</strong> {{ __('common.action_cannot_undone') }}</p>
-                    <textarea id="delete-reason" class="form-control mt-3" placeholder="{{ __('common.reason_for_deletion') }} ({{ __('common.optional') }})" rows="3"></textarea>
-                `,
+                            <p>{{ __('common.confirm_delete_member') }}</p>
+                            <p class="text-danger small mt-2"><strong>{{ __('common.warning') }}:</strong> {{ __('common.action_cannot_undone') }}</p>
+                            <textarea id="delete-reason" class="form-control mt-3" placeholder="{{ __('common.reason_for_deletion') }} ({{ __('common.optional') }})" rows="3"></textarea>
+                        `,
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#dc3545',
@@ -1399,14 +1399,14 @@
                         icon: 'success',
                         title: '{{ __('common.member_registered_success_title') }}',
                         html: `
-                            <div class="text-start">
-                                <p><strong>{{ session('name') }}</strong> {{ __('common.has_been_registered_successfully') }}!</p>
-                                <p class="mb-2"><strong>{{ __('common.member_id') }}:</strong> {{ session('user_id') }}</p>
-                                <p class="mb-2"><strong>{{ __('common.membership_type') }}:</strong> {{ ucfirst(session('membership_type')) }}</p>
-                                <hr>
-                                <p class="small text-muted mb-0">{{ __('common.viewing_member_details_page') }}.</p>
-                            </div>
-                        `,
+                                        <div class="text-start">
+                                            <p><strong>{{ session('name') }}</strong> {{ __('common.has_been_registered_successfully') }}!</p>
+                                            <p class="mb-2"><strong>{{ __('common.member_id') }}:</strong> {{ session('user_id') }}</p>
+                                            <p class="mb-2"><strong>{{ __('common.membership_type') }}:</strong> {{ ucfirst(session('membership_type')) }}</p>
+                                            <hr>
+                                            <p class="small text-muted mb-0">{{ __('common.viewing_member_details_page') }}.</p>
+                                        </div>
+                                    `,
                         confirmButtonText: '{{ __('common.ok') }}',
                         confirmButtonColor: '#5b2a86',
                         timer: 5000,
@@ -1421,7 +1421,7 @@
                         showConfirmButton: false
                     });
                 @endif
-        });
+                });
 
             let itemCount = 1;
             const itemTypes = @json($itemTypes);
@@ -1431,28 +1431,28 @@
                 const row = document.createElement('div');
                 row.className = 'item-row mb-3';
                 row.innerHTML = `
-                <div class="row g-2">
-                    <div class="col-md-4">
-                        <select class="form-select form-select-sm" name="items[${itemCount}][item_type]" required>
-                            ${itemTypes.map(t => `<option value="${t}">${t}</option>`).join('')}
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <input type="number" step="0.01" class="form-control form-control-sm" name="items[${itemCount}][quantity_promised]" required>
-                    </div>
-                    <div class="col-md-2">
-                        <input type="text" class="form-control form-control-sm" name="items[${itemCount}][unit]" placeholder="{{ __('common.bags_head_etc') }}">
-                    </div>
-                    <div class="col-md-3">
-                        <input type="number" class="form-control form-control-sm" name="items[${itemCount}][estimated_value]">
-                    </div>
-                    <div class="col-md-1 d-flex align-items-end">
-                        <button type="button" class="btn btn-outline-danger btn-sm w-100" onclick="removeItem(this)">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                </div>
-            `;
+                        <div class="row g-2">
+                            <div class="col-md-4">
+                                <select class="form-select form-select-sm" name="items[${itemCount}][item_type]" required>
+                                    ${itemTypes.map(t => `<option value="${t}">${t}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <input type="number" step="0.01" class="form-control form-control-sm" name="items[${itemCount}][quantity_promised]" required>
+                            </div>
+                            <div class="col-md-2">
+                                <input type="text" class="form-control form-control-sm" name="items[${itemCount}][unit]" placeholder="{{ __('common.bags_head_etc') }}">
+                            </div>
+                            <div class="col-md-3">
+                                <input type="number" class="form-control form-control-sm" name="items[${itemCount}][estimated_value]">
+                            </div>
+                            <div class="col-md-1 d-flex align-items-end">
+                                <button type="button" class="btn btn-outline-danger btn-sm w-100" onclick="removeItem(this)">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
                 container.appendChild(row);
                 itemCount++;
             }

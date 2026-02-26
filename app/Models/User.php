@@ -74,7 +74,7 @@ class User extends Authenticatable
 
     public function canManageLeadership()
     {
-        return $this->isPastor() || $this->role === 'secretary' || $this->isAdmin();
+        return $this->isPastor() || $this->isAdmin();
     }
 
     public function isSecretary()
@@ -372,6 +372,68 @@ class User extends Authenticatable
             return "{$hours}h {$remainingMinutes}m";
         }
 
-        return "{$hours}h";
+    }
+
+    /**
+     * Check if user has any active leadership position
+     */
+    public function hasActiveLeadershipPosition(): bool
+    {
+        if (!$this->member_id || !$this->member) {
+            return false;
+        }
+
+        return $this->member->activeLeadershipPositions()
+            ->where(function ($query) {
+                $query->whereNull('end_date')
+                    ->orWhere('end_date', '>=', now()->toDateString());
+            })
+            ->exists();
+    }
+
+    /**
+     * Get the default dashboard route for this user based on their role and leadership status
+     */
+    public function getDefaultDashboardRoute(): string
+    {
+        // 1. Admin
+        if ($this->isAdmin()) {
+            return 'admin.dashboard';
+        }
+
+        // 2. High-level staff roles (that might not have member_id)
+        if ($this->isPastor()) {
+            return 'dashboard.pastor';
+        }
+
+        if ($this->isTreasurer()) {
+            return 'finance.dashboard';
+        }
+
+        if ($this->isSecretary()) {
+            return 'dashboard.secretary';
+        }
+
+        if ($this->isParishWorker()) {
+            return 'parish-worker.dashboard';
+        }
+
+        // 3. Member-linked roles / leadership
+        if ($this->member_id) {
+            // Check for leadership positions first
+            if ($this->isEvangelismLeader()) {
+                return 'evangelism-leader.dashboard';
+            }
+
+            if ($this->isChurchElder()) {
+                return 'church-elder.dashboard';
+            }
+
+            // Regular members, even those in branches, always go to member portal
+            return 'member.dashboard';
+        }
+
+        // Default fallback
+        return 'member.dashboard';
     }
 }

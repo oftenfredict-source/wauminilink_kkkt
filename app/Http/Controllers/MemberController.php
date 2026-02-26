@@ -110,6 +110,7 @@ class MemberController extends Controller
             'member_type' => ['nullable', 'required_if:membership_type,permanent', Rule::in(['father', 'mother', 'independent'])],
             'membership_type' => ['required', Rule::in(['permanent', 'temporary'])],
             'envelope_number' => 'nullable|string|max:100',
+            'lives_outside_main_area' => 'nullable|boolean',
 
             // Temporary membership duration fields
             'membership_duration_value' => 'nullable|required_if:membership_type,temporary|integer|min:1|max:120',
@@ -277,6 +278,11 @@ class MemberController extends Controller
                 }
             }
 
+            // Mandate member envelope number
+            if (empty($request->input('envelope_number'))) {
+                $v->errors()->add('envelope_number', 'Envelope number is required.');
+            }
+
             // Mandate spouse envelope number if married
             if ($request->input('marital_status') === 'married') {
                 if (empty($request->input('spouse_envelope_number'))) {
@@ -293,8 +299,11 @@ class MemberController extends Controller
                         try {
                             $dob = Carbon::parse($children[$i]['date_of_birth']);
                             if ($dob->diffInYears(now()) >= 18) {
-                                if (empty($children[$i]['envelope_number'])) {
-                                    $v->errors()->add("children.$i.envelope_number", 'Envelope number is required for children aged 18 and above.');
+                                // Envelope number required for adults NOT living outside
+                                if (empty($children[$i]['lives_outside_main_area']) || $children[$i]['lives_outside_main_area'] !== 'yes') {
+                                    if (empty($children[$i]['envelope_number'])) {
+                                        $v->errors()->add("children.$i.envelope_number", 'Envelope number is required for children aged 18 and above living within the area.');
+                                    }
                                 }
                             }
                         } catch (\Exception $e) {
@@ -529,6 +538,7 @@ class MemberController extends Controller
                 'disability_type' => $request->disability_type,
                 'vulnerable_status' => $request->has('vulnerable_status') || $request->vulnerable_status == 1,
                 'vulnerable_type' => $request->vulnerable_type,
+                'lives_outside_main_area' => $request->has('lives_outside_main_area') || $request->lives_outside_main_area == 1,
             ];
 
             \Log::info('Member data to be saved:', $memberData);
@@ -1761,6 +1771,7 @@ class MemberController extends Controller
                 'disability_type' => $request->disability_type,
                 'vulnerable_status' => $request->has('vulnerable_status') || $request->vulnerable_status == 1,
                 'vulnerable_type' => $request->vulnerable_type,
+                'lives_outside_main_area' => $request->has('lives_outside_main_area') || $request->lives_outside_main_area == 1,
             ];
 
             // Add member_id if provided
@@ -1881,6 +1892,7 @@ class MemberController extends Controller
                 'disability_type' => $request->disability_type,
                 'vulnerable_status' => $request->has('vulnerable_status') || $request->vulnerable_status == 1,
                 'vulnerable_type' => $request->vulnerable_type,
+                'lives_outside_main_area' => $request->has('lives_outside_main_area') || $request->lives_outside_main_area == 1,
             ];
 
             // Update baptism fields

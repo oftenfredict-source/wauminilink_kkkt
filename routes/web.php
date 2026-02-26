@@ -325,6 +325,8 @@ Route::middleware(['auth', PreventBackHistory::class, 'treasurer'])->group(funct
     Route::prefix('reports')->name('reports.')->group(function () {
         Route::get('/', [App\Http\Controllers\ReportController::class, 'index'])->name('index');
         Route::get('/general-secretary', [App\Http\Controllers\ReportController::class, 'generalSecretaryReport'])->name('general-secretary');
+        Route::post('/general-secretary/save', [App\Http\Controllers\ReportController::class, 'saveGeneralSecretaryReport'])->name('general-secretary.save');
+        Route::post('/general-secretary/verify/{year}', [App\Http\Controllers\ReportController::class, 'verifyGeneralSecretaryReport'])->name('general-secretary.verify');
         Route::get('/overview', [App\Http\Controllers\ReportController::class, 'overview'])->name('overview');
         Route::get('/member-giving', [App\Http\Controllers\ReportController::class, 'memberGiving'])->name('member-giving');
         Route::get('/department-giving', [App\Http\Controllers\ReportController::class, 'departmentGiving'])->name('department-giving');
@@ -1444,6 +1446,8 @@ Route::middleware(['auth', PreventBackHistory::class])->prefix('admin')->name('a
     Route::get('/roles-permissions', [AdminController::class, 'rolesPermissions'])->name('roles-permissions');
     Route::post('/roles-permissions/update', [AdminController::class, 'updateRolePermissions'])->name('roles-permissions.update');
     Route::get('/system-monitor', [AdminController::class, 'systemMonitor'])->name('system-monitor');
+    Route::get('/otp-management', [AdminController::class, 'otpManagement'])->name('otp-management');
+    Route::delete('/otp-management/{id}', [AdminController::class, 'deleteOtp'])->name('otp-management.delete');
     Route::get('/system-info', [AdminController::class, 'getSystemInfo'])->name('system-info');
     Route::post('/clear-cache', [AdminController::class, 'clearCache'])->name('clear-cache');
 });

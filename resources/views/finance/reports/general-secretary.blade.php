@@ -22,6 +22,41 @@
                     </form>
                 </div>
             </div>
+
+            @if(isset($savedReport))
+                <div class="mt-2 d-flex align-items-center gap-2 d-print-none">
+                    <span class="badge {{ $isVerified ? 'bg-success' : 'bg-warning text-dark' }}">
+                        Status: {{ strtoupper($savedReport->status) }}
+                    </span>
+                    @if($isVerified)
+                        @if($savedReport->verifiedBy)
+                            <small class="text-muted">
+                                Verified by {{ $savedReport->verifiedBy->full_name }} on {{ $savedReport->verified_at->format('d/m/Y H:i') }}
+                            </small>
+                        @endif
+                    @endif
+                </div>
+            @endif
+
+            <div class="mt-3 d-flex gap-2 d-print-none">
+                @php $user = auth()->user(); @endphp
+                @if($user->isSecretary() || $user->isAdmin())
+                    @if(!$isVerified)
+                        <button type="button" class="btn btn-success btn-sm" id="btnSaveDraft">
+                            <i class="fas fa-save me-1"></i> Save Estimates as Draft
+                        </button>
+                    @endif
+                @endif
+
+                @if(($user->isPastor() || $user->isAdmin()) && !$isVerified && isset($savedReport))
+                    <form id="verifyReportForm" action="{{ route('reports.general-secretary.verify', $year) }}" method="POST">
+                        @csrf
+                        <button type="button" class="btn btn-primary btn-sm" onclick="confirmVerification()">
+                            <i class="fas fa-check-circle me-1"></i> Verify & Lock Report
+                        </button>
+                    </form>
+                @endif
+            </div>
         </div>
         <div class="card-body p-4">
             <div class="text-center mb-4">
@@ -81,7 +116,14 @@
                                     <tr>
                                         <td style="width: 80px" class="text-center">{{ $code }}</td>
                                         <td>{{ $data['name'] }}</td>
-                                        <td class="text-end">{{ number_format($data['estimate'], 0) }}</td>
+                                        <td class="p-0">
+                                            @if(($user->isSecretary() || $user->isAdmin()) && !$isVerified)
+                                                <input type="number" class="form-control form-control-sm border-0 text-end rounded-0 bg-transparent income-estimate" 
+                                                       data-code="{{ $code }}" value="{{ $data['estimate'] }}" step="0.01">
+                                            @else
+                                                <div class="px-2 py-1 text-end">{{ number_format($data['estimate'], 0) }}</div>
+                                            @endif
+                                        </td>
                                         <td class="text-end fw-bold">{{ number_format($data['actual'], 0) }}</td>
                                         <td class="text-end {{ $diff >= 0 ? 'text-success' : 'text-danger' }}">
                                             {{ number_format($diff, 0) }}
@@ -120,7 +162,14 @@
                                     <tr>
                                         <td class="text-center">{{ $code }}</td>
                                         <td>{{ $data['name'] }}</td>
-                                        <td class="text-end">{{ number_format($data['estimate'], 0) }}</td>
+                                        <td class="p-0">
+                                            @if(($user->isSecretary() || $user->isAdmin()) && !$isVerified)
+                                                <input type="number" class="form-control form-control-sm border-0 text-end rounded-0 bg-transparent income-estimate" 
+                                                       data-code="{{ $code }}" value="{{ $data['estimate'] }}" step="0.01">
+                                            @else
+                                                <div class="px-2 py-1 text-end">{{ number_format($data['estimate'], 0) }}</div>
+                                            @endif
+                                        </td>
                                         <td class="text-end fw-bold">{{ number_format($data['actual'], 0) }}</td>
                                         <td class="text-end {{ $diff >= 0 ? 'text-success' : 'text-danger' }}">
                                             {{ number_format($diff, 0) }}
@@ -174,7 +223,14 @@
                                     <tr>
                                         <td class="text-center">{{ $code }}</td>
                                         <td>{{ $data['name'] }}</td>
-                                        <td class="text-end">{{ number_format($data['estimate'], 0) }}</td>
+                                        <td class="p-0">
+                                            @if(($user->isSecretary() || $user->isAdmin()) && !$isVerified)
+                                                <input type="number" class="form-control form-control-sm border-0 text-end rounded-0 bg-transparent income-estimate" 
+                                                       data-code="{{ $code }}" value="{{ $data['estimate'] }}" step="0.01">
+                                            @else
+                                                <div class="px-2 py-1 text-end">{{ number_format($data['estimate'], 0) }}</div>
+                                            @endif
+                                        </td>
                                         <td class="text-end fw-bold">{{ number_format($data['actual'], 0) }}</td>
                                         <td class="text-end {{ $diff >= 0 ? 'text-success' : 'text-danger' }}">
                                             {{ number_format($diff, 0) }}
@@ -227,7 +283,14 @@
                                     <tr>
                                         <td class="text-center">{{ $code }}</td>
                                         <td>{{ $data['name'] }}</td>
-                                        <td class="text-end">{{ number_format($data['estimate'], 0) }}</td>
+                                        <td class="p-0">
+                                            @if(($user->isSecretary() || $user->isAdmin()) && !$isVerified)
+                                                <input type="number" class="form-control form-control-sm border-0 text-end rounded-0 bg-transparent income-estimate" 
+                                                       data-code="{{ $code }}" value="{{ $data['estimate'] }}" step="0.01">
+                                            @else
+                                                <div class="px-2 py-1 text-end">{{ number_format($data['estimate'], 0) }}</div>
+                                            @endif
+                                        </td>
                                         <td class="text-end fw-bold">{{ number_format($data['actual'], 0) }}</td>
                                         <td class="text-end {{ $diff >= 0 ? 'text-success' : 'text-danger' }}">
                                             {{ number_format($diff, 0) }}
@@ -293,7 +356,14 @@
                                     <tr>
                                         <td class="text-center">{{ $code }}</td>
                                         <td>{{ $data['name'] }}</td>
-                                        <td class="text-end">{{ number_format($data['estimate'], 0) }}</td>
+                                        <td class="p-0">
+                                            @if(($user->isSecretary() || $user->isAdmin()) && !$isVerified)
+                                                <input type="number" class="form-control form-control-sm border-0 text-end rounded-0 bg-transparent expense-estimate" 
+                                                       data-code="{{ $code }}" value="{{ $data['estimate'] }}" step="0.01">
+                                            @else
+                                                <div class="px-2 py-1 text-end">{{ number_format($data['estimate'], 0) }}</div>
+                                            @endif
+                                        </td>
                                         <td class="text-end fw-bold">{{ number_format($data['actual'], 0) }}</td>
                                         <td class="text-end {{ $diff >= 0 ? 'text-success' : 'text-danger' }}">
                                             {{ number_format($diff, 0) }}
@@ -339,7 +409,14 @@
                                     <tr>
                                         <td class="text-center">{{ $code }}</td>
                                         <td>{{ $data['name'] }}</td>
-                                        <td class="text-end">{{ number_format($data['estimate'], 0) }}</td>
+                                        <td class="p-0">
+                                            @if(($user->isSecretary() || $user->isAdmin()) && !$isVerified)
+                                                <input type="number" class="form-control form-control-sm border-0 text-end rounded-0 bg-transparent expense-estimate" 
+                                                       data-code="{{ $code }}" value="{{ $data['estimate'] }}" step="0.01">
+                                            @else
+                                                <div class="px-2 py-1 text-end">{{ number_format($data['estimate'], 0) }}</div>
+                                            @endif
+                                        </td>
                                         <td class="text-end fw-bold">{{ number_format($data['actual'], 0) }}</td>
                                         <td class="text-end {{ $diff >= 0 ? 'text-success' : 'text-danger' }}">
                                             {{ number_format($diff, 0) }}
@@ -385,7 +462,14 @@
                                     <tr>
                                         <td class="text-center">{{ $code }}</td>
                                         <td>{{ $data['name'] }}</td>
-                                        <td class="text-end">{{ number_format($data['estimate'], 0) }}</td>
+                                        <td class="p-0">
+                                            @if(($user->isSecretary() || $user->isAdmin()) && !$isVerified)
+                                                <input type="number" class="form-control form-control-sm border-0 text-end rounded-0 bg-transparent expense-estimate" 
+                                                       data-code="{{ $code }}" value="{{ $data['estimate'] }}" step="0.01">
+                                            @else
+                                                <div class="px-2 py-1 text-end">{{ number_format($data['estimate'], 0) }}</div>
+                                            @endif
+                                        </td>
                                         <td class="text-end fw-bold">{{ number_format($data['actual'], 0) }}</td>
                                         <td class="text-end {{ $diff >= 0 ? 'text-success' : 'text-danger' }}">
                                             {{ number_format($diff, 0) }}
@@ -664,3 +748,61 @@
     }
 </style>
 @endsection
+
+@section('scripts')
+<script>
+function confirmVerification() {
+    SwalHelpers.confirm(
+        'Verify & Lock Report',
+        'Are you sure you want to verify and lock this report? This action cannot be undone and will prevent further editing.',
+        'Yes, Verify & Lock',
+        'Cancel',
+        function() {
+            document.getElementById('verifyReportForm').submit();
+        }
+    );
+}
+
+$(document).ready(function() {
+    $('#btnSaveDraft').on('click', function() {
+        const btn = $(this);
+        const originalHtml = btn.html();
+        
+        // Collect estimates
+        const incomeEstimates = {};
+        $('.income-estimate').each(function() {
+            incomeEstimates[$(this).data('code')] = $(this).val() || 0;
+        });
+        
+        const expenseEstimates = {};
+        $('.expense-estimate').each(function() {
+            expenseEstimates[$(this).data('code')] = $(this).val() || 0;
+        });
+        
+        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Saving...');
+        
+        $.ajax({
+            url: "{{ route('reports.general-secretary.save') }}",
+            method: "POST",
+            data: {
+                _token: "{{ csrf_token() }}",
+                year: "{{ $year }}",
+                income_estimates: incomeEstimates,
+                expense_estimates: expenseEstimates
+            },
+            success: function(response) {
+                SwalHelpers.success('Saved!', 'Estimates saved successfully as draft.', () => {
+                    window.location.reload();
+                });
+            },
+            error: function(xhr) {
+                const error = xhr.responseJSON ? xhr.responseJSON.error : 'An error occurred';
+                SwalHelpers.error('Error!', error);
+                btn.prop('disabled', false).html(originalHtml);
+            }
+        });
+    });
+});
+</script>
+@endsection
+

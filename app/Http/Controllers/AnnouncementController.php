@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Announcement;
 use App\Models\Member;
+use App\Models\Campus;
+use App\Models\Community;
 use App\Services\SmsService;
 use App\Services\SettingsService;
 use Illuminate\Http\Request;
@@ -18,17 +20,22 @@ class AnnouncementController extends Controller
     public function index()
     {
         $today = \Carbon\Carbon::now()->toDateString();
-        
-        $announcements = Announcement::where(function($query) use ($today) {
-                // Show announcements that don't have an end_date or end_date is in the future
-                $query->whereNull('end_date')
-                      ->orWhere('end_date', '>', $today);
-            })
+
+        $announcements = Announcement::where(function ($query) use ($today) {
+            // Show announcements that don't have an end_date or end_date is in the future
+            $query->whereNull('end_date')
+                ->orWhere('end_date', '>', $today);
+        })
             ->orderBy('is_pinned', 'desc')
             ->orderBy('created_at', 'desc')
             ->paginate(15);
 
-        return view('announcements.index', compact('announcements'));
+        $campuses = Campus::active()->get();
+        $communities = Community::active()->get();
+        // Fetch members with phone numbers for individual selection
+        $members = Member::whereNotNull('phone_number')->where('phone_number', '!=', '')->orderBy('full_name')->get();
+
+        return view('announcements.index', compact('announcements', 'campuses', 'communities', 'members'));
     }
 
     /**
@@ -36,7 +43,12 @@ class AnnouncementController extends Controller
      */
     public function create()
     {
-        return view('announcements.create');
+        $campuses = Campus::active()->get();
+        $communities = Community::active()->get();
+        // Fetch members with phone numbers for individual selection
+        $members = Member::whereNotNull('phone_number')->where('phone_number', '!=', '')->orderBy('full_name')->get();
+
+        return view('announcements.create', compact('campuses', 'communities', 'members'));
     }
 
     /**
@@ -51,6 +63,13 @@ class AnnouncementController extends Controller
                 'type' => 'required|in:general,urgent,event,reminder',
                 'start_date' => 'nullable|date',
                 'end_date' => 'nullable|date',
+                'sms_campus_id' => 'nullable|exists:campuses,id',
+                'sms_community_id' => 'nullable|exists:communities,id',
+                'sms_gender' => 'nullable|in:male,female',
+                'sms_age_group' => 'nullable|in:adult,child',
+                'sms_residence' => 'nullable|in:main_area,outside',
+                'sms_member_ids' => 'nullable|array',
+                'sms_member_ids.*' => 'exists:members,id'
             ];
 
             // Only validate end_date after start_date if start_date is provided
@@ -82,7 +101,14 @@ class AnnouncementController extends Controller
 
             // Send SMS to members if requested
             if ($request->has('send_sms') && $request->boolean('send_sms')) {
-                $this->sendAnnouncementSms($announcement);
+                $this->sendAnnouncementSms($announcement, $request->only([
+                    'sms_campus_id',
+                    'sms_community_id',
+                    'sms_gender',
+                    'sms_age_group',
+                    'sms_residence',
+                    'sms_member_ids'
+                ]));
             }
 
             $successMessage = 'Announcement created successfully!';
@@ -117,7 +143,12 @@ class AnnouncementController extends Controller
      */
     public function edit(Announcement $announcement)
     {
-        return view('announcements.edit', compact('announcement'));
+        $campuses = Campus::active()->get();
+        $communities = Community::active()->get();
+        // Fetch members with phone numbers for individual selection
+        $members = Member::whereNotNull('phone_number')->where('phone_number', '!=', '')->orderBy('full_name')->get();
+
+        return view('announcements.edit', compact('announcement', 'campuses', 'communities', 'members'));
     }
 
     /**
@@ -132,6 +163,13 @@ class AnnouncementController extends Controller
                 'type' => 'required|in:general,urgent,event,reminder',
                 'start_date' => 'nullable|date',
                 'end_date' => 'nullable|date',
+                'sms_campus_id' => 'nullable|exists:campuses,id',
+                'sms_community_id' => 'nullable|exists:communities,id',
+                'sms_gender' => 'nullable|in:male,female',
+                'sms_age_group' => 'nullable|in:adult,child',
+                'sms_residence' => 'nullable|in:main_area,outside',
+                'sms_member_ids' => 'nullable|array',
+                'sms_member_ids.*' => 'exists:members,id'
             ];
 
             // Only validate end_date after start_date if start_date is provided
@@ -161,7 +199,14 @@ class AnnouncementController extends Controller
 
             // Send SMS to members if requested
             if ($request->has('send_sms') && $request->boolean('send_sms')) {
-                $this->sendAnnouncementSms($announcement);
+                $this->sendAnnouncementSms($announcement, $request->only([
+                    'sms_campus_id',
+                    'sms_community_id',
+                    'sms_gender',
+                    'sms_age_group',
+                    'sms_residence',
+                    'sms_member_ids'
+                ]));
             }
 
             $successMessage = 'Announcement updated successfully!';
@@ -197,13 +242,20 @@ class AnnouncementController extends Controller
     /**
      * Send SMS notification for an existing announcement
      */
-    public function sendSms(Announcement $announcement)
+    public function sendSms(Request $request, Announcement $announcement)
     {
         try {
-            $this->sendAnnouncementSms($announcement);
-            
+            $this->sendAnnouncementSms($announcement, $request->only([
+                'sms_campus_id',
+                'sms_community_id',
+                'sms_gender',
+                'sms_age_group',
+                'sms_residence',
+                'sms_member_ids'
+            ]));
+
             return redirect()->route('announcements.index')
-                ->with('success', 'SMS notifications sent to all members successfully!');
+                ->with('success', 'SMS notifications sent to selected members successfully!');
         } catch (\Exception $e) {
             \Log::error('Failed to send announcement SMS', [
                 'announcement_id' => $announcement->id,
@@ -218,7 +270,7 @@ class AnnouncementController extends Controller
     /**
      * Send SMS notification to all members about the announcement
      */
-    private function sendAnnouncementSms(Announcement $announcement)
+    private function sendAnnouncementSms(Announcement $announcement, array $filters = [])
     {
         try {
             // Check if SMS notifications are enabled
@@ -233,10 +285,44 @@ class AnnouncementController extends Controller
             // Build SMS message
             $message = $this->buildAnnouncementMessage($announcement, $churchName);
 
-            // Get all members with phone numbers
-            $members = Member::whereNotNull('phone_number')
-                ->where('phone_number', '!=', '')
-                ->get();
+            // Get filtered members with phone numbers
+            $query = Member::whereNotNull('phone_number')
+                ->where('phone_number', '!=', '');
+
+            // Prioritize specific members if selected
+            if (!empty($filters['sms_member_ids'])) {
+                $query->whereIn('id', $filters['sms_member_ids']);
+            } else {
+                // Apply general filters only if specific members are not selected
+                if (!empty($filters['sms_campus_id'])) {
+                    $query->where('campus_id', $filters['sms_campus_id']);
+                }
+                if (!empty($filters['sms_community_id'])) {
+                    $query->where('community_id', $filters['sms_community_id']);
+                }
+                if (!empty($filters['sms_gender'])) {
+                    $query->where('gender', $filters['sms_gender']);
+                }
+                if (!empty($filters['sms_age_group'])) {
+                    $today = \Carbon\Carbon::today();
+                    $adultDate = $today->copy()->subYears(18);
+
+                    if ($filters['sms_age_group'] === 'adult') {
+                        $query->where('date_of_birth', '<=', $adultDate);
+                    } else {
+                        $query->where('date_of_birth', '>', $adultDate);
+                    }
+                }
+                if (!empty($filters['sms_residence'])) {
+                    if ($filters['sms_residence'] === 'main_area') {
+                        $query->where('lives_outside_main_area', false);
+                    } else {
+                        $query->where('lives_outside_main_area', true);
+                    }
+                }
+            }
+
+            $members = $query->get();
 
             $smsService = app(SmsService::class);
             $successCount = 0;
@@ -244,16 +330,13 @@ class AnnouncementController extends Controller
 
             foreach ($members as $member) {
                 try {
-                    $result = $smsService->sendDebug($member->phone_number, $message);
-                    
-                    if ($result['ok'] ?? false) {
+                    if ($smsService->send($member->phone_number, $message)) {
                         $successCount++;
                     } else {
                         $failCount++;
                         Log::warning('Failed to send announcement SMS to member', [
                             'member_id' => $member->id,
                             'phone' => $member->phone_number,
-                            'reason' => $result['reason'] ?? 'unknown',
                         ]);
                     }
                 } catch (\Exception $e) {
@@ -296,15 +379,16 @@ class AnnouncementController extends Controller
         ];
 
         $typeLabel = $typeLabels[$announcement->type] ?? 'TAARIFA';
-        
+
         // Truncate content to fit SMS (SMS typically 160 characters, but we'll use 120 to be safe)
         $content = mb_substr($announcement->content, 0, 100);
         if (mb_strlen($announcement->content) > 100) {
             $content .= '...';
         }
 
-        // Build message without extra spaces and without date
-        $message = "{$typeLabel} - {$churchName}\n";
+        // Build message without extra spaces
+        $date = $announcement->created_at->format('d/m/Y');
+        $message = "{$typeLabel} ({$date}) - {$churchName}\n";
         $message .= "{$announcement->title}\n";
         $message .= "{$content}";
 

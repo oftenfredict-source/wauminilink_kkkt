@@ -23,6 +23,10 @@ class DepartmentController extends Controller
      */
     public function store(Request $request)
     {
+        if (auth()->user()->isSecretary()) {
+            return redirect()->route('departments.index')->with('error', 'You do not have permission to create departments.');
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -83,6 +87,10 @@ class DepartmentController extends Controller
      */
     public function update(Request $request, Department $department)
     {
+        if (auth()->user()->isSecretary()) {
+            return redirect()->route('departments.show', $department)->with('error', 'You do not have permission to update departments.');
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',

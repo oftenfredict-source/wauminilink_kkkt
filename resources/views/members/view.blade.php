@@ -1244,6 +1244,72 @@
                     });
                 }
             });
+
+            // Password Reset Function
+            window.resetPassword = function (memberId) {
+                Swal.fire({
+                    title: 'Confirm Password Reset',
+                    text: 'Are you sure you want to reset the password for this member? A new password will be generated and sent via SMS if a phone number is available.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Yes, reset it!',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        Swal.fire({
+                            title: 'Resetting Password...',
+                            text: 'Please wait while we generate a new password.',
+                            allowOutsideClick: false,
+                            allowEscapeKey: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+
+                        fetch(`{{ url('/members') }}/${memberId}/reset-password`, {
+                            method: 'POST',
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            }
+                        })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    let successHtml = `<p>${data.message}</p>`;
+                                    if (data.password) {
+                                        successHtml += `<div class="alert alert-info mt-2"><strong>New Password:</strong> <code style="font-size: 1.25rem;">${data.password}</code></div>`;
+                                        successHtml += `<p class="text-muted small">Tafadhali kilipe nenosiri hili kwa mwanachama.</p>`;
+                                    }
+
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Success!',
+                                        html: successHtml,
+                                        confirmButtonText: 'Close'
+                                    });
+                                } else {
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Error!',
+                                        text: data.message || 'Failed to reset password.'
+                                    });
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error:', error);
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error!',
+                                    text: 'An error occurred while resetting the password.'
+                                });
+                            });
+                    }
+                });
+            };
         </script>
     @endsection
 @endsection

@@ -15,6 +15,7 @@ use App\Models\CommunityOfferingItem;
 use App\Models\AhadiPledge;
 use App\Models\OfferingCollectionSession;
 use App\Models\OfferingCollectionItem;
+use App\Models\GeneralSecretaryReport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -36,6 +37,13 @@ class ReportController extends Controller
         }
 
         $year = $request->get('year', date('Y'));
+
+        // Load or find existing saved report for this year
+        $savedReport = GeneralSecretaryReport::where('year', $year)->first();
+        $isVerified = $savedReport && $savedReport->status === 'verified';
+        $savedIncomeEstimates = $savedReport ? $savedReport->income_estimates : [];
+        $savedExpenseEstimates = $savedReport ? $savedReport->expense_estimates : [];
+
         $start = Carbon::createFromDate($year, 1, 1)->startOfDay();
         $end = Carbon::createFromDate($year, 12, 31)->endOfDay();
 
@@ -538,6 +546,43 @@ class ReportController extends Controller
             }
         }
 
+        // Override with saved estimates if any
+        foreach ($gospelIncome as $code => &$data) {
+            if (isset($savedIncomeEstimates[$code])) {
+                $data['estimate'] = $savedIncomeEstimates[$code];
+            }
+        }
+        foreach ($groupIncome as $code => &$data) {
+            if (isset($savedIncomeEstimates[$code])) {
+                $data['estimate'] = $savedIncomeEstimates[$code];
+            }
+        }
+        foreach ($buildingIncome as $code => &$data) {
+            if (isset($savedIncomeEstimates[$code])) {
+                $data['estimate'] = $savedIncomeEstimates[$code];
+            }
+        }
+        foreach ($investmentIncome as $code => &$data) {
+            if (isset($savedIncomeEstimates[$code])) {
+                $data['estimate'] = $savedIncomeEstimates[$code];
+            }
+        }
+        foreach ($gospelExpenses as $code => &$data) {
+            if (isset($savedExpenseEstimates[$code])) {
+                $data['estimate'] = $savedExpenseEstimates[$code];
+            }
+        }
+        foreach ($groupExpenses as $code => &$data) {
+            if (isset($savedExpenseEstimates[$code])) {
+                $data['estimate'] = $savedExpenseEstimates[$code];
+            }
+        }
+        foreach ($buildingExpenses as $code => &$data) {
+            if (isset($savedExpenseEstimates[$code])) {
+                $data['estimate'] = $savedExpenseEstimates[$code];
+            }
+        }
+
         return view('finance.reports.general-secretary', [
             'year' => $year,
             'gospelIncome' => $gospelIncome,
@@ -546,9 +591,70 @@ class ReportController extends Controller
             'investmentIncome' => $investmentIncome,
             'gospelExpenses' => $gospelExpenses,
             'groupExpenses' => $groupExpenses,
-            'buildingExpenses' => $buildingExpenses
+            'buildingExpenses' => $buildingExpenses,
+            'savedReport' => $savedReport,
+            'isVerified' => $isVerified
         ]);
     }
+
+    /**
+     * Save General Secretary Report Estimates
+     */
+    public function saveGeneralSecretaryReport(Request $request)
+    {
+        $user = auth()->user();
+        if (!$user->isSecretary() && !$user->isAdmin()) {
+            return response()->json(['error' => 'Permission denied'], 403);
+        }
+
+        $year = $request->input('year');
+        $incomeEst = $request->input('income_estimates', []);
+        $expenseEst = $request->input('expense_estimates', []);
+
+        $report = GeneralSecretaryReport::where('year', $year)->first();
+
+        if ($report && $report->status === 'verified') {
+            return response()->json(['error' => 'Verified reports cannot be edited'], 422);
+        }
+
+        $report = GeneralSecretaryReport::updateOrCreate(
+            ['year' => $year],
+            [
+                'income_estimates' => $incomeEst,
+                'expense_estimates' => $expenseEst,
+                'status' => 'draft',
+                'updated_by' => $user->id,
+                'created_by' => $report ? $report->created_by : $user->id
+            ]
+        );
+
+        return response()->json(['success' => 'Estimates saved as draft', 'report' => $report]);
+    }
+
+    /**
+     * Verify General Secretary Report
+     */
+    public function verifyGeneralSecretaryReport(Request $request, $year)
+    {
+        $user = auth()->user();
+        if (!$user->isPastor() && !$user->isAdmin()) {
+            return redirect()->back()->with('error', 'Only Pastors or Admins can verify reports.');
+        }
+
+        $report = GeneralSecretaryReport::where('year', $year)->first();
+
+        if (!$report) {
+            return redirect()->back()->with('error', 'Report data not found. Save estimates first.');
+        }
+
+        $report->status = 'verified';
+        $report->verified_by = $user->id;
+        $report->verified_at = now();
+        $report->save();
+
+        return redirect()->back()->with('success', 'Report for ' . $year . ' has been verified and locked.');
+    }
+
 
     /**
      * System-wide reports overview: members and finance at a glance

@@ -20,53 +20,14 @@ use App\Services\SettingsService;
 class AuthController extends Controller
 {
     // OTP Feature Flag - Set to false to disable OTP temporarily
-    private const ENABLE_OTP = false;
+    private const ENABLE_OTP = true;
 
     // Show login form
     public function showLogin()
     {
         // If user is already authenticated, redirect to dashboard
         if (Auth::check()) {
-            $user = Auth::user();
-            $campus = $user->getCampus();
-
-            // 1. Super Administrator prioritized check
-            if ($user->isAdmin()) {
-                return redirect()->route('admin.dashboard');
-            }
-
-            // Check evangelism leader FIRST (before branch check) - they should always go to evangelism dashboard
-            if ($user->isEvangelismLeader()) {
-                return redirect()->route('evangelism-leader.dashboard');
-            }
-
-            // Church elder
-            if ($user->isChurchElder()) {
-                return redirect()->route('church-elder.dashboard');
-            }
-
-            // Check if branch user
-            if ($campus && !$campus->is_main_campus) {
-                return redirect()->route('branch.dashboard');
-            }
-
-            // Check if Usharika admin
-            if ($user->isUsharikaAdmin() || ($campus && $campus->is_main_campus && $user->isAdmin())) {
-                return redirect()->route('usharika.dashboard');
-            }
-
-            // Default role-based redirects
-            if ($user->isPastor()) {
-                return redirect()->route('dashboard.pastor');
-            } elseif ($user->isTreasurer()) {
-                return redirect()->route('finance.dashboard');
-            } elseif ($user->isParishWorker()) {
-                return redirect()->route('parish-worker.dashboard');
-            } elseif ($user->isMember()) {
-                return redirect()->route('member.dashboard');
-            } else {
-                return redirect()->route('dashboard.secretary');
-            }
+            return redirect()->route(Auth::user()->getDefaultDashboardRoute());
         }
 
         // Prevent caching of login page
@@ -84,8 +45,8 @@ class AuthController extends Controller
             'password' => ['required'],
         ]);
 
-        $emailOrMemberId = $request->input('email');
-        $password = $request->input('password');
+        $emailOrMemberId = trim($request->input('email'));
+        $password = trim($request->input('password'));
 
         try {
             // Check if input is an email or member_id
@@ -273,94 +234,9 @@ class AuthController extends Controller
                         // Silently continue if table doesn't exist
                     }
 
-                    // 1. Super Administrator prioritized check
-                    if ($user->isAdmin()) {
-                        return redirect()->route('admin.dashboard')
-                            ->with('success', 'Login successful! Welcome Admin.');
-                    }
-
-                    // FIRST: Check if user has member_id but no active leadership positions → Member Portal
-                    if ($user->member_id && $user->member) {
-                        $activePositions = $user->member->activeLeadershipPositions()
-                            ->where('is_active', true)
-                            ->where(function ($query) {
-                                $query->whereNull('end_date')
-                                    ->orWhere('end_date', '>=', now()->toDateString());
-                            })
-                            ->get();
-
-                        if ($activePositions->isEmpty()) {
-                            // No active positions → Member Portal
-                            return redirect()->route('member.dashboard')
-                                ->with('success', 'Login successful! Welcome.');
-                        }
-                    }
-
-                    // Check evangelism leader (before branch check) - they should always go to evangelism dashboard
-                    if ($user->isEvangelismLeader()) {
-                        return redirect()->route('evangelism-leader.dashboard')
-                            ->with('success', 'Login successful! Welcome Evangelism Leader.');
-                    }
-
-                    // Check church elder BEFORE branch check (users in branch can be elders)
-                    if ($user->isChurchElder()) {
-                        return redirect()->route('church-elder.dashboard')
-                            ->with('success', 'Login successful! Welcome Church Elder.');
-                    }
-
-                    // Check if user is branch user (only if they have active leadership positions)
-                    $campus = $user->getCampus();
-                    if ($campus && !$campus->is_main_campus) {
-                        // Only redirect to branch dashboard if they have active positions or are admin/secretary
-                        if ($user->isAdmin() || $user->isSecretary() || ($user->member_id && $user->member)) {
-                            $hasActivePositions = false;
-                            if ($user->member_id && $user->member) {
-                                $activePositions = $user->member->activeLeadershipPositions()
-                                    ->where('is_active', true)
-                                    ->where(function ($query) {
-                                        $query->whereNull('end_date')
-                                            ->orWhere('end_date', '>=', now()->toDateString());
-                                    })
-                                    ->get();
-                                $hasActivePositions = $activePositions->isNotEmpty();
-                            }
-
-                            // Only show branch dashboard if they have active positions or are admin/secretary
-                            if ($hasActivePositions || $user->isAdmin() || $user->isSecretary()) {
-                                return redirect()->route('branch.dashboard')
-                                    ->with('success', 'Login successful! Welcome to ' . $campus->name . ' branch.');
-                            }
-                        }
-                    }
-
-                    // Check if Usharika admin
-                    if ($user->isUsharikaAdmin() || ($campus && $campus->is_main_campus && $user->isAdmin())) {
-                        return redirect()->route('usharika.dashboard')
-                            ->with('success', 'Login successful! Welcome to Usharika Dashboard.');
-                    }
-
-
-
-                    // Redirect based on role (for main campus users)
-                    if ($user->role === 'secretary') {
-                        return redirect()->route('dashboard.secretary')
-                            ->with('success', 'Login successful! Welcome back.');
-                    } elseif ($user->role === 'pastor') {
-                        return redirect()->route('dashboard.pastor')
-                            ->with('success', 'Login successful! Welcome Pastor.');
-                    } elseif ($user->role === 'treasurer') {
-                        return redirect()->route('finance.dashboard')
-                            ->with('success', 'Login successful! Welcome Treasurer.');
-                    } elseif ($user->role === 'parish_worker') {
-                        return redirect()->route('parish-worker.dashboard')
-                            ->with('success', 'Login successful! Welcome Parish Worker.');
-                    } elseif ($user->role === 'member') {
-                        return redirect()->route('member.dashboard')
-                            ->with('success', 'Login successful! Welcome.');
-                    } else {
-                        Auth::logout();
-                        return back()->withErrors(['role' => 'Unauthorized role.']);
-                    }
+                    // Redirect based on role and leadership status
+                    return redirect()->route($user->getDefaultDashboardRoute())
+                        ->with('success', 'Login successful! Welcome.');
                 }
             }
         } catch (\Illuminate\Database\QueryException $e) {
@@ -421,8 +297,8 @@ class AuthController extends Controller
             // Generate 6-digit OTP
             $otpCode = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 
-            // OTP expires in 2 minutes
-            $expiresAt = now()->addMinutes(2);
+            // OTP expires in 5 minutes
+            $expiresAt = now()->addMinutes(5);
 
             // Invalidate any existing unused OTPs for this user
             try {
@@ -691,102 +567,9 @@ class AuthController extends Controller
             // Silently continue if table doesn't exist
         }
 
-        // 1. Super Administrator prioritized check
-        if ($user->isAdmin()) {
-            return redirect()->route('admin.dashboard')
-                ->with('success', 'Login successful! Welcome Admin.');
-        }
-
-        // FIRST: Check if user has member_id but no active leadership positions → Member Portal
-        if ($user->member_id && $user->member) {
-            $activePositions = $user->member->activeLeadershipPositions()
-                ->where('is_active', true)
-                ->where(function ($query) {
-                    $query->whereNull('end_date')
-                        ->orWhere('end_date', '>=', now()->toDateString());
-                })
-                ->get();
-
-            if ($activePositions->isEmpty()) {
-                // No active positions → Member Portal
-                return redirect()->route('member.dashboard')
-                    ->with('success', 'Login successful! Welcome.');
-            }
-        }
-
-        // Check evangelism leader (before branch check) - they should always go to evangelism dashboard
-        if ($user->isEvangelismLeader()) {
-            return redirect()->route('evangelism-leader.dashboard')
-                ->with('success', 'Login successful! Welcome Evangelism Leader.');
-        }
-
-        // Check parish worker
-        if ($user->isParishWorker()) {
-            return redirect()->route('parish-worker.dashboard')
-                ->with('success', 'Login successful! Welcome Parish Worker.');
-        }
-
-        // Check church elder BEFORE branch check (users in branch can be elders)
-        if ($user->isChurchElder()) {
-            // Redirect to the first community they are assigned to, or a general dashboard
-            $community = $user->elderCommunities()->first();
-            if ($community) {
-                return redirect()->route('church-elder.community.show', $community->id)
-                    ->with('success', 'Login successful! Welcome Church Elder.');
-            }
-            return redirect()->route('church-elder.dashboard')
-                ->with('success', 'Login successful! Welcome Church Elder.');
-        }
-
-        // Check if user is branch user (only if they have active leadership positions)
-        $campus = $user->getCampus();
-        if ($campus && !$campus->is_main_campus) {
-            // Only redirect to branch dashboard if they have active positions or are admin/secretary
-            if ($user->isAdmin() || $user->isSecretary() || ($user->member_id && $user->member)) {
-                $hasActivePositions = false;
-                if ($user->member_id && $user->member) {
-                    $activePositions = $user->member->activeLeadershipPositions()
-                        ->where('is_active', true)
-                        ->where(function ($query) {
-                            $query->whereNull('end_date')
-                                ->orWhere('end_date', '>=', now()->toDateString());
-                        })
-                        ->get();
-                    $hasActivePositions = $activePositions->isNotEmpty();
-                }
-
-                // Only show branch dashboard if they have active positions or are admin/secretary
-                if ($hasActivePositions || $user->isAdmin() || $user->isSecretary()) {
-                    return redirect()->route('branch.dashboard')
-                        ->with('success', 'Login successful! Welcome to ' . $campus->name . ' branch.');
-                }
-            }
-        }
-
-        // Check if Usharika admin
-        if ($user->isUsharikaAdmin() || ($campus && $campus->is_main_campus && $user->isAdmin())) {
-            return redirect()->route('usharika.dashboard')
-                ->with('success', 'Login successful! Welcome to Usharika Dashboard.');
-        }
-
-
-        // Redirect based on role (for main campus users)
-        if ($user->role === 'secretary') {
-            return redirect()->route('dashboard.secretary')
-                ->with('success', 'Login successful! Welcome back.');
-        } elseif ($user->role === 'pastor') {
-            return redirect()->route('dashboard.pastor')
-                ->with('success', 'Login successful! Welcome Pastor.');
-        } elseif ($user->role === 'treasurer') {
-            return redirect()->route('finance.dashboard')
-                ->with('success', 'Login successful! Welcome Treasurer.');
-        } elseif ($user->role === 'member') {
-            return redirect()->route('member.dashboard')
-                ->with('success', 'Login successful! Welcome.');
-        } else {
-            Auth::logout();
-            return back()->withErrors(['role' => 'Unauthorized role.']);
-        }
+        // Redirect based on role and leadership status
+        return redirect()->route($user->getDefaultDashboardRoute())
+            ->with('success', 'Login successful! Welcome.');
     }
 
     /**
@@ -867,27 +650,7 @@ class AuthController extends Controller
     {
         // If user is already authenticated, redirect to dashboard
         if (Auth::check()) {
-            $user = Auth::user();
-            if ($user->isAdmin()) {
-                return redirect()->route('admin.dashboard');
-            } elseif ($user->isPastor()) {
-                return redirect()->route('dashboard.pastor');
-            } elseif ($user->isTreasurer()) {
-                return redirect()->route('finance.dashboard');
-            } elseif ($user->isEvangelismLeader()) {
-                return redirect()->route('evangelism-leader.dashboard');
-            } elseif ($user->isChurchElder()) {
-                // Redirect to the first community they are assigned to, or a general dashboard
-                $community = $user->elderCommunities()->first();
-                if ($community) {
-                    return redirect()->route('church-elder.community.show', $community->id);
-                }
-                return redirect()->route('church-elder.dashboard');
-            } elseif ($user->isMember()) {
-                return redirect()->route('member.dashboard');
-            } else {
-                return redirect()->route('dashboard.secretary');
-            }
+            return redirect()->route(Auth::user()->getDefaultDashboardRoute());
         }
 
         return view('forgot-password');

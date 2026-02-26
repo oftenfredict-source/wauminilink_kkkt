@@ -134,10 +134,10 @@
                             <div class="col-md-4">
                                 <div class="form-floating">
                                     <input type="text" name="envelope_number" id="envelope_number" class="form-control"
-                                        placeholder="e.g. 024">
-                                    <label for="envelope_number">Envelope Number (Optional)</label>
+                                        placeholder="e.g. 024" required>
+                                    <label for="envelope_number">Envelope Number <span class="text-danger">*</span></label>
                                 </div>
-                                <small class="text-muted ms-1">Unique number within the fellowship (Jumuiya)</small>
+                                <small class="text-muted ms-1">Required for all members</small>
                             </div>
                         </div>
 
@@ -275,15 +275,17 @@
                         <div class="row g-4 mb-4">
                             <div class="col-md-4">
                                 <div class="form-floating">
-                                    <div class="input-group">
-                                        <span class="input-group-text">+255</span>
+                                    <div class="input-group has-validation">
+                                        <span class="input-group-text bg-light text-primary fw-bold">+255</span>
                                         <input type="text" class="form-control" name="phone_number" id="phone_number"
-                                            placeholder="744000000" required>
+                                            placeholder="712345678" pattern="[0-9]{9}" minlength="9" maxlength="9" required>
+                                        <div class="invalid-feedback">
+                                            Please enter a valid 9-digit phone number (e.g., 712345678).
+                                        </div>
                                     </div>
-                                    <label for="phone_number"></label>
+                                    <label for="phone_number" class="d-none"></label>
                                 </div>
-                                <small class="text-muted ms-1">Enter your phone number without +255 (e.g.,
-                                    712345678)</small>
+                                <small class="text-muted ms-1">Enter 9 digits (e.g., 712345678)</small>
                             </div>
                             <div class="col-md-4">
                                 <div class="form-floating">
@@ -1078,77 +1080,74 @@
                 const stepEl = document.getElementById('step' + step);
                 if (!stepEl) return true;
 
-                // Get all required fields in this step
-                const requiredFields = stepEl.querySelectorAll('input[required], select[required], textarea[required]');
-                const missingFields = [];
+                // Get all inputs, selects, and textareas in this step (not just required ones)
+                const fields = stepEl.querySelectorAll('input, select, textarea');
+                const invalidFields = [];
 
-                requiredFields.forEach(field => {
+                fields.forEach(field => {
                     // Skip hidden fields (not visible to user)
                     if (!isElementVisible(field)) {
                         return;
                     }
 
-                    // Skip file fields (they're optional)
+                    // Skip file fields (browser handles them differently, and they are usually optional here)
                     if (field.type === 'file') {
                         return;
                     }
 
-                    // Skip gender field if it's not required (hidden for father/mother)
-                    if (field.id === 'gender' && !field.hasAttribute('required')) {
-                        return;
-                    }
+                    // Native browser validation check (handles required, pattern, min/max length, etc.)
+                    let isFieldValid = field.checkValidity();
 
-                    let isValid = true;
-                    const value = field.value ? field.value.trim() : '';
-
-                    if (field.type === 'date') {
-                        isValid = value !== '';
-                    } else if (field.tagName === 'SELECT') {
-                        isValid = value !== '';
-                    } else {
-                        isValid = value !== '';
-                    }
-
-                    if (!isValid) {
-                        missingFields.push(field);
+                    if (!isFieldValid) {
+                        invalidFields.push(field);
                         field.classList.add('is-invalid');
 
-                        // Add invalid feedback to parent form-floating
-                        const formFloating = field.closest('.form-floating');
-                        if (formFloating) {
-                            const label = formFloating.querySelector('label');
-                            if (label && !label.querySelector('.text-danger')) {
-                                const errorText = document.createElement('small');
-                                errorText.className = 'text-danger d-block mt-1';
-                                errorText.textContent = 'This field is required';
-                                formFloating.appendChild(errorText);
-                            }
+                        // Add invalid feedback if not already present
+                        const parent = field.closest('.form-floating') || field.closest('.input-group') || field.parentElement;
+                        let feedback = parent.querySelector('.invalid-feedback') || parent.querySelector('.text-danger');
+
+                        if (!feedback) {
+                            feedback = document.createElement('div');
+                            feedback.className = 'invalid-feedback d-block';
+                            feedback.textContent = field.validationMessage || 'This field is required or invalid';
+                            parent.appendChild(feedback);
+                        } else {
+                            feedback.style.display = 'block';
+                            if (field.validationMessage) feedback.textContent = field.validationMessage;
                         }
                     } else {
                         field.classList.remove('is-invalid');
+                        field.classList.add('is-valid');
 
-                        // Remove error text
-                        const formFloating = field.closest('.form-floating');
-                        if (formFloating) {
-                            const errorText = formFloating.querySelector('.text-danger.d-block');
-                            if (errorText) {
-                                errorText.remove();
-                            }
+                        // Hide error text
+                        const parent = field.closest('.form-floating') || field.closest('.input-group') || field.parentElement;
+                        const feedback = parent.querySelector('.invalid-feedback') || parent.querySelector('.text-danger');
+                        if (feedback && feedback.classList.contains('invalid-feedback')) {
+                            feedback.style.display = 'none';
+                        } else if (feedback) {
+                            feedback.remove();
                         }
                     }
                 });
 
-                if (missingFields.length > 0) {
-                    // Scroll to first missing field
-                    missingFields[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                if (invalidFields.length > 0) {
+                    // Scroll to first invalid field
+                    invalidFields[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
                     setTimeout(() => {
-                        missingFields[0].focus();
+                        invalidFields[0].focus();
                     }, 500);
 
+                    // Add a shake effect to the form or specific field
+                    const firstParent = invalidFields[0].closest('.col-md-4') || invalidFields[0].closest('.col-12');
+                    if (firstParent) {
+                        firstParent.classList.add('shake-animation');
+                        setTimeout(() => firstParent.classList.remove('shake-animation'), 500);
+                    }
+
                     Swal.fire({
-                        icon: 'warning',
-                        title: 'Required Fields Missing',
-                        html: `Please fill in all required fields (marked with <span class="text-danger">*</span>) before proceeding.<br><br>Found ${missingFields.length} missing field(s).`,
+                        icon: 'error',
+                        title: 'Validation Failed',
+                        html: `Please correct the following ${invalidFields.length} issue(s) before proceeding.<br><br>Make sure all required fields are filled and formats are correct.`,
                         confirmButtonText: 'OK'
                     });
 
@@ -1233,160 +1232,160 @@
 
                 // Step 1: Personal Information
                 html += `
-                <div class="col-12">
-                    <div class="card border-primary mb-3">
-                        <div class="card-header bg-primary text-white">
-                            <h6 class="mb-0"><i class="fas fa-user me-2"></i>Personal Information</h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="row g-3">
-                                <div class="col-md-4"><strong>Membership Type:</strong> ${getSelectText('membership_type')}</div>
-                                <div class="col-md-4"><strong>Member Type:</strong> ${getSelectText('member_type')}</div>
-                                <div class="col-md-4"><strong>Branch/Campus:</strong> ${getSelectText('campus_id')}</div>
-                                <div class="col-md-4"><strong>Community:</strong> ${getSelectText('community_id') || 'N/A'}</div>
-                                <div class="col-md-4"><strong>Full Name:</strong> ${getValue('full_name')}</div>
-                                <div class="col-md-4"><strong>Gender:</strong> ${getSelectText('gender')}</div>
-                                <div class="col-md-4"><strong>Date of Birth:</strong> ${formatDate(getValue('date_of_birth'))}</div>
-                                <div class="col-md-4"><strong>Education Level:</strong> ${getSelectText('education_level') || 'N/A'}</div>
-                                <div class="col-md-4"><strong>Profession:</strong> ${getValue('profession')}</div>
-                                <div class="col-md-4"><strong>Working Area:</strong> ${getValue('working_area') || 'N/A'}</div>
-                                <div class="col-md-4"><strong>NIDA Number:</strong> ${getValue('nida_number') || 'N/A'}</div>
-                                <div class="col-md-4"><strong>Baptism Status:</strong> ${getSelectText('baptism_status')}</div>
-                                ${getValue('baptism_status') === 'baptized' ? `
-                                    <div class="col-md-4"><strong>Baptism Date:</strong> ${formatDate(getValue('baptism_date'))}</div>
-                                    <div class="col-md-4"><strong>Baptism Location:</strong> ${getValue('baptism_location') || 'N/A'}</div>
-                                    <div class="col-md-4"><strong>Baptized By:</strong> ${getValue('baptized_by') || 'N/A'}</div>
-                                    <div class="col-md-4"><strong>Baptism Certificate:</strong> ${getValue('baptism_certificate_number') || 'N/A'}</div>
-                                ` : ''}
-                                <div class="col-md-4"><strong>Profile Picture:</strong> ${getValue('profile_picture')}</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
+                                                                        <div class="col-12">
+                                                                            <div class="card border-primary mb-3">
+                                                                                <div class="card-header bg-primary text-white">
+                                                                                    <h6 class="mb-0"><i class="fas fa-user me-2"></i>Personal Information</h6>
+                                                                                </div>
+                                                                                <div class="card-body">
+                                                                                    <div class="row g-3">
+                                                                                        <div class="col-md-4"><strong>Membership Type:</strong> ${getSelectText('membership_type')}</div>
+                                                                                        <div class="col-md-4"><strong>Member Type:</strong> ${getSelectText('member_type')}</div>
+                                                                                        <div class="col-md-4"><strong>Branch/Campus:</strong> ${getSelectText('campus_id')}</div>
+                                                                                        <div class="col-md-4"><strong>Community:</strong> ${getSelectText('community_id') || 'N/A'}</div>
+                                                                                        <div class="col-md-4"><strong>Full Name:</strong> ${getValue('full_name')}</div>
+                                                                                        <div class="col-md-4"><strong>Gender:</strong> ${getSelectText('gender')}</div>
+                                                                                        <div class="col-md-4"><strong>Date of Birth:</strong> ${formatDate(getValue('date_of_birth'))}</div>
+                                                                                        <div class="col-md-4"><strong>Education Level:</strong> ${getSelectText('education_level') || 'N/A'}</div>
+                                                                                        <div class="col-md-4"><strong>Profession:</strong> ${getValue('profession')}</div>
+                                                                                        <div class="col-md-4"><strong>Working Area:</strong> ${getValue('working_area') || 'N/A'}</div>
+                                                                                        <div class="col-md-4"><strong>NIDA Number:</strong> ${getValue('nida_number') || 'N/A'}</div>
+                                                                                        <div class="col-md-4"><strong>Baptism Status:</strong> ${getSelectText('baptism_status')}</div>
+                                                                                        ${getValue('baptism_status') === 'baptized' ? `
+                                                                                            <div class="col-md-4"><strong>Baptism Date:</strong> ${formatDate(getValue('baptism_date'))}</div>
+                                                                                            <div class="col-md-4"><strong>Baptism Location:</strong> ${getValue('baptism_location') || 'N/A'}</div>
+                                                                                            <div class="col-md-4"><strong>Baptized By:</strong> ${getValue('baptized_by') || 'N/A'}</div>
+                                                                                            <div class="col-md-4"><strong>Baptism Certificate:</strong> ${getValue('baptism_certificate_number') || 'N/A'}</div>
+                                                                                        ` : ''}
+                                                                                        <div class="col-md-4"><strong>Profile Picture:</strong> ${getValue('profile_picture')}</div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    `;
 
                 // Step 2: Other Information
                 html += `
-                <div class="col-12">
-                    <div class="card border-primary mb-3">
-                        <div class="card-header bg-primary text-white">
-                            <h6 class="mb-0"><i class="fas fa-address-card me-2"></i>Contact & Location Information</h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="row g-3">
-                                <div class="col-md-4"><strong>Phone Number:</strong> ${formatPhone(getValue('phone_number'))}</div>
-                                <div class="col-md-4"><strong>Email:</strong> ${getValue('email') || 'N/A'}</div>
-                                <div class="col-md-4"><strong>Region:</strong> ${getSelectText('region')}</div>
-                                <div class="col-md-4"><strong>District:</strong> ${getSelectText('district')}</div>
-                                <div class="col-md-4"><strong>Ward:</strong> ${getValue('ward')}</div>
-                                <div class="col-md-4"><strong>Street:</strong> ${getValue('street')}</div>
-                                <div class="col-md-4"><strong>P O Box:</strong> ${getValue('address')}</div>
-                                <div class="col-md-4"><strong>Tribe:</strong> ${getSelectText('tribe') === 'Other' ? getValue('other_tribe') : getSelectText('tribe')}</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                                                                        <div class="col-12">
+                                                                            <div class="card border-primary mb-3">
+                                                                                <div class="card-header bg-primary text-white">
+                                                                                    <h6 class="mb-0"><i class="fas fa-address-card me-2"></i>Contact & Location Information</h6>
+                                                                                </div>
+                                                                                <div class="card-body">
+                                                                                    <div class="row g-3">
+                                                                                        <div class="col-md-4"><strong>Phone Number:</strong> ${formatPhone(getValue('phone_number'))}</div>
+                                                                                        <div class="col-md-4"><strong>Email:</strong> ${getValue('email') || 'N/A'}</div>
+                                                                                        <div class="col-md-4"><strong>Region:</strong> ${getSelectText('region')}</div>
+                                                                                        <div class="col-md-4"><strong>District:</strong> ${getSelectText('district')}</div>
+                                                                                        <div class="col-md-4"><strong>Ward:</strong> ${getValue('ward')}</div>
+                                                                                        <div class="col-md-4"><strong>Street:</strong> ${getValue('street')}</div>
+                                                                                        <div class="col-md-4"><strong>P O Box:</strong> ${getValue('address')}</div>
+                                                                                        <div class="col-md-4"><strong>Tribe:</strong> ${getSelectText('tribe') === 'Other' ? getValue('other_tribe') : getSelectText('tribe')}</div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
 
-                <!-- Social Welfare Information -->
-                <div class="col-12">
-                    <div class="card border-danger mb-3">
-                        <div class="card-header bg-danger text-white">
-                            <h6 class="mb-0"><i class="fas fa-hand-holding-heart me-2"></i>Social Welfare Status</h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="row g-3">
-                                <div class="col-md-4"><strong>Orphan Status:</strong> ${({
+                                                                        <!-- Social Welfare Information -->
+                                                                        <div class="col-12">
+                                                                            <div class="card border-danger mb-3">
+                                                                                <div class="card-header bg-danger text-white">
+                                                                                    <h6 class="mb-0"><i class="fas fa-hand-holding-heart me-2"></i>Social Welfare Status</h6>
+                                                                                </div>
+                                                                                <div class="card-body">
+                                                                                    <div class="row g-3">
+                                                                                        <div class="col-md-4"><strong>Orphan Status:</strong> ${({
                         'not_orphan': 'Si Yatima',
                         'father_deceased': 'Baba amefariki',
                         'mother_deceased': 'Mama amefariki',
                         'both_deceased': 'Wote wamefariki'
                     })[getValue('orphan_status')] || getValue('orphan_status')
                     }</div>
-                                <div class="col-md-4"><strong>Has Disability:</strong> ${document.getElementById('disability_status')?.checked ? 'Yes (' + (getValue('disability_type') || 'N/A') + ')' : 'No'}</div>
-                                <div class="col-md-4"><strong>Vulnerable:</strong> ${document.getElementById('vulnerable_status')?.checked ? 'Yes (' + (getValue('vulnerable_type') || 'N/A') + ')' : 'No'}</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
+                                                                                        <div class="col-md-4"><strong>Has Disability:</strong> ${document.getElementById('disability_status')?.checked ? 'Yes (' + (getValue('disability_type') || 'N/A') + ')' : 'No'}</div>
+                                                                                        <div class="col-md-4"><strong>Vulnerable:</strong> ${document.getElementById('vulnerable_status')?.checked ? 'Yes (' + (getValue('vulnerable_type') || 'N/A') + ')' : 'No'}</div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    `;
 
                 // Step 3: Current Residence
                 html += `
-                <div class="col-12">
-                    <div class="card border-primary mb-3">
-                        <div class="card-header bg-primary text-white">
-                            <h6 class="mb-0"><i class="fas fa-home me-2"></i>Current Residence</h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="row g-3">
-                                <div class="col-md-4"><strong>Region:</strong> ${getSelectText('residence_region')}</div>
-                                <div class="col-md-4"><strong>District:</strong> ${getSelectText('residence_district')}</div>
-                                <div class="col-md-4"><strong>Ward:</strong> ${getValue('residence_ward')}</div>
-                                <div class="col-md-4"><strong>Street:</strong> ${getValue('residence_street')}</div>
-                                <div class="col-md-4"><strong>Road Name:</strong> ${getValue('residence_road') || 'N/A'}</div>
-                                <div class="col-md-4"><strong>House Number:</strong> ${getValue('residence_house_number') || 'N/A'}</div>
-                                <div class="col-md-6"><strong>Neighbor Name:</strong> ${getValue('neighbor_name') || 'N/A'}</div>
-                                <div class="col-md-6"><strong>Neighbor Phone:</strong> ${getValue('neighbor_phone') ? formatPhone(getValue('neighbor_phone')) : 'N/A'}</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
+                                                                        <div class="col-12">
+                                                                            <div class="card border-primary mb-3">
+                                                                                <div class="card-header bg-primary text-white">
+                                                                                    <h6 class="mb-0"><i class="fas fa-home me-2"></i>Current Residence</h6>
+                                                                                </div>
+                                                                                <div class="card-body">
+                                                                                    <div class="row g-3">
+                                                                                        <div class="col-md-4"><strong>Region:</strong> ${getSelectText('residence_region')}</div>
+                                                                                        <div class="col-md-4"><strong>District:</strong> ${getSelectText('residence_district')}</div>
+                                                                                        <div class="col-md-4"><strong>Ward:</strong> ${getValue('residence_ward')}</div>
+                                                                                        <div class="col-md-4"><strong>Street:</strong> ${getValue('residence_street')}</div>
+                                                                                        <div class="col-md-4"><strong>Road Name:</strong> ${getValue('residence_road') || 'N/A'}</div>
+                                                                                        <div class="col-md-4"><strong>House Number:</strong> ${getValue('residence_house_number') || 'N/A'}</div>
+                                                                                        <div class="col-md-6"><strong>Neighbor Name:</strong> ${getValue('neighbor_name') || 'N/A'}</div>
+                                                                                        <div class="col-md-6"><strong>Neighbor Phone:</strong> ${getValue('neighbor_phone') ? formatPhone(getValue('neighbor_phone')) : 'N/A'}</div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    `;
 
                 // Step 4: Family Information
                 const maritalStatus = getSelectText('marital_status');
                 html += `
-                <div class="col-12">
-                    <div class="card border-primary mb-3">
-                        <div class="card-header bg-primary text-white">
-                            <h6 class="mb-0"><i class="fas fa-users me-2"></i>Family Information</h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="row g-3">
-                                <div class="col-md-4"><strong>Marital Status:</strong> ${maritalStatus || 'N/A'}</div>
-                                ${maritalStatus === 'Married' ? `
-                                    <div class="col-md-4"><strong>Wedding Type:</strong> ${getSelectText('wedding_type') || 'N/A'}</div>
-                                    <div class="col-md-4"><strong>Wedding Date:</strong> ${formatDate(getValue('wedding_date')) || 'N/A'}</div>
-                                    <div class="col-12"><hr><h6 class="text-primary">Spouse Information</h6></div>
-                                    <div class="col-md-4"><strong>Spouse Name:</strong> ${getValue('spouse_full_name') || 'N/A'}</div>
-                                    <div class="col-md-4"><strong>Spouse Date of Birth:</strong> ${formatDate(getValue('spouse_date_of_birth')) || 'N/A'}</div>
-                                    <div class="col-md-4"><strong>Spouse Education:</strong> ${getSelectText('spouse_education_level') || 'N/A'}</div>
-                                    <div class="col-md-4"><strong>Spouse Profession:</strong> ${getValue('spouse_profession') || 'N/A'}</div>
-                                    <div class="col-md-4"><strong>Spouse NIDA:</strong> ${getValue('spouse_nida_number') || 'N/A'}</div>
-                                    <div class="col-md-4"><strong>Spouse Email:</strong> ${getValue('spouse_email') || 'N/A'}</div>
-                                    <div class="col-md-4"><strong>Spouse Church Member:</strong> ${getSelectText('spouse_church_member') || 'N/A'}</div>
-                                    <div class="col-md-4"><strong>Spouse Phone:</strong> ${getValue('spouse_phone_number') ? formatPhone(getValue('spouse_phone_number')) : 'N/A'}</div>
-                                    <div class="col-md-4"><strong>Spouse Tribe:</strong> ${getSelectText('spouse_tribe') === 'Other' ? getValue('spouse_other_tribe') : getSelectText('spouse_tribe') || 'N/A'}</div>
-                                    <div class="col-md-4"><strong>Spouse Baptism Status:</strong> ${getSelectText('spouse_baptism_status') || 'N/A'}</div>
-                                    ${getValue('spouse_baptism_status') === 'baptized' ? `
-                                        <div class="col-md-4"><strong>Spouse Baptism Date:</strong> ${formatDate(getValue('spouse_baptism_date')) || 'N/A'}</div>
-                                        <div class="col-md-4"><strong>Spouse Baptism Location:</strong> ${getValue('spouse_baptism_location') || 'N/A'}</div>
-                                        <div class="col-md-4"><strong>Spouse Baptized By:</strong> ${getValue('spouse_baptized_by') || 'N/A'}</div>
-                                    ` : ''}
-                                    <div class="col-md-4"><strong>Spouse Envelope Number:</strong> ${getValue('spouse_envelope_number') || 'N/A'}</div>
-                                    <div class="col-md-4"><strong>Spouse Picture:</strong> ${getValue('spouse_profile_picture')}</div>
-                                ` : ''}
-                                <div class="col-12"><hr><h6 class="text-warning">Guardian Information</h6></div>
-                                <div class="col-md-4"><strong>Guardian Name:</strong> ${getValue('guardian_name') || 'N/A'}</div>
-                                <div class="col-md-4"><strong>Guardian Phone:</strong> ${getValue('guardian_phone') ? formatPhone(getValue('guardian_phone')) : 'N/A'}</div>
-                                <div class="col-md-4"><strong>Guardian Relationship:</strong> ${getValue('guardian_relationship') || 'N/A'}</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
+                                                                        <div class="col-12">
+                                                                            <div class="card border-primary mb-3">
+                                                                                <div class="card-header bg-primary text-white">
+                                                                                    <h6 class="mb-0"><i class="fas fa-users me-2"></i>Family Information</h6>
+                                                                                </div>
+                                                                                <div class="card-body">
+                                                                                    <div class="row g-3">
+                                                                                        <div class="col-md-4"><strong>Marital Status:</strong> ${maritalStatus || 'N/A'}</div>
+                                                                                        ${maritalStatus === 'Married' ? `
+                                                                                            <div class="col-md-4"><strong>Wedding Type:</strong> ${getSelectText('wedding_type') || 'N/A'}</div>
+                                                                                            <div class="col-md-4"><strong>Wedding Date:</strong> ${formatDate(getValue('wedding_date')) || 'N/A'}</div>
+                                                                                            <div class="col-12"><hr><h6 class="text-primary">Spouse Information</h6></div>
+                                                                                            <div class="col-md-4"><strong>Spouse Name:</strong> ${getValue('spouse_full_name') || 'N/A'}</div>
+                                                                                            <div class="col-md-4"><strong>Spouse Date of Birth:</strong> ${formatDate(getValue('spouse_date_of_birth')) || 'N/A'}</div>
+                                                                                            <div class="col-md-4"><strong>Spouse Education:</strong> ${getSelectText('spouse_education_level') || 'N/A'}</div>
+                                                                                            <div class="col-md-4"><strong>Spouse Profession:</strong> ${getValue('spouse_profession') || 'N/A'}</div>
+                                                                                            <div class="col-md-4"><strong>Spouse NIDA:</strong> ${getValue('spouse_nida_number') || 'N/A'}</div>
+                                                                                            <div class="col-md-4"><strong>Spouse Email:</strong> ${getValue('spouse_email') || 'N/A'}</div>
+                                                                                            <div class="col-md-4"><strong>Spouse Church Member:</strong> ${getSelectText('spouse_church_member') || 'N/A'}</div>
+                                                                                            <div class="col-md-4"><strong>Spouse Phone:</strong> ${getValue('spouse_phone_number') ? formatPhone(getValue('spouse_phone_number')) : 'N/A'}</div>
+                                                                                            <div class="col-md-4"><strong>Spouse Tribe:</strong> ${getSelectText('spouse_tribe') === 'Other' ? getValue('spouse_other_tribe') : getSelectText('spouse_tribe') || 'N/A'}</div>
+                                                                                            <div class="col-md-4"><strong>Spouse Baptism Status:</strong> ${getSelectText('spouse_baptism_status') || 'N/A'}</div>
+                                                                                            ${getValue('spouse_baptism_status') === 'baptized' ? `
+                                                                                                <div class="col-md-4"><strong>Spouse Baptism Date:</strong> ${formatDate(getValue('spouse_baptism_date')) || 'N/A'}</div>
+                                                                                                <div class="col-md-4"><strong>Spouse Baptism Location:</strong> ${getValue('spouse_baptism_location') || 'N/A'}</div>
+                                                                                                <div class="col-md-4"><strong>Spouse Baptized By:</strong> ${getValue('spouse_baptized_by') || 'N/A'}</div>
+                                                                                            ` : ''}
+                                                                                            <div class="col-md-4"><strong>Spouse Envelope Number:</strong> ${getValue('spouse_envelope_number') || 'N/A'}</div>
+                                                                                            <div class="col-md-4"><strong>Spouse Picture:</strong> ${getValue('spouse_profile_picture')}</div>
+                                                                                        ` : ''}
+                                                                                        <div class="col-12"><hr><h6 class="text-warning">Guardian Information</h6></div>
+                                                                                        <div class="col-md-4"><strong>Guardian Name:</strong> ${getValue('guardian_name') || 'N/A'}</div>
+                                                                                        <div class="col-md-4"><strong>Guardian Phone:</strong> ${getValue('guardian_phone') ? formatPhone(getValue('guardian_phone')) : 'N/A'}</div>
+                                                                                        <div class="col-md-4"><strong>Guardian Relationship:</strong> ${getValue('guardian_relationship') || 'N/A'}</div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    `;
 
                 // Children Information
                 const childrenCount = parseInt(getValue('children_count')) || 0;
                 if (childrenCount > 0) {
                     html += `
-                    <div class="col-12">
-                        <div class="card border-primary mb-3">
-                            <div class="card-header bg-primary text-white">
-                                <h6 class="mb-0"><i class="fas fa-child me-2"></i>Children Information (${childrenCount} ${childrenCount === 1 ? 'Child' : 'Children'})</h6>
-                            </div>
-                            <div class="card-body">
-                `;
+                                                                            <div class="col-12">
+                                                                                <div class="card border-primary mb-3">
+                                                                                    <div class="card-header bg-primary text-white">
+                                                                                        <h6 class="mb-0"><i class="fas fa-child me-2"></i>Children Information (${childrenCount} ${childrenCount === 1 ? 'Child' : 'Children'})</h6>
+                                                                                    </div>
+                                                                                    <div class="card-body">
+                                                                        `;
 
                     for (let i = 0; i < childrenCount; i++) {
                         const childNameEl = form.querySelector(`input[name="children[${i}][full_name]"]`);
@@ -1400,34 +1399,34 @@
                         const childBaptism = childBaptismEl?.options[childBaptismEl.selectedIndex]?.text || 'N/A';
 
                         html += `
-                        <div class="border rounded p-3 mb-3">
-                            <h6 class="text-primary">Child ${i + 1}</h6>
-                            <div class="row g-3">
-                                <div class="col-md-4"><strong>Name:</strong> ${childName}</div>
-                                <div class="col-md-4"><strong>Gender:</strong> ${childGender}</div>
-                                    <div class="col-md-4"><strong>Date of Birth:</strong> ${formatDate(childDOB)}</div>
-                                    <div class="col-md-4"><strong>Envelope No:</strong> ${form.querySelector(`input[name="children[${i}][envelope_number]"]`)?.value || 'N/A'}</div>
-                                    <div class="col-md-4"><strong>Baptism Status:</strong> ${childBaptism}</div>
-                                    ${childBaptism === 'Baptized' ? `
-                                        <div class="col-md-4"><strong>Baptism Date:</strong> ${formatDate(form.querySelector(`input[name="children[${i}][baptism_date]"]`)?.value || '')}</div>
-                                        <div class="col-md-4"><strong>Baptism Location:</strong> ${form.querySelector(`input[name="children[${i}][baptism_location]"]`)?.value || 'N/A'}</div>
-                                        <div class="col-md-4"><strong>Baptized By:</strong> ${form.querySelector(`input[name="children[${i}][baptized_by]"]`)?.value || 'N/A'}</div>
-                                    ` : ''}
-                                    <div class="col-12"><hr></div>
-                                    <div class="col-md-4"><strong>Orphan Status:</strong> ${form.querySelector(`select[name="children[${i}][orphan_status]"]`)?.options[form.querySelector(`select[name="children[${i}][orphan_status]"]`).selectedIndex]?.text || 'N/A'}</div>
-                                    <div class="col-md-4"><strong>Has Disability:</strong> ${form.querySelector(`input[name="children[${i}][disability_status]"]`)?.checked ? 'Yes (' + (form.querySelector(`input[name="children[${i}][disability_type]"]`)?.value || 'N/A') + ')' : 'No'}</div>
-                                    <div class="col-md-4"><strong>Vulnerable:</strong> ${form.querySelector(`input[name="children[${i}][vulnerable_status]"]`)?.checked ? 'Yes (' + (form.querySelector(`input[name="children[${i}][vulnerable_type]"]`)?.value || 'N/A') + ')' : 'No'}</div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
+                                                                                <div class="border rounded p-3 mb-3">
+                                                                                    <h6 class="text-primary">Child ${i + 1}</h6>
+                                                                                    <div class="row g-3">
+                                                                                        <div class="col-md-4"><strong>Name:</strong> ${childName}</div>
+                                                                                        <div class="col-md-4"><strong>Gender:</strong> ${childGender}</div>
+                                                                                            <div class="col-md-4"><strong>Date of Birth:</strong> ${formatDate(childDOB)}</div>
+                                                                                            <div class="col-md-4"><strong>Envelope No:</strong> ${form.querySelector(`input[name="children[${i}][envelope_number]"]`)?.value || 'N/A'}</div>
+                                                                                            <div class="col-md-4"><strong>Baptism Status:</strong> ${childBaptism}</div>
+                                                                                            ${childBaptism === 'Baptized' ? `
+                                                                                                <div class="col-md-4"><strong>Baptism Date:</strong> ${formatDate(form.querySelector(`input[name="children[${i}][baptism_date]"]`)?.value || '')}</div>
+                                                                                                <div class="col-md-4"><strong>Baptism Location:</strong> ${form.querySelector(`input[name="children[${i}][baptism_location]"]`)?.value || 'N/A'}</div>
+                                                                                                <div class="col-md-4"><strong>Baptized By:</strong> ${form.querySelector(`input[name="children[${i}][baptized_by]"]`)?.value || 'N/A'}</div>
+                                                                                            ` : ''}
+                                                                                            <div class="col-12"><hr></div>
+                                                                                            <div class="col-md-4"><strong>Orphan Status:</strong> ${form.querySelector(`select[name="children[${i}][orphan_status]"]`)?.options[form.querySelector(`select[name="children[${i}][orphan_status]"]`).selectedIndex]?.text || 'N/A'}</div>
+                                                                                            <div class="col-md-4"><strong>Has Disability:</strong> ${form.querySelector(`input[name="children[${i}][disability_status]"]`)?.checked ? 'Yes (' + (form.querySelector(`input[name="children[${i}][disability_type]"]`)?.value || 'N/A') + ')' : 'No'}</div>
+                                                                                            <div class="col-md-4"><strong>Vulnerable:</strong> ${form.querySelector(`input[name="children[${i}][vulnerable_status]"]`)?.checked ? 'Yes (' + (form.querySelector(`input[name="children[${i}][vulnerable_type]"]`)?.value || 'N/A') + ')' : 'No'}</div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            `;
                     }
 
                     html += `
-                            </div>
-                        </div>
-                    </div>
-                `;
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        `;
                 }
 
                 html += '</div>';
@@ -1690,6 +1689,7 @@
                     handleMemberTypeChange();
                 }
 
+
                 // Baptism status change handlers
                 const baptismStatus = document.getElementById('baptism_status');
                 if (baptismStatus) {
@@ -1854,196 +1854,201 @@
 
                         for (let i = 0; i < count; i++) {
                             const childHtml = `
-                            <div class="card mb-3 border-light">
-                                <div class="card-header bg-light">
-                                    <h6 class="mb-0">Child ${i + 1}</h6>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row g-4 mb-3">
-                                        <div class="col-md-4">
-                                            <div class="form-floating">
-                                                <input type="text" class="form-control" name="children[${i}][full_name]" required>
-                                                <label>Full Name <span class="text-danger">*</span></label>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <div class="form-floating">
-                                                <select class="form-select" name="children[${i}][gender]" required>
-                                                    <option value="">Select...</option>
-                                                    <option value="male">Male</option>
-                                                    <option value="female">Female</option>
-                                                </select>
-                                                <label>Gender <span class="text-danger">*</span></label>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <div class="form-floating">
-                                                <input type="date" class="form-control" name="children[${i}][date_of_birth]" required>
-                                                <label>Date of Birth <span class="text-danger">*</span></label>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <div class="form-floating">
-                                                <select class="form-select child-membership-status" name="children[${i}][is_church_member]" data-child-index="${i}">
-                                                    <option value="no">No</option>
-                                                    <option value="yes">Yes</option>
-                                                </select>
-                                                <label>Church Member?</label>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <div class="form-floating">
-                                                <input type="text" class="form-control child-envelope-number" name="children[${i}][envelope_number]" id="child${i}_envelope_number" placeholder="e.g. 123">
-                                                <label id="child${i}_envelope_label">Envelope No <span class="text-danger label-required" style="display:none;">*</span></label>
-                                            </div>
-                                        </div>
-                                    </div>
+                                                                                    <div class="card mb-3 border-light">
+                                                                                        <div class="card-header bg-light">
+                                                                                            <h6 class="mb-0">Child ${i + 1}</h6>
+                                                                                        </div>
+                                                                                        <div class="card-body">
+                                                                                            <div class="row g-4 mb-3">
+                                                                                                <div class="col-md-4">
+                                                                                                    <div class="form-floating">
+                                                                                                        <input type="text" class="form-control" name="children[${i}][full_name]" required>
+                                                                                                        <label>Full Name <span class="text-danger">*</span></label>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                                <div class="col-md-3">
+                                                                                                    <div class="form-floating">
+                                                                                                        <select class="form-select" name="children[${i}][gender]" required>
+                                                                                                            <option value="">Select...</option>
+                                                                                                            <option value="male">Male</option>
+                                                                                                            <option value="female">Female</option>
+                                                                                                        </select>
+                                                                                                        <label>Gender <span class="text-danger">*</span></label>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                                <div class="col-md-3">
+                                                                                                    <div class="form-floating">
+                                                                                                        <input type="date" class="form-control" name="children[${i}][date_of_birth]" required>
+                                                                                                        <label>Date of Birth <span class="text-danger">*</span></label>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                                <div class="col-md-2">
+                                                                                                    <div class="form-floating">
+                                                                                                        <select class="form-select child-membership-status" name="children[${i}][is_church_member]" data-child-index="${i}">
+                                                                                                            <option value="no">No</option>
+                                                                                                            <option value="yes">Yes</option>
+                                                                                                        </select>
+                                                                                                        <label>Church Member?</label>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                                <div class="col-md-2" style="display:none;">
+                                                                                                    <div class="form-floating">
+                                                                                                        <input type="text" class="form-control child-envelope-number" name="children[${i}][envelope_number]" id="child${i}_envelope_number" placeholder="e.g. 123">
+                                                                                                        <label id="child${i}_envelope_label">Envelope No <span class="text-danger label-required" style="display:none;">*</span></label>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            </div>
 
-                                    <!-- Campus and Fellowship (only for member children) -->
-                                    <div class="row g-4 mb-3 child-member-fields" id="child${i}_member_fields" style="display:none;">
-                                        <div class="col-md-6">
-                                            <div class="form-floating">
-                                                <select class="form-select child-campus-select" name="children[${i}][campus_id]" id="child${i}_campus_id" data-child-index="${i}">
-                                                    <option value="">Select Campus...</option>
-                                                </select>
-                                                <label>Campus/Branch <span class="text-danger">*</span></label>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="form-floating">
-                                                <select class="form-select child-community-select" name="children[${i}][community_id]" id="child${i}_community_id" data-child-index="${i}">
-                                                    <option value="">Select Fellowship...</option>
-                                                </select>
-                                                <label>Fellowship (Jumuiya) <span class="text-danger">*</span></label>
-                                            </div>
-                                        </div>
-                                    </div>
+                                                                                            <!-- Campus and Fellowship (only for member children) -->
+                                                                                            <div class="row g-4 mb-3 child-member-fields" id="child${i}_member_fields" style="display:none;">
+                                                                                                <div class="col-md-6">
+                                                                                                    <div class="form-floating">
+                                                                                                        <select class="form-select child-campus-select" name="children[${i}][campus_id]" id="child${i}_campus_id" data-child-index="${i}">
+                                                                                                            <option value="">Select Campus...</option>
+                                                                                                        </select>
+                                                                                                        <label>Campus/Branch <span class="text-danger">*</span></label>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                                <div class="col-md-6">
+                                                                                                    <div class="form-floating">
+                                                                                                        <select class="form-select child-community-select" name="children[${i}][community_id]" id="child${i}_community_id" data-child-index="${i}">
+                                                                                                            <option value="">Select Fellowship...</option>
+                                                                                                        </select>
+                                                                                                        <label>Fellowship (Jumuiya) <span class="text-danger">*</span></label>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            </div>
 
-                                    <!-- Location for children living outside main area -->
-                                    <div class="row g-4 mb-3">
-                                        <div class="col-md-12">
-                                            <div class="form-check">
-                                                <input class="form-check-input child-outside-area" type="checkbox" name="children[${i}][lives_outside_main_area]" value="yes" id="child${i}_outside_area" data-child-index="${i}">
-                                                <label class="form-check-label" for="child${i}_outside_area">
-                                                    This child lives outside the main church area
-                                                </label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="row g-4 mb-3 child-location-fields" id="child${i}_location_fields" style="display:none;">
-                                        <div class="col-md-3">
-                                            <div class="form-floating">
-                                                <select class="form-select child-region-select" name="children[${i}][region]" id="child${i}_region" data-child-index="${i}">
-                                                    <option value="">Select Region...</option>
-                                                </select>
-                                                <label>Region</label>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <div class="form-floating">
-                                                <select class="form-select child-district-select" name="children[${i}][district]" id="child${i}_district" data-child-index="${i}">
-                                                    <option value="">Select District...</option>
-                                                </select>
-                                                <label>District</label>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <div class="form-floating">
-                                                <input type="text" class="form-control" name="children[${i}][city_town]" placeholder="City/Town">
-                                                <label>City/Town</label>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <div class="form-floating">
-                                                <input type="text" class="form-control" name="children[${i}][current_church_attended]" placeholder="Church name">
-                                                <label>Current Church Attended (Optional)</label>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <div class="form-floating">
-                                                <input type="text" class="form-control child-phone-input" name="children[${i}][phone_number]" id="child${i}_phone_number" placeholder="+255XXXXXXXXX" pattern="^\+255[0-9]{9,15}$">
-                                                <label>Phone Number (Optional)</label>
-                                            </div>
-                                            <small class="text-muted d-block mt-1">Format: +255XXXXXXXXX</small>
-                                        </div>
-                                    </div>
+                                                                                            <!-- Location for children living outside main area -->
+                                                                                            <div class="row g-4 mb-3">
+                                                                                                <div class="col-md-12">
+                                                                                                    <div class="form-check">
+                                                                                                        <input class="form-check-input child-outside-area" type="checkbox" name="children[${i}][lives_outside_main_area]" value="yes" id="child${i}_outside_area" data-child-index="${i}">
+                                                                                                        <label class="form-check-label" for="child${i}_outside_area">
+                                                                                                            This child lives outside the main church area
+                                                                                                        </label>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                            <div class="row g-4 mb-3 child-location-fields" id="child${i}_location_fields" style="display:none;">
+                                                                                                <div class="col-md-3">
+                                                                                                    <div class="form-floating">
+                                                                                                        <select class="form-select child-region-select" name="children[${i}][region]" id="child${i}_region" data-child-index="${i}">
+                                                                                                            <option value="">Select Region...</option>
+                                                                                                        </select>
+                                                                                                        <label>Region</label>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                                <div class="col-md-3">
+                                                                                                    <div class="form-floating">
+                                                                                                        <select class="form-select child-district-select" name="children[${i}][district]" id="child${i}_district" data-child-index="${i}">
+                                                                                                            <option value="">Select District...</option>
+                                                                                                        </select>
+                                                                                                        <label>District</label>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                                <div class="col-md-3">
+                                                                                                    <div class="form-floating">
+                                                                                                        <input type="text" class="form-control" name="children[${i}][city_town]" placeholder="City/Town">
+                                                                                                        <label>City/Town</label>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                                <div class="col-md-3">
+                                                                                                    <div class="form-floating">
+                                                                                                        <input type="text" class="form-control" name="children[${i}][current_church_attended]" placeholder="Church name">
+                                                                                                        <label>Current Church Attended (Optional)</label>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                                <div class="col-md-3">
+                                                                                                    <div class="form-floating">
+                                                                                                        <input type="text" class="form-control child-phone-input" name="children[${i}][phone_number]" id="child${i}_phone_number" placeholder="+255XXXXXXXXX" pattern="^\+255[0-9]{9,15}$">
+                                                                                                        <label>Phone Number (Optional)</label>
+                                                                                                    </div>
+                                                                                                    <small class="text-muted d-block mt-1">Format: +255XXXXXXXXX</small>
+                                                                                                </div>
+                                                                                            </div>
 
-                                    <hr class="my-3">
-                                    <h6 class="text-primary mb-3"><i class="fas fa-tint me-2"></i>Child ${i + 1} Baptism Information</h6>
-                                    <div class="row g-4">
-                                        <div class="col-md-4">
-                                            <div class="form-floating">
-                                                <select class="form-select child-baptism-status" name="children[${i}][baptism_status]" data-child-index="${i}">
-                                                    <option value="">Select...</option>
-                                                    <option value="baptized">Baptized</option>
-                                                    <option value="not_baptized">Not Baptized</option>
-                                                </select>
-                                                <label>Baptism Status</label>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4 child-baptism-date-wrapper" id="child${i}_baptism_date_wrapper" style="display:none;">
-                                            <div class="form-floating">
-                                                <input type="date" class="form-control" name="children[${i}][baptism_date]">
-                                                <label>Baptism Date</label>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4 child-baptism-location-wrapper" id="child${i}_baptism_location_wrapper" style="display:none;">
-                                            <div class="form-floating">
-                                                <input type="text" class="form-control" name="children[${i}][baptism_location]" placeholder="Church name">
-                                                <label>Baptism Location/Church</label>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4 child-baptized-by-wrapper" id="child${i}_baptized_by_wrapper" style="display:none;">
-                                            <div class="form-floating">
-                                                <input type="text" class="form-control" name="children[${i}][baptized_by]" placeholder="Pastor name">
-                                                <label>Baptized By</label>
-                                            </div>
-                                        </div>
-                                    </div>
+                                                                                            <hr class="my-3">
+                                                                                            <h6 class="text-primary mb-3"><i class="fas fa-tint me-2"></i>Child ${i + 1} Baptism Information</h6>
+                                                                                            <div class="row g-4">
+                                                                                                <div class="col-md-4">
+                                                                                                    <div class="form-floating">
+                                                                                                        <select class="form-select child-baptism-status" name="children[${i}][baptism_status]" data-child-index="${i}">
+                                                                                                            <option value="">Select...</option>
+                                                                                                            <option value="baptized">Baptized</option>
+                                                                                                            <option value="not_baptized">Not Baptized</option>
+                                                                                                        </select>
+                                                                                                        <label>Baptism Status</label>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                                <div class="col-md-4 child-baptism-date-wrapper" id="child${i}_baptism_date_wrapper" style="display:none;">
+                                                                                                    <div class="form-floating">
+                                                                                                        <input type="date" class="form-control" name="children[${i}][baptism_date]">
+                                                                                                        <label>Baptism Date</label>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                                <div class="col-md-4 child-baptism-location-wrapper" id="child${i}_baptism_location_wrapper" style="display:none;">
+                                                                                                    <div class="form-floating">
+                                                                                                        <input type="text" class="form-control" name="children[${i}][baptism_location]" placeholder="Church name">
+                                                                                                        <label>Baptism Location/Church</label>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                                <div class="col-md-4 child-baptized-by-wrapper" id="child${i}_baptized_by_wrapper" style="display:none;">
+                                                                                                    <div class="form-floating">
+                                                                                                        <input type="text" class="form-control" name="children[${i}][baptized_by]" placeholder="Pastor name">
+                                                                                                        <label>Baptized By</label>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            </div>
 
-                                    <hr class="my-3">
-                                    <h6 class="text-danger mb-3"><i class="fas fa-hand-holding-heart me-2"></i>Child ${i + 1} Welfare Status</h6>
-                                    <div class="row g-4 mb-3">
-                                        <div class="col-md-4">
-                                            <div class="form-floating">
-                                                <select class="form-select" name="children[${i}][orphan_status]">
-                                                    <option value="not_orphan">Si Yatima (Not Orphan)</option>
-                                                    <option value="father_deceased">Baba amefariki (Father Deceased)</option>
-                                                    <option value="mother_deceased">Mama amefariki (Mother Deceased)</option>
-                                                    <option value="both_deceased">Wote wamefariki (Both Deceased)</option>
-                                                </select>
-                                                <label>Hali ya Uyathima (Orphan Status)</label>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <div class="form-check form-switch pt-2">
-                                                <input class="form-check-input child-disability-status" type="checkbox" name="children[${i}][disability_status]" value="1" data-child-index="${i}" id="child${i}_disability_status">
-                                                <label class="form-check-label fw-bold" for="child${i}_disability_status">Ana Ulemavu? (Has Disability?)</label>
-                                            </div>
-                                            <div id="child${i}_disabilityTypeWrapper" class="mt-2" style="display:none;">
-                                                <div class="form-floating">
-                                                    <input type="text" class="form-control" name="children[${i}][disability_type]" placeholder="Nature of disability">
-                                                    <label>Aina ya Ulemavu (Type)</label>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <div class="form-check form-switch pt-2">
-                                                <input class="form-check-input child-vulnerable-status" type="checkbox" name="children[${i}][vulnerable_status]" value="1" data-child-index="${i}" id="child${i}_vulnerable_status">
-                                                <label class="form-check-label fw-bold" for="child${i}_vulnerable_status">Hali Ngumu/Dhaifu? (Vulnerable?)</label>
-                                            </div>
-                                            <div id="child${i}_vulnerableTypeWrapper" class="mt-2" style="display:none;">
-                                                <div class="form-floating">
-                                                    <input type="text" class="form-control" name="children[${i}][vulnerable_type]" placeholder="e.g. Poverty">
-                                                    <label>Aina ya Changamoto (Type)</label>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
+                                                                                            <hr class="my-3">
+                                                                                            <h6 class="text-danger mb-3"><i class="fas fa-hand-holding-heart me-2"></i>Child ${i + 1} Welfare Status</h6>
+                                                                                            <div class="row g-4 mb-3">
+                                                                                                <div class="col-md-4">
+                                                                                                    <div class="form-floating">
+                                                                                                        <select class="form-select" name="children[${i}][orphan_status]">
+                                                                                                            <option value="not_orphan">Si Yatima (Not Orphan)</option>
+                                                                                                            <option value="father_deceased">Baba amefariki (Father Deceased)</option>
+                                                                                                            <option value="mother_deceased">Mama amefariki (Mother Deceased)</option>
+                                                                                                            <option value="both_deceased">Wote wamefariki (Both Deceased)</option>
+                                                                                                        </select>
+                                                                                                        <label>Hali ya Uyathima (Orphan Status)</label>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                                <div class="col-md-4">
+                                                                                                    <div class="form-check form-switch pt-2">
+                                                                                                        <input class="form-check-input child-disability-status" type="checkbox" name="children[${i}][disability_status]" value="1" data-child-index="${i}" id="child${i}_disability_status">
+                                                                                                        <label class="form-check-label fw-bold" for="child${i}_disability_status">Ana Ulemavu? (Has Disability?)</label>
+                                                                                                    </div>
+                                                                                                    <div id="child${i}_disabilityTypeWrapper" class="mt-2" style="display:none;">
+                                                                                                        <div class="form-floating">
+                                                                                                            <input type="text" class="form-control" name="children[${i}][disability_type]" placeholder="Nature of disability">
+                                                                                                            <label>Aina ya Ulemavu (Type)</label>
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                                <div class="col-md-4">
+                                                                                                    <div class="form-check form-switch pt-2">
+                                                                                                        <input class="form-check-input child-vulnerable-status" type="checkbox" name="children[${i}][vulnerable_status]" value="1" data-child-index="${i}" id="child${i}_vulnerable_status">
+                                                                                                        <label class="form-check-label fw-bold" for="child${i}_vulnerable_status">Hali Ngumu/Dhaifu? (Vulnerable?)</label>
+                                                                                                    </div>
+                                                                                                    <div id="child${i}_vulnerableTypeWrapper" class="mt-2" style="display:none;">
+                                                                                                        <div class="form-floating">
+                                                                                                            <input type="text" class="form-control" name="children[${i}][vulnerable_type]" placeholder="e.g. Poverty">
+                                                                                                            <label>Aina ya Changamoto (Type)</label>
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                `;
                             container.innerHTML += childHtml;
+                        }
+
+                        // Need to call after adding all
+                        for (let i = 0; i < count; i++) {
+                            updateChildEnvelopeVisibility(i);
                         }
 
                         // Add event listeners for child baptism status changes
@@ -2072,6 +2077,8 @@
                                 if (locationFields) {
                                     locationFields.style.display = this.checked ? 'block' : 'none';
                                 }
+                                // Update envelope field visibility
+                                updateChildEnvelopeVisibility(childIndex);
                             });
                         });
                     });
@@ -2161,20 +2168,48 @@
                                     const membershipStatusSelect = card.querySelector('.child-membership-status');
                                     if (membershipStatusSelect) {
                                         const childIndex = membershipStatusSelect.getAttribute('data-child-index');
-                                        const dob = e.target.value;
-                                        const label = document.getElementById(`child${childIndex}_envelope_label`);
-                                        if (dob && label) {
-                                            const birth = new Date(dob);
-                                            const age = Math.floor((new Date() - birth) / (1000 * 60 * 60 * 24 * 365.25));
-                                            const indicator = label.querySelector('.label-required');
-                                            if (indicator) {
-                                                indicator.style.display = age >= 18 ? 'inline' : 'none';
-                                            }
-                                        }
+                                        updateChildEnvelopeVisibility(childIndex);
                                     }
                                 }
                             }
                         });
+                    }
+
+                    // Function to update child envelope visibility and requirements
+                    function updateChildEnvelopeVisibility(childIndex) {
+                        const dobInput = document.querySelector(`input[name="children[${childIndex}][date_of_birth]"]`);
+                        const outsideCheckbox = document.getElementById(`child${childIndex}_outside_area`);
+                        const envelopeInput = document.getElementById(`child${childIndex}_envelope_number`);
+                        const envelopeWrapper = envelopeInput ? envelopeInput.closest('.col-md-2') : null;
+
+                        if (!dobInput || !envelopeInput || !envelopeWrapper) return;
+
+                        const dob = dobInput.value;
+                        const isOutside = outsideCheckbox ? outsideCheckbox.checked : false;
+
+                        let age = 0;
+                        if (dob) {
+                            const birth = new Date(dob);
+                            age = Math.floor((new Date() - birth) / (1000 * 60 * 60 * 24 * 365.25));
+                        }
+
+                        // Requirement: 18+ and NOT living outside
+                        const isRequired = age >= 18 && !isOutside;
+
+                        if (isRequired) {
+                            envelopeWrapper.style.display = 'block';
+                            envelopeInput.setAttribute('required', 'required');
+                            const label = document.getElementById(`child${childIndex}_envelope_label`);
+                            if (label) {
+                                const indicator = label.querySelector('.label-required');
+                                if (indicator) indicator.style.display = 'inline';
+                            }
+                        } else {
+                            envelopeWrapper.style.display = 'none';
+                            envelopeInput.removeAttribute('required');
+                            envelopeInput.value = ''; // Clear value if hidden
+                            envelopeInput.classList.remove('is-invalid');
+                        }
                     }
 
                     // Function to load campuses for child campus select
@@ -2488,16 +2523,16 @@
                                 icon: 'info',
                                 title: 'Preview Mode',
                                 html: `
-                                <div class="text-start">
-                                    <p><strong>Form validation successful!</strong></p>
-                                    <p>This is a preview/test submission. No data was saved to the database.</p>
-                                    <hr>
-                                    <p class="small text-muted mb-0">
-                                        <i class="fas fa-info-circle me-1"></i>
-                                        Uncheck "Preview/Test Mode" and submit again to actually save the member data.
-                                    </p>
-                                </div>
-                            `,
+                                                                                        <div class="text-start">
+                                                                                            <p><strong>Form validation successful!</strong></p>
+                                                                                            <p>This is a preview/test submission. No data was saved to the database.</p>
+                                                                                            <hr>
+                                                                                            <p class="small text-muted mb-0">
+                                                                                                <i class="fas fa-info-circle me-1"></i>
+                                                                                                Uncheck "Preview/Test Mode" and submit again to actually save the member data.
+                                                                                            </p>
+                                                                                        </div>
+                                                                                    `,
                                 confirmButtonText: 'OK',
                                 confirmButtonColor: '#5b2a86'
                             });
@@ -2594,6 +2629,35 @@
 
             .form-floating>.is-invalid~label {
                 color: #dc3545 !important;
+            }
+
+            .shake-animation {
+                animation: shake 0.5s cubic-bezier(.36, .07, .19, .97) both;
+                transform: translate3d(0, 0, 0);
+            }
+
+            @keyframes shake {
+
+                10%,
+                90% {
+                    transform: translate3d(-1px, 0, 0);
+                }
+
+                20%,
+                80% {
+                    transform: translate3d(2px, 0, 0);
+                }
+
+                30%,
+                50%,
+                70% {
+                    transform: translate3d(-4px, 0, 0);
+                }
+
+                40%,
+                60% {
+                    transform: translate3d(4px, 0, 0);
+                }
             }
         </style>
     @endpush

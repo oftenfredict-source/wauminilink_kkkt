@@ -77,6 +77,7 @@ class Member extends Model
         'disability_type',
         'vulnerable_status',
         'vulnerable_type',
+        'lives_outside_main_area',
     ];
 
     protected $casts = [
@@ -115,8 +116,8 @@ class Member extends Model
     public function departments()
     {
         return $this->belongsToMany(Department::class, 'department_member')
-                    ->withPivot('status', 'assigned_at')
-                    ->withTimestamps();
+            ->withPivot('status', 'assigned_at')
+            ->withTimestamps();
     }
 
     public function offerings()
@@ -177,10 +178,10 @@ class Member extends Model
     public function getAllChildrenAttribute()
     {
         $children = collect();
-        
+
         // 1. Direct children
         $children = $children->merge($this->children);
-        
+
         // 2. Spouse's children
         if ($this->spouse_member_id) {
             $spouse = $this->spouseMember;
@@ -188,12 +189,12 @@ class Member extends Model
                 $children = $children->merge($spouse->children);
             }
         }
-        
+
         // 3. Main member's children (if this member is linked as a spouse)
         $mainMember = $this->mainMember;
         if ($mainMember) {
             $children = $children->merge($mainMember->children);
-            
+
             // Also check main member's spouse (case where children linked to another spouse)
             if ($mainMember->spouse_member_id && $mainMember->spouse_member_id != $this->id) {
                 $otherSpouse = $mainMember->spouseMember;
@@ -202,7 +203,7 @@ class Member extends Model
                 }
             }
         }
-        
+
         return $children->unique('id')->values();
     }
 
@@ -232,57 +233,37 @@ class Member extends Model
 
     /**
      * Generate a unique member ID
-     * Format: YYYY + sequential (2 digits) + letter (1) + digits (2) + -WL
-     * Example: 202574G58-WL
+     * Format: KKKT-YYYY-NNNN
+     * Example: KKKT-2026-0001
      */
     public static function generateMemberId()
     {
+        $year = date('Y');
+        $prefix = "KKKT-{$year}-";
+
         do {
-            $year = date('Y');
-            
-            // Get the highest sequential number for the current year
-            // Extract sequential numbers from existing member IDs for this year
-            $existingIds = self::where('member_id', 'LIKE', $year . '%')
-                ->whereNotNull('member_id')
-                ->pluck('member_id')
-                ->toArray();
-            
-            $sequential = 1; // Start from 01
-            if (!empty($existingIds)) {
-                $maxSequential = 0;
-                foreach ($existingIds as $id) {
-                    // Extract the 2-digit sequential number (positions 4-5 after year)
-                    // Format: YYYYXXL##-WL
-                    if (strlen($id) >= 6 && substr($id, 0, 4) == $year) {
-                        $seqPart = substr($id, 4, 2);
-                        if (is_numeric($seqPart)) {
-                            $seqNum = (int)$seqPart;
-                            if ($seqNum > $maxSequential) {
-                                $maxSequential = $seqNum;
-                            }
-                        }
-                    }
+            // Get the highest sequential number for the current year with the new format
+            $lastMember = self::where('member_id', 'LIKE', $prefix . '%')
+                ->where('member_id', 'REGEXP', '^KKKT-[0-9]{4}-[0-9]{4}$')
+                ->orderBy('member_id', 'desc')
+                ->first();
+
+            $nextNumber = 1;
+            if ($lastMember) {
+                // Extract NNNN from KKKT-YYYY-NNNN
+                $parts = explode('-', $lastMember->member_id);
+                if (isset($parts[2]) && is_numeric($parts[2])) {
+                    $nextNumber = (int) $parts[2] + 1;
                 }
-                $sequential = $maxSequential + 1;
             }
-            
-            // Ensure sequential is 2 digits (01-99)
-            if ($sequential > 99) {
-                $sequential = 1; // Reset to 01 if we exceed 99 (unlikely but safety check)
-            }
-            $sequentialPadded = str_pad($sequential, 2, '0', STR_PAD_LEFT);
-            
-            // Generate 1 random uppercase letter (A-Z)
-            $letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-            $randomLetter = $letters[rand(0, strlen($letters) - 1)];
-            
-            // Generate 2 random digits (00-99)
-            $randomDigits = str_pad(rand(0, 99), 2, '0', STR_PAD_LEFT);
-            
-            $memberId = $year . $sequentialPadded . $randomLetter . $randomDigits . '-WL';
-            
+
+            $sequentialPadded = str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+            $memberId = $prefix . $sequentialPadded;
+
+            // Increment for next iteration if exists (to avoid infinite loop if somehow duplicated)
+            $nextNumber++;
         } while (self::where('member_id', $memberId)->exists());
-        
+
         return $memberId;
     }
 
@@ -296,25 +277,25 @@ class Member extends Model
     {
         $maxAttempts = 1000; // Prevent infinite loop
         $attempts = 0;
-        
+
         do {
             // Generate random number between 10 and 999 (2-3 digits)
             $enrollId = rand(10, 999);
             $attempts++;
-            
+
             if ($attempts >= $maxAttempts) {
                 // If we can't find a unique ID, try sequential search
                 for ($id = 10; $id <= 999; $id++) {
-                    if (!self::where('biometric_enroll_id', (string)$id)->exists()) {
-                        return (string)$id;
+                    if (!self::where('biometric_enroll_id', (string) $id)->exists()) {
+                        return (string) $id;
                     }
                 }
                 throw new \Exception('Cannot generate unique biometric enroll ID. All IDs (10-999) are taken.');
             }
-            
-        } while (self::where('biometric_enroll_id', (string)$enrollId)->exists());
-        
-        return (string)$enrollId;
+
+        } while (self::where('biometric_enroll_id', (string) $enrollId)->exists());
+
+        return (string) $enrollId;
     }
 
     /**
@@ -329,7 +310,7 @@ class Member extends Model
             if (empty($member->biometric_enroll_id)) {
                 $member->biometric_enroll_id = self::generateBiometricEnrollId();
             }
-            
+
             // Set membership status default
             if (empty($member->membership_status)) {
                 $member->membership_status = 'active';
@@ -353,7 +334,7 @@ class Member extends Model
         if (!$this->isTemporaryMember() || !$this->membership_end_date) {
             return false;
         }
-        
+
         $daysUntilExpiry = now()->diffInDays($this->membership_end_date, false);
         return $daysUntilExpiry >= 0 && $daysUntilExpiry <= 30;
     }
@@ -366,7 +347,7 @@ class Member extends Model
         if (!$this->isTemporaryMember() || !$this->membership_end_date) {
             return false;
         }
-        
+
         return now()->isAfter($this->membership_end_date) && $this->membership_status === 'active';
     }
 
@@ -378,7 +359,7 @@ class Member extends Model
         if (!$this->isTemporaryMember() || !$this->membership_end_date) {
             return null;
         }
-        
+
         return now()->diffInDays($this->membership_end_date, false);
     }
 

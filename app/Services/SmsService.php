@@ -182,7 +182,8 @@ class SmsService
     public function buildPromiseGuestNotificationMessage(string $guestName, $serviceDate, \App\Models\SundayService $service = null): string
     {
         // Get custom template from settings or use default
-        $template = SettingsService::get('sms_promise_guest_template', 
+        $template = SettingsService::get(
+            'sms_promise_guest_template',
             "Shalom {{name}}, tunakukumbusha kuhusu ahadi yako ya kuhudhuria ibada ya Jumapili tarehe {{date}}.\n\n" .
             "Tunatarajia kukuona na kukushukuru kwa kuwa sehemu ya familia yetu ya kiroho.\n\n" .
             "{{service_details}}\n\n" .
@@ -193,7 +194,10 @@ class SmsService
         if ($serviceDate instanceof \Carbon\Carbon) {
             $formattedDate = $serviceDate->format('d/m/Y');
         } elseif ($service && $service->service_date) {
-            $formattedDate = $service->service_date->format('d/m/Y');
+            $dateObj = $service->service_date instanceof \Carbon\Carbon
+                ? $service->service_date
+                : \Carbon\Carbon::parse($service->service_date);
+            $formattedDate = $dateObj->format('d/m/Y');
         } else {
             $formattedDate = date('d/m/Y', strtotime($serviceDate));
         }
@@ -202,7 +206,10 @@ class SmsService
         $serviceDetails = [];
         if ($service) {
             if ($service->start_time) {
-                $serviceDetails[] = "Muda: " . $service->start_time->format('H:i');
+                $startTime = $service->start_time instanceof \Carbon\Carbon
+                    ? $service->start_time
+                    : \Carbon\Carbon::parse($service->start_time);
+                $serviceDetails[] = "Muda: " . $startTime->format('H:i');
             }
             if ($service->venue) {
                 $serviceDetails[] = "Mahali: " . $service->venue;
@@ -211,9 +218,9 @@ class SmsService
                 $serviceDetails[] = "Mada: " . $service->theme;
             }
         }
-        
-        $serviceDetailsText = !empty($serviceDetails) 
-            ? implode("\n", $serviceDetails) 
+
+        $serviceDetailsText = !empty($serviceDetails)
+            ? implode("\n", $serviceDetails)
             : "Tarehe: " . $formattedDate;
 
         // Replace placeholders
@@ -230,14 +237,15 @@ class SmsService
     private function buildPaymentApprovalMessage(string $memberName, string $paymentType, float $amount, string $paymentDate): string
     {
         // Get custom template from settings or use default
-        $template = SettingsService::get('sms_payment_approval_template', 
+        $template = SettingsService::get(
+            'sms_payment_approval_template',
             "Hongera {{name}}! {{payment_type}} yako ya TZS {{amount}} tarehe {{date}} imethibitishwa na imepokelewa kikamilifu.\n" .
             "Asante kwa mchango wako wa kiroho. Mungu akubariki!"
         );
 
         // Format amount with commas
         $formattedAmount = number_format($amount, 0);
-        
+
         // Format date
         $formattedDate = date('d/m/Y', strtotime($paymentDate));
 
@@ -256,7 +264,8 @@ class SmsService
     private function buildLeaderAppointmentMessage(string $leaderName, string $position, string $churchName): string
     {
         // Get custom template from settings or use default
-        $template = SettingsService::get('sms_leader_appointment_template', 
+        $template = SettingsService::get(
+            'sms_leader_appointment_template',
             "Hongera {{name}}! Umechaguliwa rasmi kuwa {{position}} wa kanisa la {{church_name}}.\n\n" .
             "Mungu akupe hekima, ujasiri na neema katika kutimiza wajibu huu wa kiroho.\n\n" .
             "Tunakuombea uongozi wenye upendo, umoja na maendeleo katika huduma ya Bwana."
@@ -322,7 +331,8 @@ class SmsService
     private function buildPledgeReminderMessage(string $memberName, string $pledgeType, float $remainingAmount, string $dueDate): string
     {
         // Get custom template from settings or use default
-        $template = SettingsService::get('sms_pledge_reminder_template', 
+        $template = SettingsService::get(
+            'sms_pledge_reminder_template',
             "Shalom {{name}}, tunakukumbusha kuhusu ahadi yako ya {{pledge_type}}; kiasi kilichobaki ni {{remaining_amount}} na mwisho ni {{due_date}}. Mungu akubariki sana kwa moyo wako wa utoaji"
         );
 
@@ -331,7 +341,7 @@ class SmsService
 
         // Format amount with commas
         $formattedAmount = 'TZS ' . number_format($remainingAmount, 0);
-        
+
         // Format date in Swahili format (dd/mm/yyyy) or use provided text
         if ($dueDate && $dueDate !== 'Hakuna tarehe maalum' && strtotime($dueDate) !== false) {
             $formattedDate = date('d/m/Y', strtotime($dueDate));
@@ -405,6 +415,14 @@ class SmsService
             // Normalize phone: API expects 255XXXXXXXXX (no plus). Convert +255... to 255...
             $normalizedPhone = ltrim($toPhoneE164, '+');
 
+            if (empty($normalizedPhone)) {
+                Log::warning('SMS sending skipped: recipient phone number is empty');
+                return [
+                    'ok' => false,
+                    'reason' => 'empty_recipient'
+                ];
+            }
+
             // If username/password are provided, use GET with query params (messaging-service.co.tz pattern)
             if (!empty($username) && !empty($password)) {
                 // Build URL with query parameters (matching the exact API format)
@@ -416,10 +434,10 @@ class SmsService
                     'to' => $normalizedPhone,
                     'text' => $message, // Automatically URL encoded by http_build_query
                 ]);
-                
+
                 // Construct full URL
                 $fullUrl = $apiUrl . '?' . $queryParams;
-                
+
                 // Use cURL directly to match the exact API format
                 $ch = curl_init();
                 curl_setopt_array($ch, [
@@ -432,12 +450,12 @@ class SmsService
                     CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
                     CURLOPT_CUSTOMREQUEST => 'GET',
                 ]);
-                
+
                 $responseBody = curl_exec($ch);
                 $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
                 $curlError = curl_error($ch);
                 curl_close($ch);
-                
+
                 if ($curlError) {
                     Log::error('SMS cURL error', [
                         'error' => $curlError,
@@ -447,7 +465,7 @@ class SmsService
                         ? ['ok' => false, 'error' => 'cURL Error: ' . $curlError, 'request' => ['url' => $fullUrl]]
                         : ['ok' => false];
                 }
-                
+
                 $requestMeta = [
                     'method' => 'GET',
                     'url' => $fullUrl,
@@ -459,24 +477,26 @@ class SmsService
                         'text' => $message
                     ]
                 ];
-                
+
                 // Check if request was successful (HTTP 200-299)
                 if ($httpCode >= 200 && $httpCode < 300) {
                     // Parse response to check for rejection
                     $responseData = json_decode($responseBody, true);
                     $isRejected = false;
                     $rejectionReason = null;
-                    
+
                     // Check if message was rejected by provider
                     if (isset($responseData['messages']) && is_array($responseData['messages'])) {
                         foreach ($responseData['messages'] as $msg) {
                             if (isset($msg['status'])) {
                                 $status = $msg['status'];
                                 // Check for rejection statuses
-                                if (isset($status['groupName']) && 
-                                    (stripos($status['groupName'], 'REJECTED') !== false || 
-                                     stripos($status['groupName'], 'FAILED') !== false ||
-                                     stripos($status['groupName'], 'ERROR') !== false)) {
+                                if (
+                                    isset($status['groupName']) &&
+                                    (stripos($status['groupName'], 'REJECTED') !== false ||
+                                        stripos($status['groupName'], 'FAILED') !== false ||
+                                        stripos($status['groupName'], 'ERROR') !== false)
+                                ) {
                                     $isRejected = true;
                                     $rejectionReason = $status['description'] ?? $status['name'] ?? 'Message rejected by provider';
                                     break;
@@ -484,7 +504,7 @@ class SmsService
                             }
                         }
                     }
-                    
+
                     if ($isRejected) {
                         Log::error('SMS rejected by provider', [
                             'to' => $toPhoneE164,
@@ -495,7 +515,7 @@ class SmsService
                             ? ['ok' => false, 'status' => $httpCode, 'body' => $responseBody, 'reason' => $rejectionReason, 'request' => $requestMeta]
                             : ['ok' => false, 'reason' => $rejectionReason];
                     }
-                    
+
                     Log::info('SMS sent successfully', ['to' => $toPhoneE164]);
                     return $debug
                         ? ['ok' => true, 'status' => $httpCode, 'body' => $responseBody, 'request' => $requestMeta]
@@ -523,25 +543,27 @@ class SmsService
                     'Accept' => 'application/json',
                 ])->timeout(15)->post($apiUrl, $payload);
                 $requestMeta = ['method' => 'POST', 'url' => $apiUrl, 'payload' => $payload];
-                
+
                 if ($response->successful()) {
                     // Check response body for rejection status
                     $responseBody = $response->body();
                     $responseData = json_decode($responseBody, true);
-                    
+
                     // Check if message was rejected by provider
                     $isRejected = false;
                     $rejectionReason = null;
-                    
+
                     if (isset($responseData['messages']) && is_array($responseData['messages'])) {
                         foreach ($responseData['messages'] as $msg) {
                             if (isset($msg['status'])) {
                                 $status = $msg['status'];
                                 // Check for rejection statuses
-                                if (isset($status['groupName']) && 
-                                    (stripos($status['groupName'], 'REJECTED') !== false || 
-                                     stripos($status['groupName'], 'FAILED') !== false ||
-                                     stripos($status['groupName'], 'ERROR') !== false)) {
+                                if (
+                                    isset($status['groupName']) &&
+                                    (stripos($status['groupName'], 'REJECTED') !== false ||
+                                        stripos($status['groupName'], 'FAILED') !== false ||
+                                        stripos($status['groupName'], 'ERROR') !== false)
+                                ) {
                                     $isRejected = true;
                                     $rejectionReason = $status['description'] ?? $status['name'] ?? 'Message rejected by provider';
                                     break;
@@ -549,7 +571,7 @@ class SmsService
                             }
                         }
                     }
-                    
+
                     if ($isRejected) {
                         Log::error('SMS rejected by provider', [
                             'to' => $toPhoneE164,
@@ -560,7 +582,7 @@ class SmsService
                             ? ['ok' => false, 'status' => $response->status(), 'body' => $responseBody, 'reason' => $rejectionReason, 'request' => $requestMeta]
                             : ['ok' => false, 'reason' => $rejectionReason];
                     }
-                    
+
                     Log::info('SMS sent successfully', ['to' => $toPhoneE164]);
                     return $debug
                         ? ['ok' => true, 'status' => $response->status(), 'body' => $responseBody, 'request' => $requestMeta]

@@ -28,13 +28,20 @@ class SmsChannel
         }
 
         $message = $notification->toSms($notifiable);
-        
+
         if (empty($message)) {
             return;
         }
 
-        // Send SMS using the SMS service
-        $this->smsService->send($notifiable->phone_number, $message);
+        // Send SMS using the SMS service if phone number is available
+        if (!empty($notifiable->phone_number)) {
+            $this->smsService->send($notifiable->phone_number, $message);
+        } else {
+            \Log::warning("SmsChannel: Skipping SMS send - no phone number for notifiable", [
+                'notifiable_id' => $notifiable->id ?? 'unknown',
+                'notification' => get_class($notification)
+            ]);
+        }
     }
 }
 

@@ -30,17 +30,17 @@ class FinancialApprovalNotification extends Notification
     public function via(object $notifiable): array
     {
         $channels = ['database'];
-        
+
         // Add email if pastor has email
         if (!empty($notifiable->email)) {
             $channels[] = 'mail';
         }
-        
+
         // Add SMS if pastor has phone number
         if (!empty($notifiable->phone_number)) {
             $channels[] = 'sms';
         }
-        
+
         return $channels;
     }
 
@@ -87,11 +87,9 @@ class FinancialApprovalNotification extends Notification
     public function toSms(object $notifiable): string
     {
         try {
-            $smsService = new SmsService();
-            
             // Translate financial type to Swahili
             $swahiliType = $this->translateFinancialTypeToSwahili($this->data['type']);
-            
+
             // Ensure amount is properly formatted - handle null/0 cases
             $amountValue = $this->data['amount'] ?? 0;
             if ($amountValue <= 0) {
@@ -104,15 +102,15 @@ class FinancialApprovalNotification extends Notification
             }
             $amount = number_format($amountValue, 0);
             $memberName = $this->data['member_name'] ?? 'Mwanachama';
-            
+
             $message = "Habari Mchungaji! Kuna {$swahiliType} ya TZS {$amount} kutoka kwa {$memberName} inahitaji uthibitisho wako. Tafadhali ingia kwenye mfumo wa Waumini Link ili kuithibitisha. Asante!";
-            
-            // Send SMS
-            $smsService->send($notifiable->phone_number, $message);
-            
+
+            // The SmsChannel handles the actual sending using the message returned here.
+            // Manually calling $smsService->send here causes duplicate SMS messages.
+
             return $message;
         } catch (\Exception $e) {
-            \Log::error('Failed to send financial approval SMS to pastor: ' . $e->getMessage(), [
+            \Log::error('Error generating financial approval SMS content: ' . $e->getMessage(), [
                 'type' => $this->data['type'] ?? 'unknown',
                 'record_id' => $this->data['record_id'] ?? null,
                 'amount' => $this->data['amount'] ?? null,

@@ -2410,6 +2410,10 @@
                                 <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
                                 {{ __('common.dashboard') }}
                             </a>
+                            <a class="nav-link" href="{{ route('announcements.index') }}">
+                                <div class="sb-nav-link-icon"><i class="fas fa-bullhorn"></i></div>
+                                {{ __('common.announcements') }}
+                            </a>
                             <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapseEvangelismMembers" aria-expanded="false" aria-controls="collapseEvangelismMembers">
                                 <div class="sb-nav-link-icon"><i class="fas fa-users"></i></div>
                                 {{ __('common.members') }}
@@ -2538,6 +2542,10 @@
                             <a class="nav-link" href="{{ route('parish-worker.dashboard') }}">
                                 <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
                                 {{ __('common.dashboard') }}
+                            </a>
+                            <a class="nav-link" href="{{ route('announcements.index') }}">
+                                <div class="sb-nav-link-icon"><i class="fas fa-bullhorn"></i></div>
+                                {{ __('common.announcements') }}
                             </a>
                             <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapsePWActivities" aria-expanded="false" aria-controls="collapsePWActivities">
                                 <div class="sb-nav-link-icon"><i class="fas fa-walking"></i></div>

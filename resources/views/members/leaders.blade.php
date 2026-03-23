@@ -144,8 +144,8 @@
                                         @foreach($leaders as $leader)
                                             <tr class="{{ $memberPositions->contains('id', $leader->id) ? 'table-danger' : '' }}"
                                                 data-position="{{ $leader->position }}"
-                                                data-name="{{ strtolower($leader->member->full_name ?? '') }}"
-                                                data-phone="{{ $leader->member->phone_number ?? '' }}">
+                                                data-name="{{ strtolower($leader->member?->full_name ?? '') }}"
+                                                data-phone="{{ $leader->member?->phone_number ?? '' }}">
                                                 <td>
                                                     <strong>{{ $leader->position_display }}</strong>
                                                     @if($memberPositions->contains('id', $leader->id))
@@ -155,24 +155,24 @@
                                                 <td>
                                                     <div class="d-flex align-items-center">
                                                         <i class="fas fa-user-circle text-danger me-2"></i>
-                                                        <strong>{{ $leader->member->full_name ?? 'N/A' }}</strong>
+                                                        <strong>{{ $leader->member?->full_name ?? 'N/A' }}</strong>
                                                     </div>
                                                 </td>
                                                 <td>
-                                                    @if($leader->member->phone_number)
-                                                        <a href="tel:{{ $leader->member->phone_number }}" class="text-decoration-none">
+                                                    @if($leader->member?->phone_number)
+                                                        <a href="tel:{{ $leader->member?->phone_number }}" class="text-decoration-none">
                                                             <i class="fas fa-phone text-success me-1"></i>
-                                                            {{ $leader->member->phone_number }}
+                                                            {{ $leader->member?->phone_number }}
                                                         </a>
                                                     @else
                                                         <span class="text-muted">N/A</span>
                                                     @endif
                                                 </td>
                                                 <td>
-                                                    @if($leader->member->email)
-                                                        <a href="mailto:{{ $leader->member->email }}" class="text-decoration-none">
+                                                    @if($leader->member?->email)
+                                                        <a href="mailto:{{ $leader->member?->email }}" class="text-decoration-none">
                                                             <i class="fas fa-envelope text-info me-1"></i>
-                                                            {{ $leader->member->email }}
+                                                            {{ $leader->member?->email }}
                                                         </a>
                                                     @else
                                                         <span class="text-muted">N/A</span>
@@ -246,36 +246,36 @@
                                                         <div class="d-flex align-items-start">
                                                             <div class="flex-grow-1">
                                                                 <h6 class="mb-1">
-                                                                    {{ $leader->member->full_name ?? 'N/A' }}
+                                                                    {{ $leader->member?->full_name ?? 'N/A' }}
                                                                     @if($memberPositions->contains('id', $leader->id))
                                                                         <span class="badge bg-success ms-1">You</span>
                                                                     @endif
                                                                 </h6>
                                                                 <small class="text-muted d-block">
                                                                     <i class="fas fa-id-card me-1"></i>
-                                                                    {{ $leader->member->member_id ?? 'N/A' }}
+                                                                    {{ $leader->member?->member_id ?? 'N/A' }}
                                                                 </small>
-                                                                @if($leader->member->phone_number)
+                                                                @if($leader->member?->phone_number)
                                                                     <small class="text-muted d-block">
                                                                         <i class="fas fa-phone me-1"></i>
-                                                                        <a href="tel:{{ $leader->member->phone_number }}"
+                                                                        <a href="tel:{{ $leader->member?->phone_number }}"
                                                                             class="text-decoration-none">
-                                                                            {{ $leader->member->phone_number }}
+                                                                            {{ $leader->member?->phone_number }}
                                                                         </a>
                                                                     </small>
                                                                 @endif
-                                                                @if($leader->member->email)
+                                                                @if($leader->member?->email)
                                                                     <small class="text-muted d-block">
                                                                         <i class="fas fa-envelope me-1"></i>
-                                                                        <a href="mailto:{{ $leader->member->email }}"
+                                                                        <a href="mailto:{{ $leader->member?->email }}"
                                                                             class="text-decoration-none">
-                                                                            {{ Str::limit($leader->member->email, 25) }}
+                                                                            {{ Str::limit($leader->member?->email ?? '', 25) }}
                                                                         </a>
                                                                     </small>
                                                                 @endif
                                                                 <small class="text-muted d-block mt-1">
                                                                     <i class="fas fa-calendar me-1"></i>
-                                                                    Since {{ $leader->appointment_date->format('M Y') }}
+                                                                    Since {{ $leader->appointment_date ? (is_object($leader->appointment_date) && method_exists($leader->appointment_date, 'format') ? $leader->appointment_date->format('M Y') : \Carbon\Carbon::parse($leader->appointment_date)->format('M Y')) : 'N/A' }}
                                                                 </small>
                                                             </div>
                                                         </div>

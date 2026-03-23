@@ -29,10 +29,10 @@ class BereavementController extends Controller
         // Search
         if ($request->filled('search')) {
             $s = $request->string('search');
-            $query->where(function($q) use ($s) {
+            $query->where(function ($q) use ($s) {
                 $q->where('deceased_name', 'like', "%{$s}%")
-                  ->orWhere('family_details', 'like', "%{$s}%")
-                  ->orWhere('related_departments', 'like', "%{$s}%");
+                    ->orWhere('family_details', 'like', "%{$s}%")
+                    ->orWhere('related_departments', 'like', "%{$s}%");
             });
         }
 
@@ -102,25 +102,25 @@ class BereavementController extends Controller
                 $members = Member::whereIn('id', $memberIds)->get();
             }
 
-        foreach ($members as $member) {
-            try {
-                BereavementContribution::create([
-                    'bereavement_event_id' => $event->id,
-                    'member_id' => $member->id,
-                    'has_contributed' => false,
-                    'contribution_type' => 'individual',
-                    'amount' => 0, // Set default amount for existing table structure
-                    'contribution_date' => now()->toDateString(), // Required by existing table
-                    'payment_method' => 'cash', // Required by existing table
-                    'recorded_by' => auth()->id(),
-                ]);
-            } catch (\Exception $e) {
-                Log::error('Failed to create contribution record for member: ' . $member->id, [
-                    'error' => $e->getMessage()
-                ]);
-                // Continue with next member
+            foreach ($members as $member) {
+                try {
+                    BereavementContribution::create([
+                        'bereavement_event_id' => $event->id,
+                        'member_id' => $member->id,
+                        'has_contributed' => false,
+                        'contribution_type' => 'individual',
+                        'amount' => 0, // Set default amount for existing table structure
+                        'contribution_date' => now()->toDateString(), // Required by existing table
+                        'payment_method' => 'cash', // Required by existing table
+                        'recorded_by' => auth()->id(),
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to create contribution record for member: ' . $member->id, [
+                        'error' => $e->getMessage()
+                    ]);
+                    // Continue with next member
+                }
             }
-        }
 
             // Send notifications if requested
             if ($request->boolean('send_notifications')) {
@@ -296,7 +296,7 @@ class BereavementController extends Controller
 
         // Map contribution_type from our format to table format
         $contributionType = $validated['contribution_type'] === 'family_wide' ? 'family' : 'individual';
-        
+
         $contribution = BereavementContribution::updateOrCreate(
             [
                 'bereavement_event_id' => $bereavement->id,
@@ -304,7 +304,7 @@ class BereavementController extends Controller
             ],
             [
                 'has_contributed' => true,
-                'amount' => $validated['contribution_amount'], // Table uses 'amount' column
+                'contribution_amount' => $validated['contribution_amount'],
                 'contribution_date' => $validated['contribution_date'],
                 'contribution_type' => $contributionType,
                 'payment_method' => $validated['payment_method'] ?? 'cash',

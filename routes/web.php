@@ -327,6 +327,7 @@ Route::middleware(['auth', PreventBackHistory::class, 'treasurer'])->group(funct
         Route::get('/general-secretary', [App\Http\Controllers\ReportController::class, 'generalSecretaryReport'])->name('general-secretary');
         Route::post('/general-secretary/save', [App\Http\Controllers\ReportController::class, 'saveGeneralSecretaryReport'])->name('general-secretary.save');
         Route::post('/general-secretary/verify/{year}', [App\Http\Controllers\ReportController::class, 'verifyGeneralSecretaryReport'])->name('general-secretary.verify');
+        Route::post('/general-secretary/reopen/{year}', [App\Http\Controllers\ReportController::class, 'reopenGeneralSecretaryReport'])->name('general-secretary.reopen');
         Route::get('/overview', [App\Http\Controllers\ReportController::class, 'overview'])->name('overview');
         Route::get('/member-giving', [App\Http\Controllers\ReportController::class, 'memberGiving'])->name('member-giving');
         Route::get('/department-giving', [App\Http\Controllers\ReportController::class, 'departmentGiving'])->name('department-giving');

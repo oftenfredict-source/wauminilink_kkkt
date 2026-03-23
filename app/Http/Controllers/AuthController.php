@@ -169,7 +169,7 @@ class AuthController extends Controller
                 $user = Auth::user();
 
                 // Check if OTP is enabled
-                if (self::ENABLE_OTP) {
+                if (self::ENABLE_OTP && !app()->environment('local')) {
                     // Generate and send OTP instead of logging in directly
                     $otp = $this->generateAndSendOtp($user, $emailOrMemberId, $request);
 

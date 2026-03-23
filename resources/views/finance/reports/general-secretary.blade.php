@@ -56,6 +56,15 @@
                         </button>
                     </form>
                 @endif
+
+                @if(($user->isPastor() || $user->isAdmin()) && $isVerified && isset($savedReport))
+                    <form id="reopenReportForm" action="{{ route('reports.general-secretary.reopen', ['year' => $year]) }}" method="POST">
+                        @csrf
+                        <button type="button" class="btn btn-warning btn-sm text-dark" onclick="confirmReopen()">
+                            <i class="fas fa-lock-open me-1"></i> Unlock Report
+                        </button>
+                    </form>
+                @endif
             </div>
         </div>
         <div class="card-body p-4">
@@ -751,6 +760,18 @@
 
 @section('scripts')
 <script>
+function confirmReopen() {
+    SwalHelpers.confirm(
+        'Unlock Report',
+        'Are you sure you want to unlock this report? This will allow edits again.',
+        'Yes, Unlock',
+        'Cancel',
+        function() {
+            document.getElementById('reopenReportForm').submit();
+        }
+    );
+}
+
 function confirmVerification() {
     SwalHelpers.confirm(
         'Verify & Lock Report',

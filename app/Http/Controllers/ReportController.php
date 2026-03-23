@@ -498,50 +498,44 @@ class ReportController extends Controller
             $budgetPurposeSlug = strtolower(str_replace([' ', '/', '.', '-', '(', ')'], '_', trim($budget->purpose)));
 
             // A. Income Estimates
-            if ($budget->budget_type === 'injili') {
-                foreach ($gospelIncome as &$income) {
-                    $nameSlug = strtolower(str_replace([' ', '/', '.', '-', '(', ')'], '_', trim($income['name'])));
-                    if ($budgetPurposeSlug === $nameSlug || stripos($nameSlug, $budgetPurposeSlug) !== false || stripos($budgetPurposeSlug, $nameSlug) !== false) {
-                        $income['estimate'] += $budget->total_budget;
-                    }
+            // Scan through all income arrays to ensure it maps even if budget_type is mismatched
+            foreach ($gospelIncome as &$income) {
+                $nameSlug = strtolower(str_replace([' ', '/', '.', '-', '(', ')'], '_', trim($income['name'])));
+                if ($budgetPurposeSlug === $nameSlug || stripos($nameSlug, $budgetPurposeSlug) !== false || stripos($budgetPurposeSlug, $nameSlug) !== false) {
+                    $income['estimate'] += $budget->total_budget;
                 }
-            } elseif ($budget->budget_type === 'umoja' || $budget->budget_type === 'other') {
-                foreach ($groupIncome as &$income) {
-                    $nameSlug = strtolower(str_replace([' ', '/', '.', '-', '(', ')'], '_', trim($income['name'])));
-                    if ($budgetPurposeSlug === $nameSlug || stripos($nameSlug, $budgetPurposeSlug) !== false || stripos($budgetPurposeSlug, $nameSlug) !== false) {
-                        $income['estimate'] += $budget->total_budget;
-                    }
+            }
+            foreach ($groupIncome as &$income) {
+                $nameSlug = strtolower(str_replace([' ', '/', '.', '-', '(', ')'], '_', trim($income['name'])));
+                if ($budgetPurposeSlug === $nameSlug || stripos($nameSlug, $budgetPurposeSlug) !== false || stripos($budgetPurposeSlug, $nameSlug) !== false) {
+                    $income['estimate'] += $budget->total_budget;
                 }
-            } elseif ($budget->budget_type === 'majengo') {
-                foreach ($buildingIncome as &$income) {
-                    $nameSlug = strtolower(str_replace([' ', '/', '.', '-', '(', ')'], '_', trim($income['name'])));
-                    if ($budgetPurposeSlug === $nameSlug || stripos($nameSlug, $budgetPurposeSlug) !== false || stripos($budgetPurposeSlug, $nameSlug) !== false) {
-                        $income['estimate'] += $budget->total_budget;
-                    }
+            }
+            foreach ($buildingIncome as &$income) {
+                $nameSlug = strtolower(str_replace([' ', '/', '.', '-', '(', ')'], '_', trim($income['name'])));
+                if ($budgetPurposeSlug === $nameSlug || stripos($nameSlug, $budgetPurposeSlug) !== false || stripos($budgetPurposeSlug, $nameSlug) !== false) {
+                    $income['estimate'] += $budget->total_budget;
                 }
             }
 
             // B. Expense Estimates (MATUMIZI)
-            if ($budget->budget_type === 'injili') {
-                foreach ($gospelExpenses as &$exp) {
-                    $expNameSlug = strtolower(str_replace([' ', '/', '.', '-', '(', ')'], '_', trim($exp['name'])));
-                    if ($budgetPurposeSlug === $expNameSlug || stripos($expNameSlug, $budgetPurposeSlug) !== false || stripos($budgetPurposeSlug, $expNameSlug) !== false) {
-                        $exp['estimate'] += $budget->total_budget;
-                    }
+            // Scan through all expense arrays to ensure it maps even if budget_type is mismatched
+            foreach ($gospelExpenses as &$exp) {
+                $expNameSlug = strtolower(str_replace([' ', '/', '.', '-', '(', ')'], '_', trim($exp['name'])));
+                if ($budgetPurposeSlug === $expNameSlug || stripos($expNameSlug, $budgetPurposeSlug) !== false || stripos($budgetPurposeSlug, $expNameSlug) !== false) {
+                    $exp['estimate'] += $budget->total_budget;
                 }
-            } elseif ($budget->budget_type === 'umoja' || $budget->budget_type === 'other') {
-                foreach ($groupExpenses as &$exp) {
-                    $expNameSlug = strtolower(str_replace([' ', '/', '.', '-', '(', ')'], '_', trim($exp['name'])));
-                    if ($budgetPurposeSlug === $expNameSlug || stripos($expNameSlug, $budgetPurposeSlug) !== false || stripos($budgetPurposeSlug, $expNameSlug) !== false) {
-                        $exp['estimate'] += $budget->total_budget;
-                    }
+            }
+            foreach ($groupExpenses as &$exp) {
+                $expNameSlug = strtolower(str_replace([' ', '/', '.', '-', '(', ')'], '_', trim($exp['name'])));
+                if ($budgetPurposeSlug === $expNameSlug || stripos($expNameSlug, $budgetPurposeSlug) !== false || stripos($budgetPurposeSlug, $expNameSlug) !== false) {
+                    $exp['estimate'] += $budget->total_budget;
                 }
-            } elseif ($budget->budget_type === 'majengo') {
-                foreach ($buildingExpenses as &$exp) {
-                    $expNameSlug = strtolower(str_replace([' ', '/', '.', '-', '(', ')'], '_', trim($exp['name'])));
-                    if ($budgetPurposeSlug === $expNameSlug || stripos($expNameSlug, $budgetPurposeSlug) !== false || stripos($budgetPurposeSlug, $expNameSlug) !== false) {
-                        $exp['estimate'] += $budget->total_budget;
-                    }
+            }
+            foreach ($buildingExpenses as &$exp) {
+                $expNameSlug = strtolower(str_replace([' ', '/', '.', '-', '(', ')'], '_', trim($exp['name'])));
+                if ($budgetPurposeSlug === $expNameSlug || stripos($expNameSlug, $budgetPurposeSlug) !== false || stripos($budgetPurposeSlug, $expNameSlug) !== false) {
+                    $exp['estimate'] += $budget->total_budget;
                 }
             }
         }
@@ -653,6 +647,30 @@ class ReportController extends Controller
         $report->save();
 
         return redirect()->back()->with('success', 'Report for ' . $year . ' has been verified and locked.');
+    }
+
+    /**
+     * Reopen General Secretary Report (Change status back to draft)
+     */
+    public function reopenGeneralSecretaryReport(Request $request, $year)
+    {
+        $user = auth()->user();
+        if (!$user->isPastor() && !$user->isAdmin()) {
+            return redirect()->back()->with('error', 'Only Pastors or Admins can reopen reports.');
+        }
+
+        $report = GeneralSecretaryReport::where('year', $year)->first();
+
+        if (!$report) {
+            return redirect()->back()->with('error', 'Report data not found.');
+        }
+
+        $report->status = 'draft';
+        $report->verified_by = null;
+        $report->verified_at = null;
+        $report->save();
+
+        return redirect()->back()->with('success', 'Report for ' . $year . ' has been unlocked and can be edited again.');
     }
 
 

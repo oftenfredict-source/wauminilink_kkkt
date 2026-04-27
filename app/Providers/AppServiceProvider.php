@@ -16,6 +16,10 @@ use App\Services\SmsService;
 use App\Services\TranslationService;
 use App\View\Composers\LanguageComposer;
 use App\Session\DatabaseSessionHandler;
+use Illuminate\Support\Facades\Storage;
+use Masbug\Flysystem\GoogleDriveAdapter;
+use Google\Client as GoogleClient;
+use League\Flysystem\Filesystem;
 
 use Illuminate\Pagination\Paginator;
 
@@ -119,5 +123,19 @@ class AppServiceProvider extends ServiceProvider
 
         // Use Bootstrap 5 for pagination
         Paginator::useBootstrapFive();
+
+        // Register Google Drive storage driver
+        Storage::extend('google', function ($app, $config) {
+            $client = new GoogleClient();
+            $client->setClientId($config['clientId']);
+            $client->setClientSecret($config['clientSecret']);
+            $client->refreshToken($config['refreshToken']);
+
+            $service = new \Google\Service\Drive($client);
+            $adapter = new GoogleDriveAdapter($service, $config['folderId']);
+            $driver = new Filesystem($adapter);
+
+            return new \Illuminate\Filesystem\FilesystemAdapter($driver, $adapter, $config);
+        });
     }
 }

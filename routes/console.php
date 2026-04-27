@@ -50,7 +50,23 @@ Schedule::command('membership:check-expiry')
 // Schedule child to member transition eligibility check to run daily at 7:00 AM
 // Checks for children who are 18+ and church members, creates transition requests
 Schedule::command('children:check-transition-eligibility')
-    ->dailyAt('7:00')
+    ->dailyAt('07:00')
+    ->timezone('Africa/Dar_es_Salaam')
+    ->withoutOverlapping()
+    ->runInBackground();
+
+// Schedule automated backups to run daily at 3:00 AM
+// This includes both database and specific files as configured
+Schedule::command('backup:run --only-db')
+    ->dailyAt('03:00')
+    ->timezone('Africa/Dar_es_Salaam')
+    ->withoutOverlapping()
+    ->runInBackground();
+
+// Schedule cleanup of old backups to run daily at 3:15 AM
+// Keeps only the latest 3 backups as per config/backup.php
+Schedule::command('backup:clean')
+    ->dailyAt('03:15')
     ->timezone('Africa/Dar_es_Salaam')
     ->withoutOverlapping()
     ->runInBackground();
